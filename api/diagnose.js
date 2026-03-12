@@ -1,5 +1,16 @@
 export default async function handler(req, res) {
-    // السماح فقط بطلبات POST
+    // 1. إضافة رؤوس CORS للسماح لموقعك بالاتصال بالسيرفر
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // يمكنك وضع رابط موقعك هنا للأمان
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+
+    // التعامل مع طلبات OPTIONS (Pre-flight)
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
@@ -7,9 +18,8 @@ export default async function handler(req, res) {
     try {
         const apiKey = process.env.OPENAI_KEY;
 
-        // التأكد من وجود مفتاح API
         if (!apiKey) {
-            return res.status(500).json({ error: "OpenAI API Key is missing in environment variables" });
+            return res.status(500).json({ error: "API Key missing" });
         }
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -19,7 +29,7 @@ export default async function handler(req, res) {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini", // تأكد من أن هذا الموديل متاح في حسابك
+                model: "gpt-4o-mini",
                 messages: req.body.messages,
                 temperature: 0.4
             })
@@ -27,21 +37,17 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // التحقق مما إذا كان هناك خطأ من OpenAI نفسه
+        // 2. التحقق من وجود خطأ من OpenAI نفسه (مثل انتهاء الرصيد)
         if (data.error) {
             console.error("OpenAI Error:", data.error);
-            return res.status(500).json({ error: data.error.message });
+            return res.status(response.status).json({ error: data.error.message });
         }
 
-        // إرسال البيانات بنفس التنسيق الذي يتوقعه كود الموقع (Frontend)
-        // ليتمكن الكود من قراءة data.choices[0].message.content
+        // 3. إرسال الاستجابة كاملة ليتعرف عليها الكود في الموقع
         return res.status(200).json(data);
 
     } catch (error) {
-        console.error("Vercel Server Error:", error);
-        return res.status(500).json({
-            error: "Internal Server Error",
-            details: error.message
-        });
+        console.error("Server Error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 }
