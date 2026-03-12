@@ -8,30 +8,31 @@ try {
 
 const apiKey = process.env.OPENAI_KEY;
 
-const response = await fetch("https://api.openai.com/v1/chat/completions",{
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-"Authorization":`Bearer ${apiKey}`
+const response = await fetch("https://api.openai.com/v1/chat/completions", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": `Bearer ${apiKey}`
 },
-body:JSON.stringify({
-model:"gpt-4o-mini",
-messages:req.body.messages
+body: JSON.stringify({
+model: "gpt-4o-mini",
+messages: req.body.messages,
+temperature: 0.4
 })
 });
 
 const data = await response.json();
 
-res.status(200).json({
-reply:data.choices?.[0]?.message?.content || "لم يتم استلام رد"
+return res.status(200).json({
+reply: data.choices?.[0]?.message?.content || "لم يتم توليد رد"
 });
 
-}catch(error){
+} catch (error) {
 
 console.log(error);
 
-res.status(500).json({
-error:"Server crashed"
+return res.status(500).json({
+error: "server_error"
 });
 
 }
