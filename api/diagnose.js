@@ -1,11 +1,15 @@
 export default async function handler(req, res) {
+    // إعدادات الـ CORS لضمان قبول الاتصال من شوبيفاي
+    res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
+        const { messages } = req.body;
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -14,24 +18,20 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: req.body.messages,
+                messages: messages,
                 temperature: 0.7
             })
         });
 
         const data = await response.json();
 
-        // هذا الجزء سيكشف لك السبب الحقيقي للخطأ في المتصفح
         if (data.error) {
-            console.error("OpenAI Error:", data.error);
-            return res.status(response.status).json({ 
-                error: "خطأ من OpenAI", 
-                detail: data.error.message // هنا سيظهر لك "Insufficent Balance" مثلاً
-            });
+            console.error("OpenAI API Error:", data.error);
+            return res.status(response.status).json(data); // إرسال الخطأ بالتفصيل للمتصفح
         }
 
         return res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ error: "Server Crash", detail: error.message });
+        return res.status(500).json({ error: { message: "Internal Server Error" } });
     }
 }
