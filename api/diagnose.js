@@ -1,11 +1,13 @@
 export default async function handler(req, res) {
-    // إعدادات الـ CORS لضمان قبول الاتصال من شوبيفاي
+    // إعدادات CORS للسماح بالاتصال من شوبيفاي
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
 
     try {
         const { messages } = req.body;
@@ -24,14 +26,8 @@ export default async function handler(req, res) {
         });
 
         const data = await response.json();
-
-        if (data.error) {
-            console.error("OpenAI API Error:", data.error);
-            return res.status(response.status).json(data); // إرسال الخطأ بالتفصيل للمتصفح
-        }
-
         return res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ error: { message: "Internal Server Error" } });
+        return res.status(500).json({ error: "Server Error", details: error.message });
     }
 }
