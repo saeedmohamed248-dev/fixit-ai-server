@@ -1,17 +1,12 @@
 export default async function handler(req, res) {
-    // إعدادات CORS للسماح بالاتصال من شوبيفاي
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // إعدادات السماح بالاتصال (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
-        const { messages } = req.body;
-
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -20,7 +15,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: messages,
+                messages: req.body.messages, // تأكد أنك ترسل messages من شوبي فاي
                 temperature: 0.7
             })
         });
@@ -28,6 +23,6 @@ export default async function handler(req, res) {
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ error: "Server Error", details: error.message });
+        return res.status(500).json({ error: error.message });
     }
 }
