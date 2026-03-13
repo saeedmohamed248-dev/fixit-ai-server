@@ -1,4 +1,5 @@
 const handler = async (req, res) => {
+    // إعدادات السماح بالاتصال من شوبيفاي
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -6,6 +7,8 @@ const handler = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
+        const { messages } = req.body;
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -14,7 +17,7 @@ const handler = async (req, res) => {
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: req.body.messages,
+                messages: messages,
                 temperature: 0.7
             })
         });
@@ -22,7 +25,7 @@ const handler = async (req, res) => {
         const data = await response.json();
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Server Error", details: error.message });
     }
 };
 
