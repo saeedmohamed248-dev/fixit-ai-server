@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>السلة وإتمام الطلب | بافاريا بارتس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="cart-container">
+      <div class="spinner">جاري التحميل...</div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('cart');
+    const container = document.getElementById('cart-container');
+    let products = [];
+
+    async function load() {
+      const cart = getCart();
+      const ids = Object.keys(cart);
+      if (ids.length === 0) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">🛒</span>
+          السلة فارغة<br><br><a class="btn" href="/shop.html">تصفح المنتجات</a></div>`;
+        return;
+      }
+      try {
+        const all = await api('/products');
+        products = all.filter((p) => ids.includes(p.id));
+        render();
+      } catch (e) {
+        container.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
+      }
+    }
+
+    function render() {
+      const cart = getCart();
+      const items = products.filter((p) => cart[p.id]);
+      if (items.length === 0) return load();
+      const total = items.reduce((s, p) => s + p.price * cart[p.id], 0);
+
+      container.innerHTML = `
+      <h1 style="margin-bottom: 20px;">السلة (${items.length})</h1>
+      <div class="cart-layout">
+        <div>
+          ${items.map((p) => `
+          <div class="cart-item">
+            <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+            <div>
+              <h4><a href="/product.html?id=${esc(p.id)}">${esc(p.name)}</a></h4>
+              <div class="sub">${conditionBadge(p)} ${esc(p.sku)}</div>
+              <div class="price" style="font-size: 15px;">${money(p.price)}</div>
+            </div>
+            <div class="actions">
+              <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
+              <button class="remove-link" data-remove="${esc(p.id)}">إزالة ✕</button>
+            </div>
+          </div>`).join('')}
+        </div>
+
+        <div class="summary">
+          <h3>إتمام الطلب</h3>
+          <div class="row"><span>الإجمالي</span><b>${money(total)}</b></div>
+          <div class="row" style="color: var(--muted); font-size: 13px;"><span>الشحن</span><span>يُحدد عند التأكيد حسب المحافظة</span></div>
+          <div class="row total"><span>المطلوب</span><span>${money(total)}</span></div>
+          <hr style="border-color: var(--line);">
+          <div><label>الاسم بالكامل *</label><input id="c-name" required></div>
+          <div><label>رقم الموبايل *</label><input id="c-phone" type="tel" dir="ltr" style="text-align: right;" placeholder="01xxxxxxxxx" required></div>
+          <div><label>المحافظة</label><input id="c-city" placeholder="القاهرة"></div>
+          <div><label>العنوان بالتفصيل *</label><textarea id="c-address" rows="2" required></textarea></div>
+          <div><label>ملاحظات (نوع العربية / سنة الموديل / رقم الشاسيه)</label><textarea id="c-notes" rows="2"></textarea></div>
+          <div class="row" style="color: var(--muted); font-size: 13px;"><span>💵 الدفع عند الاستلام</span><span>أو تحويل عند التأكيد</span></div>
+          <button class="btn" id="submit-order">تأكيد الطلب ✓</button>
+          <div id="order-error" style="color: var(--red); font-size: 14px;"></div>
+        </div>
+      </div>`;
+
+      container.querySelectorAll('[data-qty]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const c = getCart();
+          c[input.dataset.qty] = Math.max(1, Number(input.value) || 1);
+          setCart(c);
+          render();
+        });
+      });
+      container.querySelectorAll('[data-remove]').forEach((btn) => {
+        btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); render(); });
+      });
+
+      document.getElementById('submit-order').addEventListener('click', async (e) => {
+        const btn = e.target;
+        const errBox = document.getElementById('order-error');
+        errBox.textContent = '';
+        const customer = {
+          name: document.getElementById('c-name').value.trim(),
+          phone: document.getElementById('c-phone').value.trim(),
+          city: document.getElementById('c-city').value.trim(),
+          address: document.getElementById('c-address').value.trim(),
+        };
+        if (!customer.name || !customer.phone || !customer.address) {
+          errBox.textContent = 'من فضلك اكتب الاسم ورقم الموبايل والعنوان';
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'جاري إرسال الطلب...';
+        try {
+          const c = getCart();
+          const order = await api('/orders', {
+            method: 'POST',
+            body: JSON.stringify({
+              customer,
+              notes: document.getElementById('c-notes').value.trim(),
+              items: Object.entries(c).map(([id, qty]) => ({ id, qty })),
+            }),
+          });
+          setCart({});
+          showSuccess(order);
+        } catch (err) {
+          errBox.textContent = err.message;
+          btn.disabled = false;
+          btn.textContent = 'تأكيد الطلب ✓';
+        }
+      });
+    }
+
+    function showSuccess(order) {
+      const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
+      const waText = `طلب جديد من الموقع 🛒\nرقم الطلب: ${order.number}\nالاسم: ${order.customer.name}\nالموبايل: ${order.customer.phone}\n${lines}\nالإجمالي: ${order.total} جنيه`;
+      container.innerHTML = `
+      <div class="success-box">
+        <span class="icon">✅</span>
+        <h2>تم استلام طلبك بنجاح!</h2>
+        <p>رقم الطلب:</p>
+        <div class="order-number">${esc(order.number)}</div>
+        <p style="color: var(--muted); margin: 14px 0;">هنتواصل معاك على ${esc(order.customer.phone)} لتأكيد الطلب وتحديد الشحن.<br>لتأكيد أسرع، ابعت الطلب على واتساب:</p>
+        <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(waText)}">تأكيد عبر واتساب 💬</a>
+        <br><br>
+        <a href="/shop.html" style="color: var(--blue2);">← الرجوع للمتجر</a>
+      </div>`;
+      window.scrollTo(0, 0);
+    }
+
+    load();
+  </script>
+</body>
+</html>

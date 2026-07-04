@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل المنتج | بافاريا بارتس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="product-container">
+      <div class="spinner">جاري التحميل...</div>
+    </div>
+
+    <div class="container section" id="related-section" style="display: none; padding-bottom: 0;">
+      <div class="section-head"><h2>قطع مشابهة</h2></div>
+      <div class="products-grid" id="related-grid"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('shop');
+    const container = document.getElementById('product-container');
+    const id = new URLSearchParams(location.search).get('id');
+
+    async function load() {
+      if (!id) {
+        container.innerHTML = '<div class="empty-state"><span class="icon">❓</span>المنتج غير موجود</div>';
+        return;
+      }
+      try {
+        const p = await api('/products?id=' + encodeURIComponent(id));
+        document.title = p.name + ' | ' + SITE.name;
+        const out = p.stock <= 0;
+        container.innerHTML = `
+        <div class="product-layout">
+          <div class="product-img-box">${productImage(p)}</div>
+          <div class="product-info">
+            <div class="card-badges">${conditionBadge(p)} <span class="badge badge-brand">${esc(p.brand)}</span></div>
+            <h1>${esc(p.name)}</h1>
+            <div>
+              ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
+              <span class="price">${money(p.price)}</span>
+            </div>
+            <table class="meta-table">
+              <tr><td>رقم القطعة (SKU)</td><td>${esc(p.sku) || '—'}</td></tr>
+              <tr><td>رقم OEM</td><td dir="ltr" style="text-align: right;">${esc(p.oem) || '—'}</td></tr>
+              <tr><td>الحالة</td><td>${p.condition === 'used' ? 'مستعمل وارد (مفحوص)' : 'جديد'}</td></tr>
+              <tr><td>يناسب موديلات</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
+              <tr><td>المتوفر</td><td>${out ? '<span style="color: var(--red);">نفذت الكمية</span>' : p.stock + ' قطعة'}</td></tr>
+            </table>
+            <p style="color: var(--muted);">${esc(p.description)}</p>
+            ${out ? `
+              <a class="btn btn-green" style="margin-top: 18px;" target="_blank" rel="noopener"
+                 href="${waLink('السلام عليكم، عايز أحجز قطعة "' + p.name + '" (' + p.sku + ') لما تتوفر')}">
+                 نفذت الكمية — احجزها واتساب 💬</a>
+            ` : `
+              <div class="qty-row">
+                <label style="margin: 0;">الكمية:</label>
+                <input type="number" id="qty" value="1" min="1" max="${p.stock}">
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn" id="add-cart">🛒 أضف للسلة</button>
+                <a class="btn btn-green" target="_blank" rel="noopener"
+                   href="${waLink('السلام عليكم، عايز أسأل عن "' + p.name + '" (' + p.sku + ')')}">اسأل عنها واتساب 💬</a>
+              </div>
+            `}
+          </div>
+        </div>`;
+
+        const addBtn = document.getElementById('add-cart');
+        if (addBtn) addBtn.addEventListener('click', () => {
+          const qty = Math.max(1, Math.min(p.stock, Number(document.getElementById('qty').value) || 1));
+          addToCart(p.id, qty);
+        });
+
+        // منتجات مشابهة من نفس الفئة
+        const related = (await api('/products?category=' + encodeURIComponent(p.category)))
+          .filter((r) => r.id !== p.id).slice(0, 4);
+        if (related.length) {
+          document.getElementById('related-section').style.display = '';
+          document.getElementById('related-grid').innerHTML = related.map(productCard).join('');
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span>${esc(e.message)}</div>`;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

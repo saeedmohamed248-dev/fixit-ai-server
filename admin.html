@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>لوحة التحكم | بافاريا بارتس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="admin-container"></div>
+  </main>
+
+  <!-- نافذة إضافة/تعديل منتج -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <h3 id="modal-title">إضافة منتج</h3>
+      <div class="form-grid">
+        <div class="full"><label>اسم المنتج *</label><input id="m-name"></div>
+        <div><label>SKU (رقم القطعة عندك)</label><input id="m-sku" dir="ltr"></div>
+        <div><label>رقم OEM</label><input id="m-oem" dir="ltr"></div>
+        <div><label>الماركة</label>
+          <select id="m-brand"><option>BMW</option><option>MINI</option></select></div>
+        <div><label>الحالة</label>
+          <select id="m-condition"><option value="new">جديد</option><option value="used">مستعمل وارد</option></select></div>
+        <div><label>الفئة</label>
+          <select id="m-category">
+            <option>فرامل</option><option>فلاتر وصيانة</option><option>عفشة وتعليق</option>
+            <option>كهرباء وإشعال</option><option>تبريد</option><option>وقود</option>
+            <option>هيكل وإكسسوارات</option><option>أخرى</option>
+          </select></div>
+        <div><label>الموديلات (مفصولة بفاصلة: F30, F10)</label><input id="m-models" dir="ltr"></div>
+        <div><label>السعر (ج.م) *</label><input id="m-price" type="number" min="0"></div>
+        <div><label>السعر قبل الخصم (اختياري)</label><input id="m-oldPrice" type="number" min="0"></div>
+        <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
+        <div><label>رابط صورة (اختياري)</label><input id="m-image" dir="ltr" placeholder="https://..."></div>
+        <div class="full"><label>الوصف</label><textarea id="m-description" rows="3"></textarea></div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 18px;">
+        <button class="btn" id="modal-save">حفظ</button>
+        <button class="btn btn-outline" onclick="document.getElementById('product-modal').classList.remove('open')">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('');
+    const container = document.getElementById('admin-container');
+    const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
+    let products = [];
+    let editingId = null;
+
+    function token() { return localStorage.getItem('admin_token') || ''; }
+    function authHeaders() { return { Authorization: 'Bearer ' + token() }; }
+
+    /* ---------- شاشة الدخول ---------- */
+    function showLogin(msg = '') {
+      container.innerHTML = `
+      <div class="login-box">
+        <h2>🔐 لوحة التحكم</h2>
+        ${msg ? `<div class="note">${esc(msg)}</div>` : ''}
+        <input type="password" id="login-token" placeholder="رمز الدخول (ADMIN_TOKEN)">
+        <button class="btn" style="width: 100%;" id="login-btn">دخول</button>
+      </div>`;
+      document.getElementById('login-btn').addEventListener('click', async () => {
+        localStorage.setItem('admin_token', document.getElementById('login-token').value.trim());
+        init();
+      });
+    }
+
+    /* ---------- الهيكل الرئيسي ---------- */
+    async function init() {
+      if (!token()) return showLogin();
+      container.innerHTML = '<div class="spinner">جاري التحقق...</div>';
+      try {
+        await api('/orders', { headers: authHeaders() }); // اختبار الصلاحية
+      } catch (e) {
+        localStorage.removeItem('admin_token');
+        return showLogin(e.message);
+      }
+      container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <h1>لوحة التحكم</h1>
+        <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
+      </div>
+      <div class="admin-tabs">
+        <button data-tab="orders" class="active">📦 الطلبات</button>
+        <button data-tab="products">🔧 المنتجات</button>
+        <button data-tab="sync">🔄 المزامنة</button>
+      </div>
+      <div id="tab-content"></div>`;
+      document.getElementById('logout').addEventListener('click', () => {
+        localStorage.removeItem('admin_token');
+        showLogin();
+      });
+      container.querySelectorAll('.admin-tabs button').forEach((b) => {
+        b.addEventListener('click', () => {
+          container.querySelectorAll('.admin-tabs button').forEach((x) => x.classList.remove('active'));
+          b.classList.add('active');
+          showTab(b.dataset.tab);
+        });
+      });
+      showTab('orders');
+    }
+
+    function showTab(tab) {
+      if (tab === 'orders') return loadOrders();
+      if (tab === 'products') return loadProducts();
+      if (tab === 'sync') return showSync();
+    }
+
+    /* ---------- الطلبات ---------- */
+    async function loadOrders() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const orders = await api('/orders', { headers: authHeaders() });
+        if (orders.length === 0) {
+          box.innerHTML = '<div class="empty-state"><span class="icon">📭</span>لا توجد طلبات بعد</div>';
+          return;
+        }
+        box.innerHTML = `<div class="table-wrap"><table class="table">
+          <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الموبايل</th><th>القطع</th><th>الإجمالي</th><th>الحالة</th></tr>
+          ${orders.map((o) => `<tr>
+            <td><b>${esc(o.number)}</b></td>
+            <td>${new Date(o.createdAt).toLocaleDateString('ar-EG')}</td>
+            <td>${esc(o.customer.name)}<br><small style="color: var(--muted);">${esc(o.customer.city)} — ${esc(o.customer.address)}</small></td>
+            <td dir="ltr">${esc(o.customer.phone)}</td>
+            <td>${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join('<br>')}</td>
+            <td><b>${money(o.total)}</b></td>
+            <td><select data-order="${esc(o.id)}">
+              ${Object.entries(STATUS_AR).map(([k, v]) => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`).join('')}
+            </select></td>
+          </tr>`).join('')}
+        </table></div>`;
+        box.querySelectorAll('[data-order]').forEach((sel) => {
+          sel.addEventListener('change', async () => {
+            try {
+              await api('/orders', {
+                method: 'PUT', headers: authHeaders(),
+                body: JSON.stringify({ id: sel.dataset.order, status: sel.value }),
+              });
+              toast('تم تحديث حالة الطلب ✓');
+            } catch (e) { toast('⚠️ ' + e.message); }
+          });
+        });
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ---------- المنتجات ---------- */
+    async function loadProducts() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      products = await api('/products');
+      box.innerHTML = `
+      <div style="margin-bottom: 14px;"><button class="btn btn-sm" id="add-product">+ إضافة منتج</button></div>
+      <div class="table-wrap"><table class="table">
+        <tr><th>المنتج</th><th>SKU</th><th>الماركة</th><th>الحالة</th><th>السعر</th><th>المخزون</th><th></th></tr>
+        ${products.map((p) => `<tr>
+          <td>${esc(p.name)}</td>
+          <td dir="ltr">${esc(p.sku)}</td>
+          <td>${esc(p.brand)}</td>
+          <td>${p.condition === 'used' ? 'مستعمل' : 'جديد'}</td>
+          <td>${money(p.price)}</td>
+          <td style="${p.stock <= 0 ? 'color: var(--red); font-weight: 700;' : ''}">${p.stock}</td>
+          <td style="white-space: nowrap;">
+            <button class="btn btn-sm btn-outline" data-edit="${esc(p.id)}">تعديل</button>
+            <button class="btn btn-sm btn-danger" data-del="${esc(p.id)}">حذف</button>
+          </td>
+        </tr>`).join('')}
+      </table></div>`;
+      document.getElementById('add-product').addEventListener('click', () => openModal(null));
+      box.querySelectorAll('[data-edit]').forEach((b) =>
+        b.addEventListener('click', () => openModal(products.find((p) => p.id === b.dataset.edit))));
+      box.querySelectorAll('[data-del]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          if (!confirm('متأكد من حذف المنتج؟')) return;
+          try {
+            await api('/products?id=' + b.dataset.del, { method: 'DELETE', headers: authHeaders() });
+            toast('تم الحذف');
+            loadProducts();
+          } catch (e) { toast('⚠️ ' + e.message); }
+        }));
+    }
+
+    const FIELDS = ['name', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'stock', 'image', 'description'];
+    function openModal(p) {
+      editingId = p ? p.id : null;
+      document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';
+      FIELDS.forEach((f) => {
+        const el = document.getElementById('m-' + f);
+        if (f === 'models') el.value = p ? p.models.join(', ') : '';
+        else el.value = p ? (p[f] ?? '') : (f === 'stock' ? 1 : '');
+      });
+      if (!p) { document.getElementById('m-brand').value = 'BMW'; document.getElementById('m-condition').value = 'new'; }
+      document.getElementById('product-modal').classList.add('open');
+    }
+
+    document.getElementById('modal-save').addEventListener('click', async () => {
+      const body = {};
+      FIELDS.forEach((f) => {
+        const v = document.getElementById('m-' + f).value.trim();
+        body[f] = f === 'models' ? v.split(',').map((s) => s.trim()).filter(Boolean) : v;
+      });
+      if (!body.name || !body.price) return toast('⚠️ الاسم والسعر مطلوبين');
+      try {
+        if (editingId) {
+          body.id = editingId;
+          await api('/products', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+        } else {
+          await api('/products', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+        }
+        document.getElementById('product-modal').classList.remove('open');
+        toast('تم الحفظ ✓');
+        loadProducts();
+      } catch (e) { toast('⚠️ ' + e.message); }
+    });
+
+    /* ---------- المزامنة ---------- */
+    function showSync() {
+      const base = location.origin;
+      document.getElementById('tab-content').innerHTML = `
+      <div style="max-width: 760px;">
+        <h3 style="margin-bottom: 10px;">🔄 ربط المخزون مع نظام خارجي (شوبيفاي / موس تك)</h3>
+        <p style="color: var(--muted); margin-bottom: 16px;">
+          لو قطعة اتباعت في النظام التاني، ابعت إشعار للرابط ده وهيتخصم المخزون هنا تلقائياً.
+          لازم الـ SKU يكون نفسه في النظامين. (فعّل متغير SYNC_SECRET في إعدادات Vercel الأول)
+        </p>
+        <label>خصم مخزون (لما قطعة تتباع برة):</label>
+        <div class="code-block">POST ${base}/api/sync?secret=YOUR_SECRET
+Content-Type: application/json
+
+{ "sku": "BP-34116850568", "quantity": 1 }</div>
+        <br>
+        <label>سحب المخزون الحالي كله (للنظام الخارجي):</label>
+        <div class="code-block">GET ${base}/api/sync?secret=YOUR_SECRET</div>
+        <br>
+        <label>ربط شوبيفاي مباشرة:</label>
+        <p style="color: var(--muted); font-size: 14px;">
+          من إعدادات شوبيفاي → Notifications → Webhooks → أضف webhook لحدث
+          <b>Order creation</b> على الرابط:<br>
+        </p>
+        <div class="code-block">${base}/api/sync?secret=YOUR_SECRET</div>
+        <p style="color: var(--muted); font-size: 14px; margin-top: 8px;">
+          وبكده أي أوردر بيتعمل في شوبيفاي هيخصم الكمية هنا تلقائياً حسب الـ SKU.
+        </p>
+      </div>`;
+    }
+
+    init();
+  </script>
+</body>
+</html>
