@@ -37,6 +37,8 @@ export default async function handler(req, res) {
       }
       if (sort === 'price_asc') list = [...list].sort((a, b) => a.price - b.price);
       else if (sort === 'price_desc') list = [...list].sort((a, b) => b.price - a.price);
+      else if (sort === 'best') list = [...list].sort((a, b) => (b.sold || 0) - (a.sold || 0));
+      else if (sort === 'rating') list = [...list].sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
 
       return res.status(200).json(list);
     }
@@ -60,7 +62,11 @@ export default async function handler(req, res) {
         stock: Number(body.stock) || 0,
         oem: body.oem || '',
         image: body.image || '',
+        images: Array.isArray(body.images) ? body.images : [],
         description: body.description || '',
+        sold: 0,
+        ratingAvg: 0,
+        ratingCount: 0,
       };
       products.push(product);
       await saveProducts(products);

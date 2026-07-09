@@ -38,7 +38,8 @@
         <div><label>السعر (ج.م) *</label><input id="m-price" type="number" min="0"></div>
         <div><label>السعر قبل الخصم (اختياري)</label><input id="m-oldPrice" type="number" min="0"></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
-        <div><label>رابط صورة (اختياري)</label><input id="m-image" dir="ltr" placeholder="https://..."></div>
+        <div><label>رابط الصورة الرئيسية</label><input id="m-image" dir="ltr" placeholder="https://..."></div>
+        <div class="full"><label>صور إضافية (رابط في كل سطر)</label><textarea id="m-images" dir="ltr" rows="2"></textarea></div>
         <div class="full"><label>الوصف</label><textarea id="m-description" rows="3"></textarea></div>
       </div>
       <div style="display: flex; gap: 10px; margin-top: 18px;">
@@ -54,6 +55,7 @@
     renderLayout('');
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
+    const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة' };
     let products = [];
     let editingId = null;
 
@@ -91,8 +93,11 @@
         <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
       </div>
       <div class="admin-tabs">
-        <button data-tab="orders" class="active">📦 الطلبات</button>
+        <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
+        <button data-tab="orders">📦 الطلبات</button>
         <button data-tab="products">🔧 المنتجات</button>
+        <button data-tab="coupons">🎟️ الكوبونات</button>
+        <button data-tab="customers">👥 العملاء</button>
         <button data-tab="sync">🔄 المزامنة</button>
       </div>
       <div id="tab-content"></div>`;
@@ -107,13 +112,55 @@
           showTab(b.dataset.tab);
         });
       });
-      showTab('orders');
+      showTab('dashboard');
     }
 
     function showTab(tab) {
-      if (tab === 'orders') return loadOrders();
-      if (tab === 'products') return loadProducts();
-      if (tab === 'sync') return showSync();
+      const fns = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, sync: showSync };
+      fns[tab]?.();
+    }
+
+    /* ---------- نظرة عامة ---------- */
+    async function loadDashboard() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const [orders, prods] = await Promise.all([
+          api('/orders', { headers: authHeaders() }),
+          api('/products'),
+        ]);
+        const active = orders.filter((o) => o.status !== 'cancelled');
+        const sales = active.reduce((s, o) => s + o.total, 0);
+        const newOrders = orders.filter((o) => o.status === 'new').length;
+        const lowStock = prods.filter((p) => p.stock <= 2);
+        const topSold = [...prods].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 5).filter((p) => p.sold);
+
+        box.innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">إجمالي المبيعات</div><div class="value">${money(sales)}</div></div>
+          <div class="stat-card"><div class="label">عدد الطلبات</div><div class="value">${orders.length}</div></div>
+          <div class="stat-card"><div class="label">طلبات جديدة تحتاج تأكيد</div><div class="value" style="color: var(--amber);">${newOrders}</div></div>
+          <div class="stat-card"><div class="label">عدد المنتجات</div><div class="value">${prods.length}</div></div>
+        </div>
+        <div class="cart-layout">
+          <div>
+            <h3 style="margin-bottom: 12px;">⭐ الأكثر مبيعاً</h3>
+            ${topSold.length ? `<div class="table-wrap"><table class="table">
+              <tr><th>المنتج</th><th>مبيعات</th><th>المخزون</th></tr>
+              ${topSold.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.sold}</td><td>${p.stock}</td></tr>`).join('')}
+            </table></div>` : '<p style="color: var(--muted);">لسه مفيش مبيعات كافية</p>'}
+          </div>
+          <div>
+            <h3 style="margin-bottom: 12px;">⚠️ مخزون منخفض (2 أو أقل)</h3>
+            ${lowStock.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
+              <tr><th>المنتج</th><th>المتبقي</th></tr>
+              ${lowStock.map((p) => `<tr><td>${esc(p.name)}</td><td style="color: var(--red); font-weight: 700;">${p.stock}</td></tr>`).join('')}
+            </table></div>` : '<p style="color: var(--muted);">كل المخزون تمام ✓</p>'}
+          </div>
+        </div>`;
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
     }
 
     /* ---------- الطلبات ---------- */
@@ -127,14 +174,15 @@
           return;
         }
         box.innerHTML = `<div class="table-wrap"><table class="table">
-          <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الموبايل</th><th>القطع</th><th>الإجمالي</th><th>الحالة</th></tr>
+          <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الموبايل</th><th>القطع</th><th>الدفع</th><th>الإجمالي</th><th>الحالة</th></tr>
           ${orders.map((o) => `<tr>
-            <td><b>${esc(o.number)}</b></td>
+            <td><b>${esc(o.number)}</b>${o.coupon ? `<br><small style="color: var(--green);">🎟️ ${esc(o.coupon)}</small>` : ''}</td>
             <td>${new Date(o.createdAt).toLocaleDateString('ar-EG')}</td>
             <td>${esc(o.customer.name)}<br><small style="color: var(--muted);">${esc(o.customer.city)} — ${esc(o.customer.address)}</small></td>
             <td dir="ltr">${esc(o.customer.phone)}</td>
             <td>${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join('<br>')}</td>
-            <td><b>${money(o.total)}</b></td>
+            <td>${PAY_AR[o.payment] || '💵'}</td>
+            <td><b>${money(o.total)}</b>${o.discount ? `<br><small style="color: var(--green);">خصم ${money(o.discount)}</small>` : ''}</td>
             <td><select data-order="${esc(o.id)}">
               ${Object.entries(STATUS_AR).map(([k, v]) => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`).join('')}
             </select></td>
@@ -164,7 +212,7 @@
       box.innerHTML = `
       <div style="margin-bottom: 14px;"><button class="btn btn-sm" id="add-product">+ إضافة منتج</button></div>
       <div class="table-wrap"><table class="table">
-        <tr><th>المنتج</th><th>SKU</th><th>الماركة</th><th>الحالة</th><th>السعر</th><th>المخزون</th><th></th></tr>
+        <tr><th>المنتج</th><th>SKU</th><th>الماركة</th><th>الحالة</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
         ${products.map((p) => `<tr>
           <td>${esc(p.name)}</td>
           <td dir="ltr">${esc(p.sku)}</td>
@@ -172,6 +220,8 @@
           <td>${p.condition === 'used' ? 'مستعمل' : 'جديد'}</td>
           <td>${money(p.price)}</td>
           <td style="${p.stock <= 0 ? 'color: var(--red); font-weight: 700;' : ''}">${p.stock}</td>
+          <td>${p.sold || 0}</td>
+          <td>${p.ratingCount ? `${p.ratingAvg} ⭐ (${p.ratingCount})` : '—'}</td>
           <td style="white-space: nowrap;">
             <button class="btn btn-sm btn-outline" data-edit="${esc(p.id)}">تعديل</button>
             <button class="btn btn-sm btn-danger" data-del="${esc(p.id)}">حذف</button>
@@ -192,13 +242,14 @@
         }));
     }
 
-    const FIELDS = ['name', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'stock', 'image', 'description'];
+    const FIELDS = ['name', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'stock', 'image', 'images', 'description'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';
       FIELDS.forEach((f) => {
         const el = document.getElementById('m-' + f);
         if (f === 'models') el.value = p ? p.models.join(', ') : '';
+        else if (f === 'images') el.value = p ? (p.images || []).join('\n') : '';
         else el.value = p ? (p[f] ?? '') : (f === 'stock' ? 1 : '');
       });
       if (!p) { document.getElementById('m-brand').value = 'BMW'; document.getElementById('m-condition').value = 'new'; }
@@ -209,7 +260,9 @@
       const body = {};
       FIELDS.forEach((f) => {
         const v = document.getElementById('m-' + f).value.trim();
-        body[f] = f === 'models' ? v.split(',').map((s) => s.trim()).filter(Boolean) : v;
+        if (f === 'models') body[f] = v.split(',').map((s) => s.trim()).filter(Boolean);
+        else if (f === 'images') body[f] = v.split('\n').map((s) => s.trim()).filter(Boolean);
+        else body[f] = v;
       });
       if (!body.name || !body.price) return toast('⚠️ الاسم والسعر مطلوبين');
       try {
@@ -225,14 +278,87 @@
       } catch (e) { toast('⚠️ ' + e.message); }
     });
 
+    /* ---------- الكوبونات ---------- */
+    async function loadCoupons() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const coupons = await api('/coupons', { headers: authHeaders() });
+        box.innerHTML = `
+        <div class="summary" style="max-width: 640px; margin-bottom: 20px;">
+          <h3>إنشاء كوبون جديد</h3>
+          <div class="form-grid">
+            <div><label>الكود (مثال: WELCOME10)</label><input id="cp-code" dir="ltr"></div>
+            <div><label>نوع الخصم</label>
+              <select id="cp-type"><option value="percent">نسبة %</option><option value="fixed">مبلغ ثابت</option></select></div>
+            <div><label>قيمة الخصم</label><input id="cp-value" type="number" min="1"></div>
+            <div><label>حد أدنى للطلب (اختياري)</label><input id="cp-min" type="number" min="0"></div>
+          </div>
+          <button class="btn btn-sm" id="cp-add">إنشاء الكوبون</button>
+        </div>
+        ${coupons.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
+          <tr><th>الكود</th><th>الخصم</th><th>حد أدنى</th><th></th></tr>
+          ${coupons.map((c) => `<tr>
+            <td dir="ltr"><b>${esc(c.code)}</b></td>
+            <td>${c.type === 'percent' ? c.value + '%' : money(c.value)}</td>
+            <td>${c.minTotal ? money(c.minTotal) : '—'}</td>
+            <td><button class="btn btn-sm btn-danger" data-cp-del="${esc(c.code)}">حذف</button></td>
+          </tr>`).join('')}
+        </table></div>` : '<p style="color: var(--muted);">مفيش كوبونات لسه — اعمل أول كوبون وانشره على صفحاتك 🎟️</p>'}`;
+
+        document.getElementById('cp-add').addEventListener('click', async () => {
+          try {
+            await api('/coupons', {
+              method: 'POST', headers: authHeaders(),
+              body: JSON.stringify({
+                code: document.getElementById('cp-code').value,
+                type: document.getElementById('cp-type').value,
+                value: Number(document.getElementById('cp-value').value),
+                minTotal: Number(document.getElementById('cp-min').value) || 0,
+              }),
+            });
+            toast('تم إنشاء الكوبون ✓');
+            loadCoupons();
+          } catch (e) { toast('⚠️ ' + e.message); }
+        });
+        box.querySelectorAll('[data-cp-del]').forEach((b) =>
+          b.addEventListener('click', async () => {
+            await api('/coupons?code=' + encodeURIComponent(b.dataset.cpDel), { method: 'DELETE', headers: authHeaders() });
+            toast('تم الحذف');
+            loadCoupons();
+          }));
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ---------- العملاء ---------- */
+    async function loadCustomers() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const customers = await api('/auth?action=customers', { headers: authHeaders() });
+        box.innerHTML = customers.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
+          <tr><th>الاسم</th><th>الموبايل</th><th>الإيميل</th></tr>
+          ${customers.map((u) => `<tr>
+            <td>${esc(u.name)}</td>
+            <td dir="ltr">${esc(u.phone)}</td>
+            <td dir="ltr">${esc(u.email) || '—'}</td>
+          </tr>`).join('')}
+        </table></div>` : '<div class="empty-state"><span class="icon">👥</span>مفيش عملاء مسجّلين لسه</div>';
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
     /* ---------- المزامنة ---------- */
     function showSync() {
       const base = location.origin;
       document.getElementById('tab-content').innerHTML = `
       <div style="max-width: 760px;">
-        <h3 style="margin-bottom: 10px;">🔄 ربط المخزون مع نظام خارجي (شوبيفاي / موس تك)</h3>
+        <h3 style="margin-bottom: 10px;">🔄 ربط المخزون مع نظام خارجي</h3>
         <p style="color: var(--muted); margin-bottom: 16px;">
-          لو قطعة اتباعت في النظام التاني، ابعت إشعار للرابط ده وهيتخصم المخزون هنا تلقائياً.
+          لو بتبيع من مكان تاني، ابعت إشعار للرابط ده لما قطعة تتباع وهيتخصم المخزون هنا تلقائياً.
           لازم الـ SKU يكون نفسه في النظامين. (فعّل متغير SYNC_SECRET في إعدادات Vercel الأول)
         </p>
         <label>خصم مخزون (لما قطعة تتباع برة):</label>
@@ -243,16 +369,6 @@ Content-Type: application/json
         <br>
         <label>سحب المخزون الحالي كله (للنظام الخارجي):</label>
         <div class="code-block">GET ${base}/api/sync?secret=YOUR_SECRET</div>
-        <br>
-        <label>ربط شوبيفاي مباشرة:</label>
-        <p style="color: var(--muted); font-size: 14px;">
-          من إعدادات شوبيفاي → Notifications → Webhooks → أضف webhook لحدث
-          <b>Order creation</b> على الرابط:<br>
-        </p>
-        <div class="code-block">${base}/api/sync?secret=YOUR_SECRET</div>
-        <p style="color: var(--muted); font-size: 14px; margin-top: 8px;">
-          وبكده أي أوردر بيتعمل في شوبيفاي هيخصم الكمية هنا تلقائياً حسب الـ SKU.
-        </p>
       </div>`;
     }
 

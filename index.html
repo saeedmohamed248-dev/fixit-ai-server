@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>بافاريا بارتس | قطع غيار BMW & MINI استيراد جديد ومستعمل</title>
-  <meta name="description" content="قطع غيار BMW وميني كوبر أصلية — استيراد جديد ومستعمل وارد أوروبا وأمريكا. فحص وضمان وشحن لجميع المحافظات.">
+  <meta name="description" content="قطع غيار BMW وميني كوبر أصلية — استيراد جديد ومستعمل وارد أوروبا وأمريكا. فحص وضمان وشحن لجميع المحافظات. ادفع عند الاستلام أو انستاباي.">
+  <meta property="og:title" content="بافاريا بارتس | قطع غيار BMW & MINI">
+  <meta property="og:description" content="قطع غيار BMW وميني كوبر — جديد ومستعمل وارد بضمان. شحن لجميع المحافظات ودفع عند الاستلام.">
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -42,16 +45,35 @@
       </div>
     </section>
 
-    <!-- منتجات مميزة -->
+    <!-- عروض وخصومات -->
+    <section class="section" style="padding-top: 0; display: none;" id="deals-section">
+      <div class="container">
+        <div class="section-head">
+          <h2>🔥 عروض وخصومات</h2>
+          <a href="/shop.html">عرض الكل ←</a>
+        </div>
+        <div class="hscroll" id="deals-grid"></div>
+      </div>
+    </section>
+
+    <!-- الأكثر مبيعاً -->
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="section-head">
-          <h2>أحدث القطع المتاحة</h2>
+          <h2>⭐ الأكثر مبيعاً</h2>
           <a href="/shop.html">عرض الكل ←</a>
         </div>
         <div class="products-grid" id="featured-grid">
           <div class="spinner">جاري التحميل...</div>
         </div>
+      </div>
+    </section>
+
+    <!-- شاهدتها مؤخراً -->
+    <section class="section" style="padding-top: 0; display: none;" id="recent-section">
+      <div class="container">
+        <div class="section-head"><h2>👀 شاهدتها مؤخراً</h2></div>
+        <div class="hscroll" id="recent-grid"></div>
       </div>
     </section>
 
@@ -97,8 +119,25 @@
       </a>`).join('');
 
     api('/products').then((products) => {
+      // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
+      const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       document.getElementById('featured-grid').innerHTML =
-        products.slice(0, 8).map(productCard).join('') || '<div class="spinner">لا توجد منتجات بعد</div>';
+        best.map(productCard).join('') || '<div class="spinner">لا توجد منتجات بعد</div>';
+
+      // العروض: اللي عليها خصم
+      const deals = products.filter((p) => p.oldPrice > p.price);
+      if (deals.length) {
+        document.getElementById('deals-section').style.display = '';
+        document.getElementById('deals-grid').innerHTML = deals.map(productCard).join('');
+      }
+
+      // شاهدتها مؤخراً
+      const recentIds = getRecent();
+      const recent = recentIds.map((rid) => products.find((p) => p.id === rid)).filter(Boolean);
+      if (recent.length) {
+        document.getElementById('recent-section').style.display = '';
+        document.getElementById('recent-grid').innerHTML = recent.map(productCard).join('');
+      }
     }).catch((e) => {
       document.getElementById('featured-grid').innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
     });

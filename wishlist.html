@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المفضلة | بافاريا بارتس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container">
+      <h1 style="margin-bottom: 20px;">المفضلة ❤️</h1>
+      <div class="products-grid" id="wish-grid">
+        <div class="spinner">جاري التحميل...</div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('');
+    const grid = document.getElementById('wish-grid');
+
+    async function load() {
+      const ids = getWishlist();
+      if (ids.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>
+          مفيش قطع في المفضلة — دوس على ❤️ في صفحة أي منتج<br><br>
+          <a class="btn" href="/shop.html">تصفح المنتجات</a></div>`;
+        return;
+      }
+      try {
+        const all = await api('/products');
+        const items = all.filter((p) => ids.includes(p.id));
+        grid.innerHTML = items.map(productCard).join('') ||
+          '<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>القطع اللي كانت في المفضلة لم تعد متاحة</div>';
+      } catch (e) {
+        grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

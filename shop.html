@@ -54,6 +54,8 @@
             <span class="count" id="results-count"></span>
             <select id="f-sort">
               <option value="">الأحدث</option>
+              <option value="best">الأكثر مبيعاً</option>
+              <option value="rating">الأعلى تقييماً</option>
               <option value="price_asc">السعر: من الأقل</option>
               <option value="price_desc">السعر: من الأعلى</option>
             </select>
@@ -61,6 +63,7 @@
           <div class="products-grid" id="products-grid">
             <div class="spinner">جاري التحميل...</div>
           </div>
+          <div class="pagination" id="pagination"></div>
         </div>
       </div>
     </div>
@@ -84,6 +87,29 @@
       if (params.get(f)) el.value = params.get(f);
     });
 
+    const PER_PAGE = 12;
+    let currentPage = 1;
+    let lastResults = [];
+
+    function renderPage() {
+      const pages = Math.max(1, Math.ceil(lastResults.length / PER_PAGE));
+      currentPage = Math.min(currentPage, pages);
+      const slice = lastResults.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+      grid.innerHTML = slice.map(productCard).join('') ||
+        '<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>لا توجد نتائج مطابقة — جرّب تعدل الفلاتر أو <a href="/assistant.html" style="color: var(--blue2);">اسأل الخبير</a></div>';
+      const pag = document.getElementById('pagination');
+      pag.innerHTML = pages > 1
+        ? Array.from({ length: pages }, (_, i) =>
+            `<button class="${i + 1 === currentPage ? 'active' : ''}" data-page="${i + 1}">${i + 1}</button>`).join('')
+        : '';
+      pag.querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          currentPage = Number(b.dataset.page);
+          renderPage();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }));
+    }
+
     async function load() {
       grid.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       const qs = new URLSearchParams();
@@ -93,10 +119,10 @@
       });
       history.replaceState(null, '', qs.toString() ? '?' + qs : location.pathname);
       try {
-        const products = await api('/products?' + qs);
-        document.getElementById('results-count').textContent = `${products.length} منتج`;
-        grid.innerHTML = products.map(productCard).join('') ||
-          '<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>لا توجد نتائج مطابقة — جرّب تعدل الفلاتر أو <a href="/assistant.html" style="color: var(--blue2);">اسأل الخبير</a></div>';
+        lastResults = await api('/products?' + qs);
+        currentPage = 1;
+        document.getElementById('results-count').textContent = `${lastResults.length} منتج`;
+        renderPage();
       } catch (e) {
         grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
       }

@@ -6,7 +6,7 @@ const KV_URL = process.env.UPSTASH_REDIS_REST_URL;
 const KV_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 export const hasPersistence = Boolean(KV_URL && KV_TOKEN);
 
-const memory = { products: null, orders: null };
+const memory = { products: null, orders: null, users: null, reviews: null, coupons: null };
 
 async function kvGet(key) {
   const r = await fetch(`${KV_URL}/get/${key}`, {
@@ -42,13 +42,30 @@ export async function saveProducts(products) {
   else memory.products = products;
 }
 
-export async function getOrders() {
-  if (hasPersistence) return (await kvGet('orders')) || [];
-  if (!memory.orders) memory.orders = [];
-  return memory.orders;
+function makeCollection(key) {
+  return {
+    async get() {
+      if (hasPersistence) return (await kvGet(key)) || [];
+      if (!memory[key]) memory[key] = [];
+      return memory[key];
+    },
+    async save(items) {
+      if (hasPersistence) await kvSet(key, items);
+      else memory[key] = items;
+    },
+  };
 }
 
-export async function saveOrders(orders) {
-  if (hasPersistence) await kvSet('orders', orders);
-  else memory.orders = orders;
-}
+const ordersCol = makeCollection('orders');
+const usersCol = makeCollection('users');
+const reviewsCol = makeCollection('reviews');
+const couponsCol = makeCollection('coupons');
+
+export const getOrders = ordersCol.get;
+export const saveOrders = ordersCol.save;
+export const getUsers = usersCol.get;
+export const saveUsers = usersCol.save;
+export const getReviews = reviewsCol.get;
+export const saveReviews = reviewsCol.save;
+export const getCoupons = couponsCol.get;
+export const saveCoupons = couponsCol.save;

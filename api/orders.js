@@ -1,10 +1,15 @@
-// POST /api/orders → إنشاء طلب جديد (من صفحة السلة)
-// GET  /api/orders → قائمة الطلبات (إدارة)
-// PUT  /api/orders → تغيير حالة طلب (إدارة)
+// POST /api/orders                          → إنشاء طلب جديد (من صفحة السلة)
+// GET  /api/orders?mine=1                   → طلبات العميل الحالي (بتوكن العميل)
+// GET  /api/orders?track=ORD-123&phone=010  → تتبع طلب (عام)
+// GET  /api/orders                          → كل الطلبات (إدارة)
+// PUT  /api/orders                          → تغيير حالة طلب (إدارة)
 import { getProducts, saveProducts, getOrders, saveOrders } from './_lib/db.js';
+import { getUser } from './_lib/auth.js';
+import { findCoupon, calcDiscount } from './coupons.js';
 import { cors, requireAdmin } from './_lib/util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+const PAYMENTS = ['cod', 'instapay', 'wallet'];
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -38,14 +43,28 @@ export default async function handler(req, res) {
         });
       }
 
-      // خصم المخزون
+      const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+      // الكوبون يُتحقق منه في السيرفر
+      let discount = 0;
+      let couponCode = '';
+      if (body.coupon) {
+        const coupon = await findCoupon(body.coupon);
+        if (coupon) {
+          discount = calcDiscount(coupon, subtotal);
+          if (discount > 0) couponCode = coupon.code;
+        }
+      }
+
+      // خصم المخزون + عدّاد المبيعات
       for (const item of orderItems) {
         const product = products.find((p) => p.id === item.id);
         product.stock -= item.qty;
+        product.sold = (product.sold || 0) + item.qty;
       }
       await saveProducts(products);
 
-      const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const session = getUser(req);
       const order = {
         id: 'o' + Date.now(),
         number: 'ORD-' + String(Date.now()).slice(-6),
@@ -57,9 +76,14 @@ export default async function handler(req, res) {
           city: customer.city || '',
           address: customer.address,
         },
+        userId: session?.uid || null,
         notes: body.notes || '',
+        payment: PAYMENTS.includes(body.payment) ? body.payment : 'cod',
         items: orderItems,
-        total,
+        subtotal,
+        discount,
+        coupon: couponCode,
+        total: subtotal - discount,
         source: 'website',
       };
 
@@ -71,8 +95,31 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      if (!requireAdmin(req, res)) return;
       const orders = await getOrders();
+
+      // تتبع طلب — عام برقم الطلب + رقم الموبايل
+      if (req.query.track) {
+        const order = orders.find(
+          (o) => o.number === req.query.track.trim().toUpperCase() &&
+                 o.customer.phone === (req.query.phone || '').trim()
+        );
+        if (!order) return res.status(404).json({ error: 'مفيش طلب بالرقم ده — اتأكد من رقم الطلب ورقم الموبايل' });
+        return res.status(200).json({
+          number: order.number, status: order.status, createdAt: order.createdAt,
+          items: order.items.map((i) => ({ name: i.name, qty: i.qty })),
+          total: order.total, payment: order.payment,
+        });
+      }
+
+      // طلبات العميل الحالي
+      if (req.query.mine) {
+        const session = getUser(req);
+        if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });
+        return res.status(200).json(orders.filter((o) => o.userId === session.uid));
+      }
+
+      // كل الطلبات — إدارة
+      if (!requireAdmin(req, res)) return;
       return res.status(200).json(orders);
     }
 
