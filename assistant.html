@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>اسأل الخبير | بافاريا بارتس</title>
+  <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -14,16 +14,14 @@
   <main class="section">
     <div class="container">
       <div style="text-align: center; margin-bottom: 24px;">
-        <h1>اسأل خبير قطع الغيار 🤖</h1>
-        <p style="color: var(--muted);">مش عارف اسم القطعة؟ عندك صوت غريب في العربية؟ اوصف المشكلة وهنساعدك تعرف القطعة المطلوبة.</p>
+        <h1 data-i18n="as_title"></h1>
+        <p style="color: var(--muted);" data-i18n="as_sub"></p>
       </div>
       <div class="chat-box">
-        <div class="chat-messages" id="chat-messages">
-          <div class="msg msg-bot">أهلاً بيك 👋 أنا خبير قطع غيار BMW و MINI. قولي نوع عربيتك وسنة الموديل والمشكلة اللي عندك، وهساعدك تحدد القطعة اللي محتاجها.</div>
-        </div>
+        <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input">
-          <input id="chat-input" placeholder="مثال: عندي BMW F30 موديل 2015 وفيه صوت طقطقة في العفشة..." autocomplete="off">
-          <button class="btn" id="chat-send">إرسال</button>
+          <input id="chat-input" data-i18n-ph="as_ph" autocomplete="off">
+          <button class="btn" id="chat-send" data-i18n="send"></button>
         </div>
       </div>
     </div>
@@ -32,9 +30,11 @@
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('assistant');
+    document.title = t('title_assistant');
 
     const messagesBox = document.getElementById('chat-messages');
     const input = document.getElementById('chat-input');
@@ -42,7 +42,7 @@
 
     const history = [{
       role: 'system',
-      content: 'أنت خبير قطع غيار سيارات BMW وMINI Cooper في متجر "بافاريا بارتس" بمصر. مهمتك مساعدة العميل في تشخيص المشكلة وتحديد اسم القطعة المطلوبة بالعربي والإنجليزي، وبرقم OEM لو أمكن. اسأل عن الموديل والسنة لو مش واضحين. ردودك مختصرة وباللهجة المصرية البسيطة، وفي نهاية كل تشخيص اقترح على العميل يدور على القطعة في قسم المتجر أو يتواصل واتساب لو مش لاقيها.',
+      content: 'أنت خبير قطع غيار سيارات BMW وMINI Cooper في متجر "FixIt" بمصر. مهمتك مساعدة العميل في تشخيص المشكلة وتحديد اسم القطعة المطلوبة بالعربي والإنجليزي، وبرقم OEM لو أمكن. اسأل عن الموديل والسنة لو مش واضحين. رد بنفس لغة العميل (عربي مصري بسيط أو إنجليزي). ردودك مختصرة، وفي نهاية كل تشخيص اقترح على العميل يدور على القطعة في المتجر أو يتواصل واتساب لو مش لاقيها. You are the FixIt BMW & MINI parts expert in Egypt — reply in the same language the customer writes in.',
     }];
 
     function addMsg(text, who) {
@@ -54,13 +54,15 @@
       return div;
     }
 
+    addMsg(t('as_greeting'), 'bot');
+
     async function send() {
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
       addMsg(text, 'user');
       history.push({ role: 'user', content: text });
-      const thinking = addMsg('... بفكر', 'bot');
+      const thinking = addMsg(t('thinking'), 'bot');
       sendBtn.disabled = true;
       try {
         const res = await fetch('/api/diagnose', {
@@ -70,11 +72,11 @@
         });
         const data = await res.json();
         const reply = data.choices?.[0]?.message?.content;
-        if (!reply) throw new Error(data.error?.message || data.error || 'الخدمة غير متاحة حالياً');
+        if (!reply) throw new Error(data.error?.message || data.error || t('as_error'));
         thinking.textContent = reply;
         history.push({ role: 'assistant', content: reply });
       } catch (e) {
-        thinking.textContent = '⚠️ ' + e.message + ' — تقدر تتواصل معانا واتساب مباشرة.';
+        thinking.textContent = '⚠️ ' + e.message + ' — ' + t('as_fallback');
       }
       sendBtn.disabled = false;
       input.focus();

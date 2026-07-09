@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>حسابي | بافاريا بارتس</title>
+  <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -13,33 +13,34 @@
 
   <main class="section">
     <div class="container" id="account-container" style="max-width: 720px;">
-      <div class="spinner">جاري التحميل...</div>
+      <div class="spinner" data-i18n="loading"></div>
     </div>
   </main>
 
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('account');
+    document.title = t('title_account');
     const container = document.getElementById('account-container');
-    const STATUS_AR = { new: 'جديد — في انتظار التأكيد', confirmed: 'مؤكد ✓', shipped: 'في الشحن 🚚', delivered: 'تم التسليم 📦', cancelled: 'ملغي' };
 
     function showAuth(mode = 'login') {
       container.innerHTML = `
-      <div class="login-box" style="max-width: 440px; text-align: right;">
-        <h2 style="text-align: center;">👤 ${mode === 'login' ? 'تسجيل الدخول' : 'حساب جديد'}</h2>
+      <div class="login-box" style="max-width: 440px; text-align: start;">
+        <h2 style="text-align: center;">👤 ${mode === 'login' ? t('login_title') : t('register_title')}</h2>
         <div class="auth-tabs">
-          <button class="${mode === 'login' ? 'active' : ''}" data-mode="login">دخول</button>
-          <button class="${mode === 'register' ? 'active' : ''}" data-mode="register">حساب جديد</button>
+          <button class="${mode === 'login' ? 'active' : ''}" data-mode="login">${t('tab_login')}</button>
+          <button class="${mode === 'register' ? 'active' : ''}" data-mode="register">${t('tab_register')}</button>
         </div>
         <div class="form-stack">
-          ${mode === 'register' ? '<div><label>الاسم بالكامل</label><input id="a-name"></div>' : ''}
-          <div><label>رقم الموبايل</label><input id="a-phone" type="tel" dir="ltr" style="text-align: right;" placeholder="01xxxxxxxxx"></div>
-          ${mode === 'register' ? '<div><label>الإيميل (اختياري)</label><input id="a-email" type="email" dir="ltr"></div>' : ''}
-          <div><label>كلمة السر</label><input id="a-pass" type="password"></div>
-          <button class="btn" id="a-submit">${mode === 'login' ? 'دخول' : 'إنشاء الحساب'}</button>
+          ${mode === 'register' ? `<div><label>${t('name_label')}</label><input id="a-name"></div>` : ''}
+          <div><label>${t('phone').replace(' *', '')}</label><input id="a-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
+          ${mode === 'register' ? `<div><label>${t('email_label')}</label><input id="a-email" type="email" dir="ltr"></div>` : ''}
+          <div><label>${t('password')}</label><input id="a-pass" type="password"></div>
+          <button class="btn" id="a-submit">${mode === 'login' ? t('btn_login') : t('btn_register')}</button>
           <div id="a-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>`;
@@ -60,7 +61,7 @@
           }
           const data = await api('/auth', { method: 'POST', body: JSON.stringify(body) });
           setSession(data.token, data.user);
-          toast('أهلاً بيك ' + data.user.name + ' 👋');
+          toast((LANG === 'en' ? 'Welcome ' : 'أهلاً بيك ') + data.user.name + ' 👋');
           showAccount();
           renderLayout('account');
         } catch (e) { err.textContent = e.message; }
@@ -71,14 +72,14 @@
       const user = currentUser();
       container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-        <h1>أهلاً، ${esc(user.name)} 👋</h1>
-        <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
+        <h1>${t('welcome')} ${esc(user.name)} 👋</h1>
+        <button class="btn btn-outline btn-sm" id="logout">${t('logout')}</button>
       </div>
       <div style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
         📱 <span dir="ltr">${esc(user.phone)}</span> ${user.email ? ' &nbsp;|&nbsp; ✉️ ' + esc(user.email) : ''}
       </div>
-      <h2 style="margin-bottom: 14px;">طلباتي</h2>
-      <div id="my-orders"><div class="spinner">جاري التحميل...</div></div>`;
+      <h2 style="margin-bottom: 14px;">${t('my_orders')}</h2>
+      <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`;
 
       document.getElementById('logout').addEventListener('click', () => {
         clearSession();
@@ -93,19 +94,19 @@
           <div class="order-card">
             <div class="head">
               <b>${esc(o.number)}</b>
-              <span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status] || o.status}</span>
+              <span class="status-pill st-${esc(o.status)}">${t('st_' + o.status)}</span>
             </div>
-            <div style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString('ar-EG', { dateStyle: 'long' })}</div>
+            <div style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</div>
             <div style="font-size: 14px; margin: 8px 0;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <b>${money(o.total)}</b>
-              <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--blue2); font-size: 14px;">تتبع الطلب ←</a>
+              <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
             </div>
           </div>`).join('')
-          : '<div class="empty-state"><span class="icon">📭</span>لسه معملتش أي طلب<br><br><a class="btn" href="/shop.html">ابدأ التسوق</a></div>';
+          : `<div class="empty-state"><span class="icon">📭</span>${t('no_orders')}<br><br><a class="btn" href="/shop.html">${t('start_shopping')}</a></div>`;
       } catch (e) {
-        if (e.message.includes('دخول')) { clearSession(); return showAuth(); }
-        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+        clearSession();
+        return showAuth();
       }
     }
 

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بافاريا بارتس | قطع غيار BMW & MINI استيراد جديد ومستعمل</title>
-  <meta name="description" content="قطع غيار BMW وميني كوبر أصلية — استيراد جديد ومستعمل وارد أوروبا وأمريكا. فحص وضمان وشحن لجميع المحافظات. ادفع عند الاستلام أو انستاباي.">
-  <meta property="og:title" content="بافاريا بارتس | قطع غيار BMW & MINI">
-  <meta property="og:description" content="قطع غيار BMW وميني كوبر — جديد ومستعمل وارد بضمان. شحن لجميع المحافظات ودفع عند الاستلام.">
+  <title>FixIt | قطع غيار BMW & MINI استيراد جديد ومستعمل</title>
+  <meta name="description" content="FixIt — قطع غيار BMW وميني كوبر أصلية، استيراد جديد ومستعمل وارد أوروبا وأمريكا. فحص وضمان وشحن لجميع المحافظات. BMW & MINI parts, new and used import.">
+  <meta property="og:title" content="FixIt | BMW & MINI Parts — قطع غيار بي إم دبليو وميني">
+  <meta property="og:description" content="قطع غيار BMW وميني كوبر — جديد ومستعمل وارد بضمان. New & used BMW/MINI parts with warranty.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -19,17 +19,17 @@
     <!-- الهيرو -->
     <section class="hero">
       <div class="container">
-        <h1>قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
-        <p>استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
+        <h1 data-i18n="hero_title"></h1>
+        <p data-i18n="hero_sub"></p>
         <form class="search-box" action="/shop.html" method="get">
-          <input type="search" name="q" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
-          <button class="btn" type="submit">بحث</button>
+          <input type="search" name="q" data-i18n-ph="hero_search_ph">
+          <button class="btn" type="submit" data-i18n="search_btn"></button>
         </form>
         <div class="brand-chips">
           <a class="chip" href="/shop.html?brand=BMW">BMW</a>
           <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
-          <a class="chip" href="/shop.html?condition=new">جديد أصلي</a>
-          <a class="chip" href="/shop.html?condition=used">مستعمل وارد</a>
+          <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new"></a>
+          <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used"></a>
         </div>
       </div>
     </section>
@@ -38,8 +38,8 @@
     <section class="section">
       <div class="container">
         <div class="section-head">
-          <h2>تسوّق حسب الفئة</h2>
-          <a href="/shop.html">عرض الكل ←</a>
+          <h2 data-i18n="sec_cats"></h2>
+          <a href="/shop.html" data-i18n="view_all"></a>
         </div>
         <div class="cats-grid" id="cats-grid"></div>
       </div>
@@ -49,8 +49,8 @@
     <section class="section" style="padding-top: 0; display: none;" id="deals-section">
       <div class="container">
         <div class="section-head">
-          <h2>🔥 عروض وخصومات</h2>
-          <a href="/shop.html">عرض الكل ←</a>
+          <h2 data-i18n="sec_deals"></h2>
+          <a href="/shop.html" data-i18n="view_all"></a>
         </div>
         <div class="hscroll" id="deals-grid"></div>
       </div>
@@ -60,11 +60,11 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="section-head">
-          <h2>⭐ الأكثر مبيعاً</h2>
-          <a href="/shop.html">عرض الكل ←</a>
+          <h2 data-i18n="sec_best"></h2>
+          <a href="/shop.html" data-i18n="view_all"></a>
         </div>
         <div class="products-grid" id="featured-grid">
-          <div class="spinner">جاري التحميل...</div>
+          <div class="spinner" data-i18n="loading"></div>
         </div>
       </div>
     </section>
@@ -72,7 +72,7 @@
     <!-- شاهدتها مؤخراً -->
     <section class="section" style="padding-top: 0; display: none;" id="recent-section">
       <div class="container">
-        <div class="section-head"><h2>👀 شاهدتها مؤخراً</h2></div>
+        <div class="section-head"><h2 data-i18n="sec_recent"></h2></div>
         <div class="hscroll" id="recent-grid"></div>
       </div>
     </section>
@@ -81,10 +81,10 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="features-grid">
-          <div class="feature"><span class="icon">✅</span><div><h3>فحص شامل</h3><p>كل قطعة مستعملة بتتفحص بالكامل قبل البيع وبنضمنها.</p></div></div>
-          <div class="feature"><span class="icon">🚢</span><div><h3>استيراد مباشر</h3><p>وارد أوروبا وأمريكا بدون وسطاء، فالأسعار أفضل.</p></div></div>
-          <div class="feature"><span class="icon">🚚</span><div><h3>شحن سريع</h3><p>توصيل لجميع المحافظات خلال ٢-٤ أيام عمل.</p></div></div>
-          <div class="feature"><span class="icon">🤖</span><div><h3>خبير يساعدك</h3><p>مش عارف اسم القطعة؟ اسأل الخبير الذكي وهيوصلك ليها.</p></div></div>
+          <div class="feature"><span class="icon">✅</span><div><h3 data-i18n="feat1_t"></h3><p data-i18n="feat1_d"></p></div></div>
+          <div class="feature"><span class="icon">🚢</span><div><h3 data-i18n="feat2_t"></h3><p data-i18n="feat2_d"></p></div></div>
+          <div class="feature"><span class="icon">🚚</span><div><h3 data-i18n="feat3_t"></h3><p data-i18n="feat3_d"></p></div></div>
+          <div class="feature"><span class="icon">🤖</span><div><h3 data-i18n="feat4_t"></h3><p data-i18n="feat4_d"></p></div></div>
         </div>
       </div>
     </section>
@@ -94,10 +94,10 @@
       <div class="container">
         <div class="cta-band">
           <div>
-            <h2>مش لاقي القطعة اللي بتدور عليها؟</h2>
-            <p>ابعتلنا رقم الشاسيه أو صورة القطعة على واتساب وهنوفرهالك.</p>
+            <h2 data-i18n="cta_title"></h2>
+            <p data-i18n="cta_sub"></p>
           </div>
-          <a class="btn" id="cta-wa" target="_blank" rel="noopener">كلمنا واتساب 💬</a>
+          <a class="btn" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn"></a>
         </div>
       </div>
     </section>
@@ -106,23 +106,25 @@
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('home');
-    document.getElementById('cta-wa').href = waLink('السلام عليكم، بدور على قطعة مش موجودة في الموقع');
+    document.title = t('title_home');
+    document.getElementById('cta-wa').href = waLink(t('wa_part'));
 
     const CATS = ['فرامل', 'فلاتر وصيانة', 'عفشة وتعليق', 'كهرباء وإشعال', 'تبريد', 'وقود', 'هيكل وإكسسوارات'];
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
       <a class="cat-card" href="/shop.html?category=${encodeURIComponent(c)}">
         <span class="icon">${categoryIcon(c)}</span>
-        <span class="name">${c}</span>
+        <span class="name">${catName(c)}</span>
       </a>`).join('');
 
     api('/products').then((products) => {
       // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
       const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       document.getElementById('featured-grid').innerHTML =
-        best.map(productCard).join('') || '<div class="spinner">لا توجد منتجات بعد</div>';
+        best.map(productCard).join('') || `<div class="spinner">${t('no_products')}</div>`;
 
       // العروض: اللي عليها خصم
       const deals = products.filter((p) => p.oldPrice > p.price);

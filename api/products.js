@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       if (q) {
         const term = q.trim().toLowerCase();
         list = list.filter((p) =>
-          [p.name, p.sku, p.oem, p.description, ...p.models]
+          [p.name, p.nameEn || '', p.sku, p.oem, p.description, ...p.models]
             .join(' ')
             .toLowerCase()
             .includes(term)
@@ -53,6 +53,8 @@ export default async function handler(req, res) {
         id: 'p' + Date.now(),
         sku: body.sku || '',
         name: body.name,
+        nameEn: body.nameEn || '',
+        descriptionEn: body.descriptionEn || '',
         brand: body.brand || 'BMW',
         models: Array.isArray(body.models) ? body.models : [],
         category: body.category || 'أخرى',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>المفضلة | بافاريا بارتس</title>
+  <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -13,9 +13,9 @@
 
   <main class="section">
     <div class="container">
-      <h1 style="margin-bottom: 20px;">المفضلة ❤️</h1>
+      <h1 style="margin-bottom: 20px;" data-i18n="wish_title"></h1>
       <div class="products-grid" id="wish-grid">
-        <div class="spinner">جاري التحميل...</div>
+        <div class="spinner" data-i18n="loading"></div>
       </div>
     </div>
   </main>
@@ -23,24 +23,26 @@
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('');
+    document.title = t('title_wish');
     const grid = document.getElementById('wish-grid');
 
     async function load() {
       const ids = getWishlist();
       if (ids.length === 0) {
         grid.innerHTML = `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>
-          مفيش قطع في المفضلة — دوس على ❤️ في صفحة أي منتج<br><br>
-          <a class="btn" href="/shop.html">تصفح المنتجات</a></div>`;
+          ${t('wish_empty')}<br><br>
+          <a class="btn" href="/shop.html">${t('browse')}</a></div>`;
         return;
       }
       try {
         const all = await api('/products');
         const items = all.filter((p) => ids.includes(p.id));
         grid.innerHTML = items.map(productCard).join('') ||
-          '<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>القطع اللي كانت في المفضلة لم تعد متاحة</div>';
+          `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>${t('wish_empty')}</div>`;
       } catch (e) {
         grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
       }

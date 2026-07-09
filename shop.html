@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>المتجر | بافاريا بارتس</title>
+  <title>المتجر | FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -16,36 +16,36 @@
       <div class="shop-layout">
         <!-- الفلاتر -->
         <aside class="filters">
-          <h3>تصفية النتائج</h3>
+          <h3 data-i18n="filters"></h3>
           <div>
-            <label>بحث</label>
-            <input type="search" id="f-q" placeholder="اسم القطعة أو OEM...">
+            <label data-i18n="f_search"></label>
+            <input type="search" id="f-q" data-i18n-ph="f_search_ph">
           </div>
           <div>
-            <label>الماركة</label>
+            <label data-i18n="f_brand"></label>
             <select id="f-brand">
-              <option value="">الكل</option>
+              <option value="" data-i18n="all"></option>
               <option value="BMW">BMW</option>
               <option value="MINI">MINI Cooper</option>
             </select>
           </div>
           <div>
-            <label>الموديل</label>
-            <select id="f-model"><option value="">الكل</option></select>
+            <label data-i18n="f_model"></label>
+            <select id="f-model"><option value="" data-i18n="all"></option></select>
           </div>
           <div>
-            <label>الفئة</label>
-            <select id="f-category"><option value="">الكل</option></select>
+            <label data-i18n="f_cat"></label>
+            <select id="f-category"><option value="" data-i18n="all"></option></select>
           </div>
           <div>
-            <label>الحالة</label>
+            <label data-i18n="f_cond"></label>
             <select id="f-condition">
-              <option value="">الكل</option>
-              <option value="new">جديد</option>
-              <option value="used">مستعمل وارد</option>
+              <option value="" data-i18n="all"></option>
+              <option value="new" data-i18n="cond_new"></option>
+              <option value="used" data-i18n="cond_used"></option>
             </select>
           </div>
-          <button class="btn btn-outline btn-sm" id="f-reset">مسح الفلاتر</button>
+          <button class="btn btn-outline btn-sm" id="f-reset" data-i18n="clear_filters"></button>
         </aside>
 
         <!-- النتائج -->
@@ -53,15 +53,15 @@
           <div class="shop-toolbar">
             <span class="count" id="results-count"></span>
             <select id="f-sort">
-              <option value="">الأحدث</option>
-              <option value="best">الأكثر مبيعاً</option>
-              <option value="rating">الأعلى تقييماً</option>
-              <option value="price_asc">السعر: من الأقل</option>
-              <option value="price_desc">السعر: من الأعلى</option>
+              <option value="" data-i18n="sort_new"></option>
+              <option value="best" data-i18n="sort_best"></option>
+              <option value="rating" data-i18n="sort_rating"></option>
+              <option value="price_asc" data-i18n="sort_asc"></option>
+              <option value="price_desc" data-i18n="sort_desc"></option>
             </select>
           </div>
           <div class="products-grid" id="products-grid">
-            <div class="spinner">جاري التحميل...</div>
+            <div class="spinner" data-i18n="loading"></div>
           </div>
           <div class="pagination" id="pagination"></div>
         </div>
@@ -72,13 +72,14 @@
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('shop');
+    document.title = t('title_shop');
 
     const grid = document.getElementById('products-grid');
     const fields = ['q', 'brand', 'model', 'category', 'condition', 'sort'];
-    let allProducts = [];
 
     // تعبئة الفلاتر من رابط الصفحة
     const params = new URLSearchParams(location.search);
@@ -96,7 +97,7 @@
       currentPage = Math.min(currentPage, pages);
       const slice = lastResults.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
       grid.innerHTML = slice.map(productCard).join('') ||
-        '<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>لا توجد نتائج مطابقة — جرّب تعدل الفلاتر أو <a href="/assistant.html" style="color: var(--blue2);">اسأل الخبير</a></div>';
+        `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a></div>`;
       const pag = document.getElementById('pagination');
       pag.innerHTML = pages > 1
         ? Array.from({ length: pages }, (_, i) =>
@@ -111,7 +112,7 @@
     }
 
     async function load() {
-      grid.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      grid.innerHTML = `<div class="spinner">${t('loading')}</div>`;
       const qs = new URLSearchParams();
       fields.forEach((f) => {
         const v = document.getElementById('f-' + f).value.trim();
@@ -121,7 +122,7 @@
       try {
         lastResults = await api('/products?' + qs);
         currentPage = 1;
-        document.getElementById('results-count').textContent = `${lastResults.length} منتج`;
+        document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
         renderPage();
       } catch (e) {
         grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
@@ -130,13 +131,12 @@
 
     // قوائم الموديلات والفئات من البيانات نفسها
     api('/products').then((products) => {
-      allProducts = products;
       const models = [...new Set(products.flatMap((p) => p.models))].sort();
       const cats = [...new Set(products.map((p) => p.category))];
       const mSel = document.getElementById('f-model');
       const cSel = document.getElementById('f-category');
       mSel.innerHTML += models.map((m) => `<option>${esc(m)}</option>`).join('');
-      cSel.innerHTML += cats.map((c) => `<option>${esc(c)}</option>`).join('');
+      cSel.innerHTML += cats.map((c) => `<option value="${esc(c)}">${catName(c)}</option>`).join('');
       if (params.get('model')) mSel.value = params.get('model');
       if (params.get('category')) cSel.value = params.get('category');
       load();

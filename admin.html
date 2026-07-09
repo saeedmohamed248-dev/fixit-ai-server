@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
-  <title>لوحة التحكم | بافاريا بارتس</title>
+  <title>لوحة التحكم | FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -21,7 +21,8 @@
     <div class="modal">
       <h3 id="modal-title">إضافة منتج</h3>
       <div class="form-grid">
-        <div class="full"><label>اسم المنتج *</label><input id="m-name"></div>
+        <div><label>اسم المنتج (عربي) *</label><input id="m-name"></div>
+        <div><label>الاسم بالإنجليزي</label><input id="m-nameEn" dir="ltr"></div>
         <div><label>SKU (رقم القطعة عندك)</label><input id="m-sku" dir="ltr"></div>
         <div><label>رقم OEM</label><input id="m-oem" dir="ltr"></div>
         <div><label>الماركة</label>
@@ -40,7 +41,8 @@
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
         <div><label>رابط الصورة الرئيسية</label><input id="m-image" dir="ltr" placeholder="https://..."></div>
         <div class="full"><label>صور إضافية (رابط في كل سطر)</label><textarea id="m-images" dir="ltr" rows="2"></textarea></div>
-        <div class="full"><label>الوصف</label><textarea id="m-description" rows="3"></textarea></div>
+        <div class="full"><label>الوصف (عربي)</label><textarea id="m-description" rows="3"></textarea></div>
+        <div class="full"><label>الوصف بالإنجليزي</label><textarea id="m-descriptionEn" dir="ltr" rows="3"></textarea></div>
       </div>
       <div style="display: flex; gap: 10px; margin-top: 18px;">
         <button class="btn" id="modal-save">حفظ</button>
@@ -50,6 +52,7 @@
   </div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('');
@@ -242,7 +245,7 @@
         }));
     }
 
-    const FIELDS = ['name', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'stock', 'image', 'images', 'description'];
+    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'stock', 'image', 'images', 'description', 'descriptionEn'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';

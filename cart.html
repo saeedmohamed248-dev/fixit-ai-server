@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>السلة وإتمام الطلب | بافاريا بارتس</title>
+  <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -13,16 +13,18 @@
 
   <main class="section">
     <div class="container" id="cart-container">
-      <div class="spinner">جاري التحميل...</div>
+      <div class="spinner" data-i18n="loading"></div>
     </div>
   </main>
 
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('cart');
+    document.title = t('title_cart');
     const container = document.getElementById('cart-container');
     let products = [];
     let appliedCoupon = null; // { code, discount }
@@ -32,7 +34,7 @@
       const ids = Object.keys(cart);
       if (ids.length === 0) {
         container.innerHTML = `<div class="empty-state"><span class="icon">🛒</span>
-          السلة فارغة<br><br><a class="btn" href="/shop.html">تصفح المنتجات</a></div>`;
+          ${t('cart_empty')}<br><br><a class="btn" href="/shop.html">${t('browse')}</a></div>`;
         return;
       }
       try {
@@ -55,56 +57,56 @@
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
 
       container.innerHTML = `
-      <h1 style="margin-bottom: 20px;">السلة (${items.length})</h1>
+      <h1 style="margin-bottom: 20px;">${t('cart')} (${items.length})</h1>
       <div class="cart-layout">
         <div>
           ${items.map((p) => `
           <div class="cart-item">
             <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
             <div>
-              <h4><a href="/product.html?id=${esc(p.id)}">${esc(p.name)}</a></h4>
+              <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
               <div class="sub">${conditionBadge(p)} ${esc(p.sku)}</div>
               <div class="price" style="font-size: 15px;">${money(p.price)}</div>
             </div>
             <div class="actions">
               <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
-              <button class="remove-link" data-remove="${esc(p.id)}">إزالة ✕</button>
+              <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
             </div>
           </div>`).join('')}
         </div>
 
         <div class="summary">
-          <h3>ملخص الطلب</h3>
-          <div class="row"><span>الإجمالي</span><b>${money(subtotal)}</b></div>
-          ${discount ? `<div class="row" style="color: var(--green);"><span>خصم (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
+          <h3>${t('order_summary')}</h3>
+          <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}</b></div>
+          ${discount ? `<div class="row" style="color: var(--green);"><span>${t('discount_row')} (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
-            <span>الشحن</span><span>${freeShip ? '🎉 شحن مجاني' : 'يُحدد عند التأكيد'}</span>
+            <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
           </div>
-          <div class="row total"><span>المطلوب</span><span>${money(total)}</span></div>
+          <div class="row total"><span>${t('total_due')}</span><span>${money(total)}</span></div>
 
           <div style="display: flex; gap: 8px;">
-            <input id="c-coupon" placeholder="كود الخصم" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
-            <button class="btn btn-outline btn-sm" id="apply-coupon">${appliedCoupon ? 'إلغاء' : 'تطبيق'}</button>
+            <input id="c-coupon" placeholder="${t('coupon_ph')}" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
+            <button class="btn btn-outline btn-sm" id="apply-coupon">${appliedCoupon ? t('cancel') : t('apply')}</button>
           </div>
 
           <hr style="border-color: var(--line);">
-          ${!user ? `<div class="note" style="margin: 0;">💡 عندك حساب؟ <a href="/account.html" style="color: var(--blue2);">سجّل دخول</a> عشان تتابع طلباتك</div>` : ''}
-          <div><label>الاسم بالكامل *</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
-          <div><label>رقم الموبايل *</label><input id="c-phone" type="tel" dir="ltr" style="text-align: right;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
-          <div><label>المحافظة</label><input id="c-city" placeholder="القاهرة"></div>
-          <div><label>العنوان بالتفصيل *</label><textarea id="c-address" rows="2"></textarea></div>
-          <div><label>ملاحظات (نوع العربية / سنة الموديل / رقم الشاسيه)</label><textarea id="c-notes" rows="2"></textarea></div>
+          ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
+          <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
+          <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
+          <div><label>${t('city')}</label><input id="c-city" placeholder="${t('city_ph')}"></div>
+          <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
+          <div><label>${t('notes')}</label><textarea id="c-notes" rows="2"></textarea></div>
 
           <div>
-            <label>طريقة الدفع</label>
+            <label>${t('pay_method')}</label>
             <div class="pay-options">
-              <label class="pay-option"><input type="radio" name="pay" value="cod" checked> 💵 الدفع عند الاستلام</label>
-              <label class="pay-option"><input type="radio" name="pay" value="instapay"> 🏦 تحويل انستاباي</label>
-              <label class="pay-option"><input type="radio" name="pay" value="wallet"> 📱 فودافون كاش / محفظة</label>
+              <label class="pay-option"><input type="radio" name="pay" value="cod" checked> ${t('pay_cod')}</label>
+              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
+              <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
           </div>
 
-          <button class="btn" id="submit-order">تأكيد الطلب ✓</button>
+          <button class="btn" id="submit-order">${t('confirm_order')}</button>
           <div id="order-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>`;
@@ -132,7 +134,7 @@
             body: JSON.stringify({ action: 'validate', code, subtotal }),
           });
           appliedCoupon = data;
-          toast(`تم تطبيق الخصم: ${money(data.discount)} 🎉`);
+          toast(t('coupon_ok', { v: money(data.discount) }));
           render();
         } catch (e) { toast('⚠️ ' + e.message); }
       });
@@ -148,11 +150,11 @@
           address: document.getElementById('c-address').value.trim(),
         };
         if (!customer.name || !customer.phone || !customer.address) {
-          errBox.textContent = 'من فضلك اكتب الاسم ورقم الموبايل والعنوان';
+          errBox.textContent = t('fill_required');
           return;
         }
         btn.disabled = true;
-        btn.textContent = 'جاري إرسال الطلب...';
+        btn.textContent = t('sending');
         try {
           const c = getCart();
           const order = await api('/orders', {
@@ -171,38 +173,36 @@
         } catch (err) {
           errBox.textContent = err.message;
           btn.disabled = false;
-          btn.textContent = 'تأكيد الطلب ✓';
+          btn.textContent = t('confirm_order');
         }
       });
     }
 
     function showSuccess(order) {
       const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
-      const payLabel = { cod: 'دفع عند الاستلام', instapay: 'انستاباي', wallet: 'محفظة إلكترونية' }[order.payment];
-      const waText = `طلب جديد من الموقع 🛒\nرقم الطلب: ${order.number}\nالاسم: ${order.customer.name}\nالموبايل: ${order.customer.phone}\n${lines}\nالدفع: ${payLabel}\nالإجمالي: ${order.total} جنيه`;
+      const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet') }[order.payment];
+      const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${LANG === 'en' ? 'EGP' : 'جنيه'}`;
 
       let payBox = '';
       if (order.payment === 'instapay') {
-        payBox = `<div class="note" style="text-align: right;">🏦 <b>خطوة الدفع:</b> حوّل <b>${money(order.total)}</b> على انستاباي رقم
-          <b dir="ltr">${esc(SITE.instapay)}</b> وابعتلنا سكرين التحويل على واتساب ومعاه رقم طلبك.</div>`;
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_instapay', { v: money(order.total), n: esc(SITE.instapay) })}</div>`;
       } else if (order.payment === 'wallet') {
-        payBox = `<div class="note" style="text-align: right;">📱 <b>خطوة الدفع:</b> حوّل <b>${money(order.total)}</b> على محفظة رقم
-          <b dir="ltr">${esc(SITE.wallet)}</b> وابعتلنا سكرين التحويل على واتساب ومعاه رقم طلبك.</div>`;
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_wallet', { v: money(order.total), n: esc(SITE.wallet) })}</div>`;
       }
 
       container.innerHTML = `
       <div class="success-box">
         <span class="icon">✅</span>
-        <h2>تم استلام طلبك بنجاح!</h2>
-        <p>رقم الطلب:</p>
+        <h2>${t('order_success')}</h2>
+        <p>${t('order_no')}</p>
         <div class="order-number">${esc(order.number)}</div>
-        ${order.discount ? `<p style="color: var(--green); margin-top: 8px;">وفّرت ${money(order.discount)} بكود الخصم 🎉</p>` : ''}
+        ${order.discount ? `<p style="color: var(--green); margin-top: 8px;">${t('saved', { v: money(order.discount) })}</p>` : ''}
         ${payBox}
-        <p style="color: var(--muted); margin: 14px 0;">هنتواصل معاك على ${esc(order.customer.phone)} لتأكيد الطلب وتحديد الشحن.<br>
-        تقدر تتابع حالة طلبك في أي وقت من صفحة <a href="/track.html?number=${esc(order.number)}&phone=${esc(order.customer.phone)}" style="color: var(--blue2);">تتبع الطلب</a>.</p>
-        <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(waText)}">تأكيد عبر واتساب 💬</a>
+        <p style="color: var(--muted); margin: 14px 0;">${t('contact_confirm', { p: esc(order.customer.phone) })}<br>
+        ${t('track_anytime')} <a href="/track.html?number=${esc(order.number)}&phone=${esc(order.customer.phone)}" style="color: var(--accent-dark);">${t('track_page')}</a>.</p>
+        <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(waText)}">${t('confirm_wa')}</a>
         <br><br>
-        <a href="/shop.html" style="color: var(--blue2);">← الرجوع للمتجر</a>
+        <a href="/shop.html" style="color: var(--accent-dark);">${t('back_shop')}</a>
       </div>`;
       window.scrollTo(0, 0);
     }

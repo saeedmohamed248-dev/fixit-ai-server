@@ -8,7 +8,7 @@ async function api(path, options = {}) {
     ...options,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'حصل خطأ، حاول تاني');
+  if (!res.ok) throw new Error(data.error || (LANG === 'en' ? 'Something went wrong, try again' : 'حصل خطأ، حاول تاني'));
   return data;
 }
 
@@ -43,7 +43,7 @@ function addToCart(id, qty = 1) {
   const cart = getCart();
   cart[id] = (cart[id] || 0) + qty;
   setCart(cart);
-  toast('تمت الإضافة للسلة ✓');
+  toast(t('toast_added'));
 }
 function removeFromCart(id) {
   const cart = getCart();
@@ -79,7 +79,7 @@ function toggleWishlist(id) {
   list = has ? list.filter((x) => x !== id) : [...list, id];
   localStorage.setItem('wishlist', JSON.stringify(list));
   updateCartBadge();
-  toast(has ? 'اتشالت من المفضلة' : 'اتضافت للمفضلة ❤️');
+  toast(has ? t('wish_removed') : t('wish_added'));
   return !has;
 }
 function inWishlist(id) { return getWishlist().includes(id); }
@@ -98,12 +98,17 @@ function getRecent() {
 
 /* ---------- أدوات عرض ---------- */
 function money(n) {
+  if (LANG === 'en') return SITE.currencyEn + ' ' + new Intl.NumberFormat('en-EG').format(n);
   return new Intl.NumberFormat('ar-EG').format(n) + ' ' + SITE.currency;
 }
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+// اسم المنتج ووصفه باللغة الحالية
+function pname(p) { return LANG === 'en' && p.nameEn ? p.nameEn : p.name; }
+function pdesc(p) { return LANG === 'en' && p.descriptionEn ? p.descriptionEn : p.description; }
+
 const CATEGORY_ICONS = {
   'فرامل': '🛑', 'فلاتر وصيانة': '🛢️', 'عفشة وتعليق': '🔩',
   'كهرباء وإشعال': '⚡', 'تبريد': '❄️', 'وقود': '⛽', 'هيكل وإكسسوارات': '🚗',
@@ -115,20 +120,20 @@ function firstImage(p) {
 }
 function productImage(p, cssClass = 'card-img') {
   const src = firstImage(p);
-  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(p.name)}" loading="lazy">`;
+  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy">`;
   return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
 }
 
 function conditionBadge(p) {
   return p.condition === 'used'
-    ? '<span class="badge badge-used">مستعمل وارد</span>'
-    : '<span class="badge badge-new">جديد</span>';
+    ? `<span class="badge badge-used">${t('cond_used')}</span>`
+    : `<span class="badge badge-new">${t('cond_new')}</span>`;
 }
 
 function starsHtml(avg, count) {
   if (!count) return '';
   const full = Math.round(avg);
-  return `<span class="stars" title="${avg} من 5">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> <span class="stars-count">(${count})</span>`;
+  return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> <span class="stars-count">(${count})</span>`;
 }
 
 function productCard(p) {
@@ -138,14 +143,14 @@ function productCard(p) {
   <a class="card ${out ? 'card-out' : ''}" href="/product.html?id=${esc(p.id)}">
     <div class="card-img-wrap">
       ${productImage(p)}
-      ${discount ? `<span class="discount-tag">خصم ${discount}%</span>` : ''}
+      ${discount ? `<span class="discount-tag">${LANG === 'en' ? discount + '% ' + t('discount') : t('discount') + ' ' + discount + '%'}</span>` : ''}
     </div>
     <div class="card-body">
       <div class="card-badges">
         ${conditionBadge(p)}
         <span class="badge badge-brand">${esc(p.brand)}</span>
       </div>
-      <h3 class="card-title">${esc(p.name)}</h3>
+      <h3 class="card-title">${esc(pname(p))}</h3>
       <div class="card-models">${p.models.map((m) => esc(m)).join(' • ')}</div>
       ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
       <div class="card-footer">
@@ -154,8 +159,8 @@ function productCard(p) {
           <span class="price">${money(p.price)}</span>
         </div>
         ${out
-          ? '<span class="stock-out">نفذت الكمية</span>'
-          : `<button class="btn-icon add-btn" data-id="${esc(p.id)}" title="أضف للسلة">🛒</button>`}
+          ? `<span class="stock-out">${t('out_stock')}</span>`
+          : `<button class="btn-icon add-btn" data-id="${esc(p.id)}" title="${t('add_cart')}">🛒</button>`}
       </div>
     </div>
   </a>`;
@@ -204,10 +209,10 @@ function initHeaderSearch() {
           ? results.map((p) => `
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
               <span class="suggest-icon">${categoryIcon(p.category)}</span>
-              <span class="suggest-name">${esc(p.name)}<small>${p.models.map(esc).join(' • ')}</small></span>
+              <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
               <b>${money(p.price)}</b>
-            </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">عرض كل النتائج ←</a>`
-          : `<div class="suggest-empty">مفيش نتائج لـ "${esc(q)}" — <a href="/assistant.html">اسأل الخبير 🤖</a></div>`;
+            </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
+          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/assistant.html">${t('ask_expert')}</a></div>`;
         box.classList.add('open');
       } catch {}
     }, 300);
@@ -221,43 +226,49 @@ function initHeaderSearch() {
 }
 
 /* ---------- الهيدر والفوتر ---------- */
+function siteName() { return LANG === 'en' ? SITE.name : SITE.nameAr + ' FixIt'; }
+
 function renderLayout(active = '') {
   const user = currentUser();
+  const otherLang = LANG === 'ar' ? 'en' : 'ar';
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar">🚚 شحن لجميع المحافظات ${SITE.freeShippingOver ? `— مجاني فوق ${money(SITE.freeShippingOver)}` : ''} &nbsp;|&nbsp; <a href="${waLink('السلام عليكم، عندي استفسار')}" target="_blank" rel="noopener">واتساب: ${esc(SITE.phoneDisplay)}</a></div>
+    <div class="topbar">${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo" href="/index.html">
-          <span class="logo-mark">B</span>
-          <span class="logo-text">${esc(SITE.name)}<small>BMW &amp; MINI Parts</small></span>
+          <span class="logo-mark">🔧</span>
+          <span class="logo-text">Fix<em>It</em><small>${t('brand_tag')}</small></span>
         </a>
         <div class="hdr-search-wrap">
-          <input id="hdr-search" type="search" placeholder="🔍 ابحث عن قطعة، رقم OEM، موديل..." autocomplete="off">
+          <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
           <div class="hdr-suggest" id="hdr-suggest"></div>
         </div>
         <div class="header-actions">
-          <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : 'حسابي'}">
-            👤 <small>${user ? esc(user.name.split(' ')[0]) : 'دخول'}</small>
+          <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
+          <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
+            👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>
-          <a class="hdr-icon wish-link" href="/wishlist.html" title="المفضلة">
+          <a class="hdr-icon wish-link" href="/wishlist.html" title="${t('footer_wish')}">
             ❤️ <span class="wish-badge">0</span>
           </a>
-          <a class="hdr-icon cart-link" href="/cart.html" title="السلة">
+          <a class="hdr-icon cart-link" href="/cart.html" title="${t('cart')}">
             🛒 <span class="cart-badge">0</span>
           </a>
         </div>
       </div>
-      <nav class="nav container" id="main-nav">
-        <a href="/index.html" class="${active === 'home' ? 'active' : ''}">الرئيسية</a>
-        <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">كل القطع</a>
-        <a href="/shop.html?brand=BMW">BMW</a>
-        <a href="/shop.html?brand=MINI">MINI</a>
-        <a href="/shop.html?condition=used">مستعمل وارد</a>
-        <a href="/shop.html?condition=new">جديد</a>
-        <a href="/track.html" class="${active === 'track' ? 'active' : ''}">تتبع طلبك</a>
-        <a href="/assistant.html" class="${active === 'assistant' ? 'active' : ''}">اسأل الخبير 🤖</a>
+      <nav class="nav-bar">
+        <div class="container nav" id="main-nav">
+          <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
+          <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
+          <a href="/shop.html?brand=BMW">BMW</a>
+          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?condition=used">${t('nav_used')}</a>
+          <a href="/shop.html?condition=new">${t('nav_new')}</a>
+          <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
+          <a href="/assistant.html" class="${active === 'assistant' ? 'active' : ''}">${t('nav_expert')}</a>
+        </div>
       </nav>
     </header>`;
     initHeaderSearch();
@@ -269,34 +280,35 @@ function renderLayout(active = '') {
     <footer class="footer">
       <div class="container footer-grid">
         <div>
-          <div class="logo"><span class="logo-mark">B</span><span class="logo-text">${esc(SITE.name)}</span></div>
-          <p>${esc(SITE.slogan)}. كل القطع مفحوصة وبضمان، استيراد مباشر من أوروبا وأمريكا.</p>
-          <div class="pay-badges">💵 عند الاستلام &nbsp; 🏦 انستاباي &nbsp; 📱 محافظ إلكترونية</div>
+          <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">Fix<em>It</em></span></div>
+          <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
+          <div class="pay-badges">${t('pay_badges')}</div>
         </div>
         <div>
-          <h4>التسوق</h4>
-          <a href="/shop.html">كل المنتجات</a>
-          <a href="/shop.html?brand=BMW">قطع BMW</a>
-          <a href="/shop.html?brand=MINI">قطع MINI</a>
-          <a href="/wishlist.html">المفضلة</a>
+          <h4>${t('footer_shop')}</h4>
+          <a href="/shop.html">${t('footer_all')}</a>
+          <a href="/shop.html?brand=BMW">${t('footer_bmw')}</a>
+          <a href="/shop.html?brand=MINI">${t('footer_mini')}</a>
+          <a href="/wishlist.html">${t('footer_wish')}</a>
         </div>
         <div>
-          <h4>خدمة العملاء</h4>
-          <a href="/track.html">تتبع طلبك</a>
-          <a href="/account.html">حسابي</a>
-          <a href="/policies.html">الشحن والاسترجاع والضمان</a>
-          <a href="/assistant.html">اسأل الخبير</a>
+          <h4>${t('footer_service')}</h4>
+          <a href="/track.html">${t('footer_track')}</a>
+          <a href="/account.html">${t('footer_account')}</a>
+          <a href="/policies.html">${t('footer_policies')}</a>
+          <a href="/assistant.html">${t('footer_expert')}</a>
         </div>
         <div>
-          <h4>تواصل معنا</h4>
-          <a href="${waLink('السلام عليكم')}" target="_blank" rel="noopener">📱 واتساب: ${esc(SITE.phoneDisplay)}</a>
-          <span>📍 ${esc(SITE.address)}</span>
+          <h4>${t('footer_contact')}</h4>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a>
+          <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
         </div>
       </div>
-      <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — جميع الحقوق محفوظة</div>
+      <div class="footer-bottom">© ${new Date().getFullYear()} FixIt — ${t('footer_rights')}</div>
     </footer>
-    <a class="wa-float" target="_blank" rel="noopener" href="${waLink('السلام عليكم، عايز أسأل عن قطعة')}" title="كلمنا واتساب">💬</a>`;
+    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>`;
   }
 
+  applyI18n();
   updateCartBadge();
 }

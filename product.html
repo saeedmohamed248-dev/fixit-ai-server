@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تفاصيل المنتج | بافاريا بارتس</title>
+  <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -13,28 +13,28 @@
 
   <main class="section">
     <div class="container" id="product-container">
-      <div class="spinner">جاري التحميل...</div>
+      <div class="spinner" data-i18n="loading"></div>
     </div>
 
     <div class="container section" id="reviews-section" style="display: none; padding-bottom: 0;">
-      <div class="section-head"><h2>التقييمات والمراجعات ⭐</h2></div>
+      <div class="section-head"><h2 data-i18n="reviews_title"></h2></div>
       <div class="cart-layout">
         <div id="reviews-list"></div>
         <div class="summary">
-          <h3>قيّم المنتج</h3>
+          <h3 data-i18n="rate_product"></h3>
           <div class="star-input" id="star-input" data-value="0">
             <span data-star="1">★</span><span data-star="2">★</span><span data-star="3">★</span><span data-star="4">★</span><span data-star="5">★</span>
           </div>
-          <div><label>اسمك</label><input id="rv-name"></div>
-          <div><label>رأيك في القطعة (اختياري)</label><textarea id="rv-comment" rows="3"></textarea></div>
-          <button class="btn" id="rv-submit">إرسال التقييم</button>
+          <div><label data-i18n="your_name"></label><input id="rv-name"></div>
+          <div><label data-i18n="your_review"></label><textarea id="rv-comment" rows="3"></textarea></div>
+          <button class="btn" id="rv-submit" data-i18n="submit_review"></button>
           <div id="rv-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>
     </div>
 
     <div class="container section" id="related-section" style="display: none; padding-bottom: 0;">
-      <div class="section-head"><h2>قطع مشابهة</h2></div>
+      <div class="section-head"><h2 data-i18n="related"></h2></div>
       <div class="products-grid" id="related-grid"></div>
     </div>
   </main>
@@ -42,6 +42,7 @@
   <div id="site-footer"></div>
 
   <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     renderLayout('shop');
@@ -54,7 +55,7 @@
       if (images.length === 0) return `<div class="product-img-box">${productImage(p)}</div>`;
       return `
       <div>
-        <div class="product-img-box"><img class="card-img" id="main-img" src="${esc(images[0])}" alt="${esc(p.name)}"></div>
+        <div class="product-img-box"><img class="card-img" id="main-img" src="${esc(images[0])}" alt="${esc(pname(p))}"></div>
         ${images.length > 1 ? `<div class="gallery-thumbs">
           ${images.map((src, i) => `<img src="${esc(src)}" class="${i === 0 ? 'active' : ''}" data-src="${esc(src)}" alt="">`).join('')}
         </div>` : ''}
@@ -63,12 +64,12 @@
 
     async function load() {
       if (!id) {
-        container.innerHTML = '<div class="empty-state"><span class="icon">❓</span>المنتج غير موجود</div>';
+        container.innerHTML = `<div class="empty-state"><span class="icon">❓</span>${t('not_found')}</div>`;
         return;
       }
       try {
         const p = product = await api('/products?id=' + encodeURIComponent(id));
-        document.title = p.name + ' | ' + SITE.name;
+        document.title = pname(p) + ' | FixIt';
         pushRecent(p.id);
         const out = p.stock <= 0;
         const wished = inWishlist(p.id);
@@ -77,35 +78,34 @@
           ${galleryHtml(p)}
           <div class="product-info">
             <div class="card-badges">${conditionBadge(p)} <span class="badge badge-brand">${esc(p.brand)}</span>
-              ${(p.sold || 0) >= 5 ? '<span class="badge badge-new">🔥 الأكثر مبيعاً</span>' : ''}</div>
-            <h1>${esc(p.name)}</h1>
+              ${(p.sold || 0) >= 5 ? `<span class="badge badge-new">${t('best_seller')}</span>` : ''}</div>
+            <h1>${esc(pname(p))}</h1>
             ${p.ratingCount ? `<div>${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
             <div>
               ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
               <span class="price">${money(p.price)}</span>
             </div>
             <table class="meta-table">
-              <tr><td>رقم القطعة (SKU)</td><td>${esc(p.sku) || '—'}</td></tr>
-              <tr><td>رقم OEM</td><td dir="ltr" style="text-align: right;">${esc(p.oem) || '—'}</td></tr>
-              <tr><td>الحالة</td><td>${p.condition === 'used' ? 'مستعمل وارد (مفحوص)' : 'جديد'}</td></tr>
-              <tr><td>يناسب موديلات</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
-              <tr><td>المتوفر</td><td>${out ? '<span style="color: var(--red);">نفذت الكمية</span>' : p.stock <= 2 ? `<span style="color: var(--amber);">باقي ${p.stock} بس — الحق اطلبها!</span>` : p.stock + ' قطعة'}</td></tr>
+              <tr><td>${t('sku')}</td><td dir="ltr" style="text-align: start;">${esc(p.sku) || '—'}</td></tr>
+              <tr><td>${t('oem')}</td><td dir="ltr" style="text-align: start;">${esc(p.oem) || '—'}</td></tr>
+              <tr><td>${t('condition')}</td><td>${p.condition === 'used' ? t('used_checked') : t('cond_new')}</td></tr>
+              <tr><td>${t('fits')}</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
+              <tr><td>${t('available')}</td><td>${out ? `<span style="color: var(--red);">${t('out_stock')}</span>` : p.stock <= 2 ? `<span style="color: var(--amber);">${t('low_stock', { n: p.stock })}</span>` : p.stock + ' ' + t('pieces')}</td></tr>
             </table>
-            <p style="color: var(--muted);">${esc(p.description)}</p>
+            <p style="color: var(--muted);">${esc(pdesc(p))}</p>
             ${out ? `
               <a class="btn btn-green" style="margin-top: 18px;" target="_blank" rel="noopener"
-                 href="${waLink('السلام عليكم، عايز أحجز قطعة "' + p.name + '" (' + p.sku + ') لما تتوفر')}">
-                 نفذت الكمية — احجزها واتساب 💬</a>
+                 href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('reserve_wa')}</a>
             ` : `
               <div class="qty-row">
-                <label style="margin: 0;">الكمية:</label>
+                <label style="margin: 0;">${t('qty')}</label>
                 <input type="number" id="qty" value="1" min="1" max="${p.stock}">
               </div>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn" id="add-cart">🛒 أضف للسلة</button>
-                <button class="btn btn-outline" id="wish-btn">${wished ? '❤️ في المفضلة' : '🤍 أضف للمفضلة'}</button>
+                <button class="btn" id="add-cart">${t('add_cart')}</button>
+                <button class="btn btn-outline" id="wish-btn">${wished ? t('wish_in') : t('wish_out')}</button>
                 <a class="btn btn-green" target="_blank" rel="noopener"
-                   href="${waLink('السلام عليكم، عايز أسأل عن "' + p.name + '" (' + p.sku + ')')}">اسأل واتساب 💬</a>
+                   href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('ask_wa')}</a>
               </div>
             `}
           </div>
@@ -115,7 +115,7 @@
         container.querySelectorAll('.gallery-thumbs img').forEach((thumb) => {
           thumb.addEventListener('click', () => {
             document.getElementById('main-img').src = thumb.dataset.src;
-            container.querySelectorAll('.gallery-thumbs img').forEach((t) => t.classList.remove('active'));
+            container.querySelectorAll('.gallery-thumbs img').forEach((tm) => tm.classList.remove('active'));
             thumb.classList.add('active');
           });
         });
@@ -128,7 +128,7 @@
         const wishBtn = document.getElementById('wish-btn');
         if (wishBtn) wishBtn.addEventListener('click', () => {
           const nowIn = toggleWishlist(p.id);
-          wishBtn.textContent = nowIn ? '❤️ في المفضلة' : '🤍 أضف للمفضلة';
+          wishBtn.textContent = nowIn ? t('wish_in') : t('wish_out');
         });
 
         loadReviews();
@@ -155,15 +155,15 @@
         list.innerHTML = (reviews.length ? `
           <div class="rating-summary">
             <span class="big">${avg}</span>
-            <div>${starsHtml(avg, reviews.length)}<br><small style="color: var(--muted);">بناءً على ${reviews.length} تقييم</small></div>
-          </div>` : '<p style="color: var(--muted); margin-bottom: 14px;">لسه مفيش تقييمات — كن أول من يقيّم القطعة دي!</p>')
+            <div>${starsHtml(avg, reviews.length)}<br><small style="color: var(--muted);">${t('based_on', { n: reviews.length })}</small></div>
+          </div>` : `<p style="color: var(--muted); margin-bottom: 14px;">${t('no_reviews')}</p>`)
           + reviews.map((r) => `
           <div class="review-item">
             <div class="review-head">
               <b>${esc(r.name)}</b>
-              ${r.verified ? '<span class="verified-badge">✓ عميل مسجّل</span>' : ''}
+              ${r.verified ? `<span class="verified-badge">${t('verified')}</span>` : ''}
               <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
-              <span class="review-date">${new Date(r.createdAt).toLocaleDateString('ar-EG')}</span>
+              <span class="review-date">${new Date(r.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG')}</span>
             </div>
             ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
           </div>`).join('');
@@ -199,7 +199,7 @@
             comment: document.getElementById('rv-comment').value.trim(),
           }),
         });
-        toast('شكراً على تقييمك ⭐');
+        toast(t('review_thanks'));
         document.getElementById('rv-comment').value = '';
         starInput.dataset.value = 0;
         starInput.querySelectorAll('span').forEach((x) => x.classList.remove('lit'));
