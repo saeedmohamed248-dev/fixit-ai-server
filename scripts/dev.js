@@ -8,6 +8,13 @@ import { fileURLToPath } from 'url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const PORT = process.env.PORT || 3000;
 
+// قيم تجريبية للتشغيل المحلي — على Vercel لازم تضبطها من Environment Variables
+if (!process.env.ADMIN_TOKEN) {
+  process.env.ADMIN_TOKEN = 'admin123';
+  console.log('🔐 رمز لوحة التحكم المحلي: admin123');
+}
+if (!process.env.SYNC_SECRET) process.env.SYNC_SECRET = 'sync123';
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -74,4 +81,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`✅ الموقع شغال على http://localhost:${PORT}`));
+server.listen(PORT, () => {
+  console.log(`✅ الموقع شغال على        http://localhost:${PORT}`);
+  console.log(`🎛️ لوحة التحكم على       http://localhost:${PORT}/admin.html`);
+  console.log('⏹️ للإيقاف: اضغط Ctrl+C');
+});
