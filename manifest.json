@@ -1,0 +1,12 @@
+{
+  "name": "FixIt — قطع غيار BMW & MINI",
+  "short_name": "FixIt",
+  "description": "قطع غيار BMW وميني كوبر — جديد ومستعمل وارد بضمان",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#101828",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

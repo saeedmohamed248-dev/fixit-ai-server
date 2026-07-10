@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اطلب قطعتك | FixIt</title>
+  <meta name="description" content="مش لاقي قطعة غيار BMW أو MINI؟ اطلبها من FixIt وهنوفرهالك — ابعت رقم الشاسيه وهنرد عليك خلال 24 ساعة.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" style="max-width: 640px;" id="req-container">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 data-i18n="req_title"></h1>
+        <p style="color: var(--muted);" data-i18n="req_sub"></p>
+      </div>
+      <div class="summary">
+        <div><label data-i18n="req_part"></label><input id="r-part" data-i18n-ph="req_part_ph"></div>
+        <div><label data-i18n="req_car"></label><input id="r-car" data-i18n-ph="req_car_ph"></div>
+        <div><label data-i18n="req_vin"></label><input id="r-vin" dir="ltr" style="text-align: start;" placeholder="WBA8E9G50GNT..."></div>
+        <div class="form-grid">
+          <div><label data-i18n="full_name"></label><input id="r-name"></div>
+          <div><label data-i18n="phone"></label><input id="r-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
+        </div>
+        <div><label data-i18n="req_notes"></label><textarea id="r-notes" rows="2"></textarea></div>
+        <button class="btn" id="r-send" data-i18n="req_send"></button>
+        <div id="r-error" style="color: var(--red); font-size: 14px;"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('');
+    document.title = t('title_request');
+    // لو جاي من بحث مفيش نتايجه، نملى اسم القطعة تلقائياً
+    const q = new URLSearchParams(location.search).get('q');
+    if (q) document.getElementById('r-part').value = q;
+    // لو العميل مسجّل نملى بياناته
+    const user = currentUser();
+    if (user) {
+      document.getElementById('r-name').value = user.name;
+      document.getElementById('r-phone').value = user.phone;
+    }
+
+    document.getElementById('r-send').addEventListener('click', async (e) => {
+      const err = document.getElementById('r-error');
+      err.textContent = '';
+      const body = {
+        partName: document.getElementById('r-part').value.trim(),
+        car: document.getElementById('r-car').value.trim(),
+        vin: document.getElementById('r-vin').value.trim(),
+        name: document.getElementById('r-name').value.trim(),
+        phone: document.getElementById('r-phone').value.trim(),
+        notes: document.getElementById('r-notes').value.trim(),
+      };
+      if (!body.partName || !body.name || !body.phone) {
+        err.textContent = t('fill_required');
+        return;
+      }
+      e.target.disabled = true;
+      try {
+        const request = await api('/requests', { method: 'POST', body: JSON.stringify(body) });
+        const waText = (LANG === 'en' ? 'Part request ' : 'طلب توفير قطعة ') + request.number + '\n' +
+          body.partName + (body.car ? '\n' + body.car : '') + (body.vin ? '\nVIN: ' + body.vin : '');
+        document.getElementById('req-container').innerHTML = `
+        <div class="success-box">
+          <span class="icon">🔎</span>
+          <h2>${t('req_success')}</h2>
+          <p>${t('req_number')}</p>
+          <div class="order-number">${esc(request.number)}</div>
+          <p style="color: var(--muted); margin: 14px 0;">${t('req_success_sub', { p: esc(body.phone) })}</p>
+          <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(waText)}">${t('req_wa')}</a>
+          <br><br>
+          <a href="/shop.html" style="color: var(--accent-dark);">${t('back_shop')}</a>
+        </div>`;
+        window.scrollTo(0, 0);
+      } catch (ex) {
+        err.textContent = ex.message;
+        e.target.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

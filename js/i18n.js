@@ -233,6 +233,48 @@ const I18N = {
   as_error: { ar: 'الخدمة غير متاحة حالياً', en: 'Service temporarily unavailable' },
   as_fallback: { ar: 'تقدر تتواصل معانا واتساب مباشرة.', en: 'You can reach us directly on WhatsApp.' },
 
+  /* ---------- اطلب قطعتك ---------- */
+  title_request: { ar: 'اطلب قطعتك | FixIt', en: 'Request a Part | FixIt' },
+  req_title: { ar: 'مش لاقي قطعتك؟ اطلبها 🔎', en: "Can't find your part? Request it 🔎" },
+  req_sub: { ar: 'سيب بياناتك واسم القطعة (ورقم الشاسيه لو متاح) وهندور عليها ونرد عليك خلال ٢٤ ساعة.', en: 'Leave your details and the part name (plus your VIN if available) — we will source it and get back to you within 24 hours.' },
+  req_part: { ar: 'القطعة المطلوبة *', en: 'Part needed *' },
+  req_part_ph: { ar: 'مثال: طرمبة بنزين ميني كوبر R56', en: 'e.g. Fuel pump for MINI R56' },
+  req_car: { ar: 'العربية (الموديل والسنة)', en: 'Car (model & year)' },
+  req_car_ph: { ar: 'مثال: BMW F30 موديل 2015', en: 'e.g. BMW F30, 2015' },
+  req_vin: { ar: 'رقم الشاسيه VIN (اختياري — بيضمن قطعة مظبوطة 100%)', en: 'VIN / chassis number (optional — guarantees an exact match)' },
+  req_notes: { ar: 'تفاصيل إضافية (جديد ولا مستعمل؟ ميزانيتك؟)', en: 'Extra details (new or used? your budget?)' },
+  req_send: { ar: 'إرسال الطلب 🔎', en: 'Send request 🔎' },
+  req_success: { ar: 'وصلنا طلبك!', en: 'Request received!' },
+  req_number: { ar: 'رقم الطلب:', en: 'Request number:' },
+  req_success_sub: { ar: 'هندور على القطعة ونتواصل معاك على {p} خلال ٢٤ ساعة. لرد أسرع كلمنا واتساب:', en: 'We will source the part and contact you on {p} within 24 hours. For a faster reply, message us on WhatsApp:' },
+  req_wa: { ar: 'تابع طلبك واتساب 💬', en: 'Follow up on WhatsApp 💬' },
+  req_link: { ar: 'اطلب قطعة مش موجودة', en: 'Request a missing part' },
+  cta_request: { ar: 'اطلب قطعتك دلوقتي 🔎', en: 'Request your part now 🔎' },
+
+  /* ---------- إحصائيات الهيرو ---------- */
+  stat1: { ar: '✓ قطع مفحوصة بضمان', en: '✓ Inspected & guaranteed' },
+  stat2: { ar: '✓ شحن ٢-٤ أيام', en: '✓ 2-4 day delivery' },
+  stat3: { ar: '✓ استيراد مباشر', en: '✓ Direct import' },
+
+  /* ---------- أسئلة شائعة ---------- */
+  faq_title: { ar: 'أسئلة شائعة ❓', en: 'FAQ ❓' },
+  faq1_q: { ar: 'إزاي أتأكد إن القطعة تناسب عربيتي؟', en: 'How do I know the part fits my car?' },
+  faq1_a: { ar: 'كل منتج مكتوب عليه الموديلات اللي بيناسبها ورقم الـ OEM. ولو مش متأكد، ابعتلنا رقم الشاسيه على واتساب أو استخدم صفحة "اطلب قطعتك" وهنتأكدلك 100%.', en: 'Every product lists compatible models and the OEM number. If unsure, send us your VIN on WhatsApp or use the "Request a Part" page and we will confirm 100%.' },
+  faq2_q: { ar: 'إيه الفرق بين الجديد والمستعمل الوارد؟', en: 'What is the difference between new and used import?' },
+  faq2_a: { ar: 'الجديد قطع أصلية بالكرتونة بضمان سنة. المستعمل الوارد قطع أصلية متفكّكة من عربيات أوروبية وأمريكية، بتتفحص بالكامل وعليها ضمان شهر — وبتوفر لحد 60% من سعر الجديد.', en: 'New parts are boxed originals with a one-year warranty. Used import parts come from European/US cars, fully inspected with a one-month warranty — saving up to 60% versus new.' },
+  faq3_q: { ar: 'الدفع والشحن بيتموا إزاي؟', en: 'How do payment and delivery work?' },
+  faq3_a: { ar: 'تدفع عند الاستلام كاش، أو تحوّل انستاباي/محفظة قبل الشحن. بنشحن لكل المحافظات خلال ٢-٤ أيام عمل وبنبلغك بتكلفة الشحن قبل التأكيد.', en: 'Pay cash on delivery, or transfer via InstaPay/e-wallet before dispatch. We deliver nationwide within 2-4 business days and confirm the shipping cost before dispatch.' },
+  faq4_q: { ar: 'لو القطعة وصلت مش مناسبة أو فيها عيب؟', en: 'What if the part arrives wrong or faulty?' },
+  faq4_a: { ar: 'ليك استرجاع أو استبدال خلال ١٤ يوم بشرط عدم التركيب. ولو ظهر عيب فني في فترة الضمان بنستبدلها أو نرجعلك فلوسك.', en: 'You can return or exchange within 14 days as long as the part is uninstalled. If a technical fault appears within warranty, we replace it or refund you.' },
+  faq5_q: { ar: 'بتجيبوا قطع مش موجودة في الموقع؟', en: 'Can you source parts not listed on the site?' },
+  faq5_a: { ar: 'أيوه! ده شغلنا الأساسي — استخدم صفحة "اطلب قطعتك" أو ابعت رقم الشاسيه واتساب، وبنوفر أغلب القطع خلال أيام من مخازننا أو بالاستيراد.', en: 'Yes! That is our specialty — use the "Request a Part" page or send your VIN on WhatsApp. We source most parts within days from our warehouses or by import.' },
+
+  /* ---------- متفرقات ---------- */
+  share: { ar: 'مشاركة', en: 'Share' },
+  link_copied: { ar: 'تم نسخ الرابط ✓', en: 'Link copied ✓' },
+  nf_title: { ar: 'الصفحة مش موجودة', en: 'Page not found' },
+  nf_sub: { ar: 'يمكن الرابط غلط أو الصفحة اتشالت — المتجر أهو كله قدامك 👇', en: 'The link may be wrong or the page was removed — the whole shop is right here 👇' },
+
   /* ---------- الفئات ---------- */
   cat_فرامل: { ar: 'فرامل', en: 'Brakes' },
   'cat_فلاتر وصيانة': { ar: 'فلاتر وصيانة', en: 'Filters & Service' },

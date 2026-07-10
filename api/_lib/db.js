@@ -70,6 +70,10 @@ export const saveReviews = reviewsCol.save;
 export const getCoupons = couponsCol.get;
 export const saveCoupons = couponsCol.save;
 
+const requestsCol = makeCollection('requests');
+export const getRequests = requestsCol.get;
+export const saveRequests = requestsCol.save;
+
 const activityCol = makeCollection('activity');
 export const getActivity = activityCol.get;
 

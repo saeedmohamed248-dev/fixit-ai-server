@@ -7,6 +7,9 @@
   <title>لوحة التحكم | FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -64,7 +67,7 @@
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة' };
-    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄' };
+    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎' };
     let products = [];
     let ordersCache = [];
     let customersCache = [];
@@ -116,6 +119,7 @@
       <div class="admin-tabs">
         <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
         <button data-tab="orders">📦 الطلبات</button>
+        <button data-tab="requests">🔎 طلبات القطع</button>
         <button data-tab="products">🔧 المنتجات والمخزون</button>
         <button data-tab="coupons">🎟️ خصومات وهدايا</button>
         <button data-tab="customers">👥 العملاء</button>
@@ -143,7 +147,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -238,7 +242,10 @@
           return;
         }
         box.innerHTML = `
-        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">💡 دوس على أي طلب لعرض التفاصيل الكاملة والفاتورة</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+          <p style="color: var(--muted); font-size: 14px; margin: 0;">💡 دوس على أي طلب لعرض التفاصيل الكاملة والفاتورة</p>
+          <button class="btn btn-outline btn-sm" id="export-csv">⬇️ تصدير Excel (CSV)</button>
+        </div>
         <div class="table-wrap"><table class="table">
           <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>القطع</th><th>الدفع</th><th>الإجمالي</th><th>الحالة</th></tr>
           ${ordersCache.map((o) => `<tr class="order-row" data-open-order="${esc(o.id)}" style="cursor: pointer;">
@@ -252,6 +259,65 @@
           </tr>`).join('')}
         </table></div>`;
         bindOrderRows(box);
+
+        // تصدير الطلبات لملف Excel (CSV)
+        document.getElementById('export-csv').addEventListener('click', () => {
+          const rows = [['رقم الطلب', 'التاريخ', 'الحالة', 'العميل', 'الموبايل', 'المحافظة', 'العنوان', 'القطع', 'الدفع', 'الخصم', 'الإجمالي']];
+          ordersCache.forEach((o) => rows.push([
+            o.number, new Date(o.createdAt).toLocaleDateString('ar-EG'), STATUS_AR[o.status] || o.status,
+            o.customer.name, o.customer.phone, o.customer.city, o.customer.address,
+            o.items.map((i) => `${i.name} x${i.qty}`).join(' | '),
+            PAY_AR[o.payment] || '', o.discount || 0, o.total,
+          ]));
+          const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(',')).join('\n');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+          a.download = `fixit-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+          a.click();
+        });
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ==================== 🔎 طلبات القطع ==================== */
+    const REQ_STATUS = { open: '🟠 جديد', sourced: '🔵 اتوفّرت', done: '✅ اتقفل' };
+    async function loadRequests() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const requests = await api('/requests', { headers: authHeaders() });
+        if (requests.length === 0) {
+          box.innerHTML = '<div class="empty-state"><span class="icon">🔎</span>مفيش طلبات توفير قطع لسه — العملاء بيبعتوها من صفحة "اطلب قطعتك"</div>';
+          return;
+        }
+        box.innerHTML = `
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">طلبات العملاء لقطع مش موجودة في المتجر — وفّرها وكسبت عميل 💪</p>
+        <div class="table-wrap"><table class="table">
+          <tr><th>الرقم</th><th>التاريخ</th><th>القطعة المطلوبة</th><th>العربية / الشاسيه</th><th>العميل</th><th>الحالة</th><th></th></tr>
+          ${requests.map((r) => `<tr>
+            <td><b>${esc(r.number)}</b></td>
+            <td>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
+            <td>${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
+            <td>${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}</td>
+            <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small></td>
+            <td><select data-req="${esc(r.id)}">
+              ${Object.entries(REQ_STATUS).map(([k, v]) => `<option value="${k}" ${r.status === k ? 'selected' : ''}>${v}</option>`).join('')}
+            </select></td>
+            <td><a class="btn btn-sm btn-green" target="_blank" rel="noopener"
+              href="https://wa.me/2${esc(r.phone)}?text=${encodeURIComponent('أهلاً ' + r.name + '، بخصوص طلبك ' + r.number + ' لقطعة "' + r.partName + '" من ' + SITE.name)}">💬 رد</a></td>
+          </tr>`).join('')}
+        </table></div>`;
+        box.querySelectorAll('[data-req]').forEach((sel) =>
+          sel.addEventListener('change', async () => {
+            try {
+              await api('/requests', {
+                method: 'PUT', headers: authHeaders(),
+                body: JSON.stringify({ id: sel.dataset.req, status: sel.value }),
+              });
+              toast('تم التحديث ✓');
+            } catch (e) { toast('⚠️ ' + e.message); }
+          }));
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }

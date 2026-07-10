@@ -10,6 +10,9 @@
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -30,6 +33,11 @@
           <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
           <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new"></a>
           <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used"></a>
+        </div>
+        <div class="hero-stats">
+          <span data-i18n="stat1"></span>
+          <span data-i18n="stat2"></span>
+          <span data-i18n="stat3"></span>
         </div>
       </div>
     </section>
@@ -63,9 +71,7 @@
           <h2 data-i18n="sec_best"></h2>
           <a href="/shop.html" data-i18n="view_all"></a>
         </div>
-        <div class="products-grid" id="featured-grid">
-          <div class="spinner" data-i18n="loading"></div>
-        </div>
+        <div class="products-grid" id="featured-grid"></div>
       </div>
     </section>
 
@@ -97,7 +103,10 @@
             <h2 data-i18n="cta_title"></h2>
             <p data-i18n="cta_sub"></p>
           </div>
-          <a class="btn" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn"></a>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a class="btn" href="/request.html" data-i18n="cta_request" style="background: #fff; color: var(--accent-dark);"></a>
+            <a class="btn btn-green" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn"></a>
+          </div>
         </div>
       </div>
     </section>
@@ -112,6 +121,7 @@
     renderLayout('home');
     document.title = t('title_home');
     document.getElementById('cta-wa').href = waLink(t('wa_part'));
+    document.getElementById('featured-grid').innerHTML = skeletonCards(8);
 
     const CATS = ['فرامل', 'فلاتر وصيانة', 'عفشة وتعليق', 'كهرباء وإشعال', 'تبريد', 'وقود', 'هيكل وإكسسوارات'];
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `

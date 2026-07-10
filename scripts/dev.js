@@ -33,6 +33,7 @@ const apiHandlers = {
   '/api/coupons': () => import('../api/coupons.js'),
   '/api/settings': () => import('../api/settings.js'),
   '/api/activity': () => import('../api/activity.js'),
+  '/api/requests': () => import('../api/requests.js'),
 };
 
 function readBody(req) {

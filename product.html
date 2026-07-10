@@ -6,6 +6,9 @@
   <title>FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -74,6 +77,11 @@
         const out = p.stock <= 0;
         const wished = inWishlist(p.id);
         container.innerHTML = `
+        <nav class="breadcrumbs">
+          <a href="/index.html">${t('nav_home')}</a><span>←</span>
+          <a href="/shop.html?category=${encodeURIComponent(p.category)}">${catName(p.category)}</a><span>←</span>
+          ${esc(pname(p))}
+        </nav>
         <div class="product-layout">
           ${galleryHtml(p)}
           <div class="product-info">
@@ -106,6 +114,7 @@
                 <button class="btn btn-outline" id="wish-btn">${wished ? t('wish_in') : t('wish_out')}</button>
                 <a class="btn btn-green" target="_blank" rel="noopener"
                    href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('ask_wa')}</a>
+                <button class="btn btn-outline" id="share-btn" title="${t('share')}">↗️</button>
               </div>
             `}
           </div>
@@ -130,6 +139,34 @@
           const nowIn = toggleWishlist(p.id);
           wishBtn.textContent = nowIn ? t('wish_in') : t('wish_out');
         });
+
+        // زرار المشاركة: مشاركة أصلية من الموبايل أو نسخ الرابط
+        const shareBtn = document.getElementById('share-btn');
+        if (shareBtn) shareBtn.addEventListener('click', async () => {
+          const data = { title: pname(p) + ' | ' + SITE.name, url: location.href };
+          if (navigator.share) { navigator.share(data).catch(() => {}); }
+          else {
+            await navigator.clipboard.writeText(location.href).catch(() => {});
+            toast(t('link_copied'));
+          }
+        });
+
+        // بيانات SEO للمنتج (Google Rich Results)
+        const ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.textContent = JSON.stringify({
+          '@context': 'https://schema.org', '@type': 'Product',
+          name: pname(p), sku: p.sku, mpn: p.oem, brand: { '@type': 'Brand', name: p.brand },
+          description: pdesc(p),
+          ...(firstImage(p) ? { image: firstImage(p) } : {}),
+          offers: {
+            '@type': 'Offer', priceCurrency: 'EGP', price: p.price,
+            availability: p.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            itemCondition: p.condition === 'used' ? 'https://schema.org/UsedCondition' : 'https://schema.org/NewCondition',
+          },
+          ...(p.ratingCount ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: p.ratingAvg, reviewCount: p.ratingCount } } : {}),
+        });
+        document.head.appendChild(ld);
 
         loadReviews();
 

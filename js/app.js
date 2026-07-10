@@ -216,6 +216,36 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// كروت تحميل هيكلية (Skeleton) بدل نص "جاري التحميل"
+function skeletonCards(n = 8) {
+  return Array.from({ length: n }, () => `
+    <div class="card skeleton-card">
+      <div class="sk sk-img"></div>
+      <div class="card-body">
+        <div class="sk sk-line" style="width: 40%;"></div>
+        <div class="sk sk-line" style="width: 85%;"></div>
+        <div class="sk sk-line" style="width: 60%;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ظهور تدريجي للعناصر مع السكرول
+function initReveal() {
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  const observeAll = () => document.querySelectorAll('.card:not(.shown), .feature:not(.shown), .cat-card:not(.shown)').forEach((el) => {
+    el.classList.add('reveal');
+    io.observe(el);
+  });
+  observeAll();
+  new MutationObserver(observeAll).observe(document.body, { childList: true, subtree: true });
+}
+document.addEventListener('DOMContentLoaded', initReveal);
+
 function toast(msg) {
   let el = document.querySelector('.toast');
   if (!el) {
@@ -344,6 +374,7 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_service')}</h4>
+          <a href="/request.html">${t('req_link')} 🔎</a>
           <a href="/track.html">${t('footer_track')}</a>
           <a href="/account.html">${t('footer_account')}</a>
           <a href="/policies.html">${t('footer_policies')}</a>
@@ -357,7 +388,14 @@ function renderLayout(active = '') {
       </div>
       <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — ${t('footer_rights')}</div>
     </footer>
-    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>`;
+    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
+    <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
+
+    const topBtn = document.getElementById('scroll-top');
+    window.addEventListener('scroll', () => {
+      topBtn.classList.toggle('show', window.scrollY > 500);
+    }, { passive: true });
+    topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   applyI18n();

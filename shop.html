@@ -6,6 +6,9 @@
   <title>المتجر | FixIt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -60,9 +63,7 @@
               <option value="price_desc" data-i18n="sort_desc"></option>
             </select>
           </div>
-          <div class="products-grid" id="products-grid">
-            <div class="spinner" data-i18n="loading"></div>
-          </div>
+          <div class="products-grid" id="products-grid"></div>
           <div class="pagination" id="pagination"></div>
         </div>
       </div>
@@ -96,8 +97,10 @@
       const pages = Math.max(1, Math.ceil(lastResults.length / PER_PAGE));
       currentPage = Math.min(currentPage, pages);
       const slice = lastResults.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+      const currentQ = document.getElementById('f-q').value.trim();
       grid.innerHTML = slice.map(productCard).join('') ||
-        `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a></div>`;
+        `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a>
+        <br><br><a class="btn" href="/request.html?q=${encodeURIComponent(currentQ)}">${t('req_link')} 🔎</a></div>`;
       const pag = document.getElementById('pagination');
       pag.innerHTML = pages > 1
         ? Array.from({ length: pages }, (_, i) =>
@@ -112,7 +115,7 @@
     }
 
     async function load() {
-      grid.innerHTML = `<div class="spinner">${t('loading')}</div>`;
+      grid.innerHTML = skeletonCards(9);
       const qs = new URLSearchParams();
       fields.forEach((f) => {
         const v = document.getElementById('f-' + f).value.trim();
