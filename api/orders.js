@@ -99,6 +99,22 @@ export default async function handler(req, res) {
       await saveOrders(orders);
 
       await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)`);
+
+      // إرسال الطلب لسيستم موس تك (لو الربط مفعّل) — كفاتورة مسودة تتأكد من هناك
+      if (process.env.MOUSSTEC_WEBHOOK_URL && process.env.MOUSSTEC_SECRET) {
+        try {
+          await fetch(process.env.MOUSSTEC_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Sync-Secret': process.env.MOUSSTEC_SECRET },
+            body: JSON.stringify(order),
+            signal: AbortSignal.timeout(6000),
+          });
+          await logActivity('sync', `📤 الطلب ${order.number} اتبعت لموس تك كفاتورة مسودة`);
+        } catch {
+          await logActivity('sync', `⚠️ فشل إرسال الطلب ${order.number} لموس تك — سجّله يدوياً`);
+        }
+      }
+
       return res.status(201).json(order);
     }
 

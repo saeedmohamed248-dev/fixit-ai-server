@@ -40,6 +40,59 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = req.body || {};
+
+      // ✨ مزامنة كاملة من Mouss Tec: إنشاء/تحديث منتجات بالكامل حسب الـ SKU
+      // { action: "upsert", items: [{ sku, name, brand, condition, price, stock, models, oem, ... }] }
+      if (body.action === 'upsert' && Array.isArray(body.items)) {
+        let created = 0, updated = 0;
+        for (const item of body.items) {
+          if (!item.sku || !item.name) continue;
+          const existing = products.find((p) => p.sku === item.sku);
+          const fields = {
+            name: item.name,
+            nameEn: item.nameEn || existing?.nameEn || '',
+            brand: item.brand || 'BMW',
+            condition: item.condition === 'used' ? 'used' : 'new',
+            price: Number(item.price) || 0,
+            oldPrice: Number(item.oldPrice) || existing?.oldPrice || 0,
+            stock: Math.max(0, Number(item.stock) || 0),
+            models: Array.isArray(item.models) ? item.models : existing?.models || [],
+            oem: item.oem || existing?.oem || '',
+            image: item.image || existing?.image || '',
+            description: item.description || existing?.description || '',
+          };
+          if (existing) { Object.assign(existing, fields); updated++; }
+          else {
+            products.push({
+              id: 'p' + Date.now() + Math.random().toString(36).slice(2, 5),
+              sku: item.sku, images: [], sold: 0, ratingAvg: 0, ratingCount: 0,
+              descriptionEn: '', ...fields,
+            });
+            created++;
+          }
+        }
+        await saveProducts(products);
+        await logActivity('sync', `🔄 مزامنة موس تك: تحديث ${updated} وإضافة ${created} منتج`);
+        return res.status(200).json({ ok: true, created, updated });
+      }
+
+      // ✨ تحديث مخزون مطلق (القيمة النهائية مش خصم): { action: "set", items: [{ sku, stock, price? }] }
+      if (body.action === 'set' && Array.isArray(body.items)) {
+        const updated = [];
+        for (const item of body.items) {
+          const product = products.find((p) => p.sku === item.sku);
+          if (!product) continue;
+          product.stock = Math.max(0, Number(item.stock) || 0);
+          if (item.price) product.price = Number(item.price);
+          updated.push({ sku: product.sku, stock: product.stock });
+        }
+        await saveProducts(products);
+        if (updated.length) {
+          await logActivity('sync', `🔄 موس تك حدّث مخزون ${updated.length} قطعة`);
+        }
+        return res.status(200).json({ ok: true, updated });
+      }
+
       // ندعم الشكل البسيط وشكل Shopify order webhook
       const lines = Array.isArray(body.line_items)
         ? body.line_items
