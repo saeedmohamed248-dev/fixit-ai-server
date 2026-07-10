@@ -269,6 +269,9 @@ const I18N = {
   faq5_q: { ar: 'بتجيبوا قطع مش موجودة في الموقع؟', en: 'Can you source parts not listed on the site?' },
   faq5_a: { ar: 'أيوه! ده شغلنا الأساسي — استخدم صفحة "اطلب قطعتك" أو ابعت رقم الشاسيه واتساب، وبنوفر أغلب القطع خلال أيام من مخازننا أو بالاستيراد.', en: 'Yes! That is our specialty — use the "Request a Part" page or send your VIN on WhatsApp. We source most parts within days from our warehouses or by import.' },
 
+  ship_progress: { ar: 'فاضل {v} وتوصل للشحن المجاني 🚚', en: 'Add {v} more for free shipping 🚚' },
+  low_left: { ar: 'باقي {n} بس!', en: 'Only {n} left!' },
+
   /* ---------- متفرقات ---------- */
   share: { ar: 'مشاركة', en: 'Share' },
   link_copied: { ar: 'تم نسخ الرابط ✓', en: 'Link copied ✓' },

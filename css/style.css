@@ -853,6 +853,11 @@ tr.order-row:hover td { background: var(--card2); }
 .faq-item[open] summary::after { transform: rotate(45deg); }
 .faq-item p { padding: 0 18px 16px; color: var(--muted); font-size: 14px; }
 
+/* ====== شريط الشحن المجاني ====== */
+.ship-progress small { color: var(--accent-dark); font-weight: 600; font-size: 13px; }
+.progress-track { height: 8px; background: var(--card2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 5px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 99px; transition: width 0.4s; }
+
 /* ====== شارات الهيرو ====== */
 .hero-stats { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: #cdd5df; }
 

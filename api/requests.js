@@ -3,7 +3,7 @@
 // GET  /api/requests → القائمة (إدارة)
 // PUT  /api/requests → تغيير الحالة (إدارة) { id, status: open|sourced|done }
 import { getRequests, saveRequests, logActivity } from './_lib/db.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -11,8 +11,12 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'POST') {
       const { name, phone, car, vin, partName, notes } = req.body || {};
+      if (!rateLimit(req, res, 'requests', 5)) return;
       if (!name?.trim() || !phone?.trim() || !partName?.trim()) {
         return res.status(400).json({ error: 'الاسم ورقم الموبايل واسم القطعة مطلوبين' });
+      }
+      if (!validPhone(phone)) {
+        return res.status(400).json({ error: 'رقم الموبايل لازم يكون 11 رقم ويبدأ بـ 01' });
       }
       const requests = await getRequests();
       const request = {

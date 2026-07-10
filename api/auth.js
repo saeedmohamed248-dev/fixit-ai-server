@@ -5,7 +5,7 @@
 // GET  /api/auth?action=customers  → قائمة العملاء (إدارة)
 import { getUsers, saveUsers } from './_lib/db.js';
 import { signToken, getUser, hashPassword, checkPassword } from './_lib/auth.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
 
 const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '' });
 
@@ -14,12 +14,16 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'POST') {
+      if (!rateLimit(req, res, 'auth', 10)) return;
       const { action, name, phone, password, email } = req.body || {};
       const users = await getUsers();
 
       if (action === 'register') {
         if (!name || !phone || !password) {
           return res.status(400).json({ error: 'الاسم ورقم الموبايل وكلمة السر مطلوبين' });
+        }
+        if (!validPhone(phone)) {
+          return res.status(400).json({ error: 'رقم الموبايل لازم يكون 11 رقم ويبدأ بـ 01' });
         }
         if (password.length < 6) {
           return res.status(400).json({ error: 'كلمة السر لازم تكون 6 حروف على الأقل' });

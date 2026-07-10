@@ -34,6 +34,8 @@ const apiHandlers = {
   '/api/settings': () => import('../api/settings.js'),
   '/api/activity': () => import('../api/activity.js'),
   '/api/requests': () => import('../api/requests.js'),
+  '/api/sitemap': () => import('../api/sitemap.js'),
+  '/sitemap.xml': () => import('../api/sitemap.js'),
 };
 
 function readBody(req) {
@@ -56,6 +58,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify(obj));
   };
+  res.send = (body) => res.end(body);
 
   if (apiHandlers[url.pathname]) {
     req.query = Object.fromEntries(url.searchParams);

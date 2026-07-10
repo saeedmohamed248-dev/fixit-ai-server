@@ -5,8 +5,8 @@
 // PUT  /api/orders                          → تغيير حالة طلب (إدارة)
 import { getProducts, saveProducts, getOrders, saveOrders, logActivity } from './_lib/db.js';
 import { getUser } from './_lib/auth.js';
-import { findCoupon, calcDiscount } from './coupons.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
+import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 const PAYMENTS = ['cod', 'instapay', 'wallet'];
@@ -19,8 +19,12 @@ export default async function handler(req, res) {
       const body = req.body || {};
       const { customer, items } = body;
 
+      if (!rateLimit(req, res, 'orders', 10)) return;
       if (!customer?.name || !customer?.phone || !customer?.address) {
         return res.status(400).json({ error: 'الاسم ورقم الموبايل والعنوان مطلوبين' });
+      }
+      if (!validPhone(customer.phone)) {
+        return res.status(400).json({ error: 'رقم الموبايل لازم يكون 11 رقم ويبدأ بـ 01' });
       }
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'السلة فارغة' });
@@ -52,7 +56,10 @@ export default async function handler(req, res) {
         const coupon = await findCoupon(body.coupon);
         if (coupon) {
           discount = calcDiscount(coupon, subtotal);
-          if (discount > 0) couponCode = coupon.code;
+          if (discount > 0) {
+            couponCode = coupon.code;
+            await markCouponUsed(coupon.code);
+          }
         }
       }
 

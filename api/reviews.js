@@ -4,7 +4,7 @@
 // DELETE /api/reviews?id=r1         → حذف مراجعة (إدارة)
 import { getProducts, saveProducts, getReviews, saveReviews } from './_lib/db.js';
 import { getUser } from './_lib/auth.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { cors, requireAdmin, rateLimit } from './_lib/util.js';
 
 async function recalcRating(productId) {
   const [products, reviews] = [await getProducts(), await getReviews()];
@@ -30,6 +30,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      if (!rateLimit(req, res, 'reviews', 5)) return;
       const { productId, rating, name, comment } = req.body || {};
       const stars = Number(rating);
       if (!productId || !stars || stars < 1 || stars > 5) {

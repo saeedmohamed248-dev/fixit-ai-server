@@ -10,6 +10,28 @@ export function cors(req, res) {
   return false;
 }
 
+// حماية من السبام: حد أقصى للمحاولات لكل IP في الدقيقة
+const hits = new Map();
+export function rateLimit(req, res, key, max = 8, windowMs = 60000) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || '?';
+  const bucket = key + ':' + ip;
+  const now = Date.now();
+  const times = (hits.get(bucket) || []).filter((t) => now - t < windowMs);
+  times.push(now);
+  hits.set(bucket, times);
+  if (hits.size > 5000) hits.clear(); // تنظيف دوري
+  if (times.length > max) {
+    res.status(429).json({ error: 'محاولات كتير ورا بعض — استنى دقيقة وحاول تاني' });
+    return false;
+  }
+  return true;
+}
+
+// رقم موبايل مصري صحيح (01 + 9 أرقام)
+export function validPhone(phone) {
+  return /^01\d{9}$/.test(String(phone || '').replace(/[\s-]/g, ''));
+}
+
 // حماية عمليات الإدارة: لازم ضبط ADMIN_TOKEN في إعدادات Vercel
 export function requireAdmin(req, res) {
   if (!process.env.ADMIN_TOKEN) {

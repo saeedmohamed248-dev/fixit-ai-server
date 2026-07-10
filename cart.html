@@ -72,7 +72,11 @@
               <div class="price" style="font-size: 15px;">${money(p.price)}</div>
             </div>
             <div class="actions">
-              <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="-1">−</button>
+                <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="1">+</button>
+              </div>
               <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
             </div>
           </div>`).join('')}
@@ -85,6 +89,11 @@
           <div class="row" style="color: var(--muted); font-size: 13px;">
             <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
           </div>
+          ${SITE.freeShippingOver && !freeShip ? `
+          <div class="ship-progress">
+            <small>${t('ship_progress', { v: money(SITE.freeShippingOver - total) })}</small>
+            <div class="progress-track"><div class="progress-fill" style="width: ${Math.min(100, Math.round(total / SITE.freeShippingOver * 100))}%;"></div></div>
+          </div>` : ''}
           <div class="row total"><span>${t('total_due')}</span><span>${money(total)}</span></div>
 
           <div style="display: flex; gap: 8px;">
@@ -125,6 +134,16 @@
       });
       container.querySelectorAll('[data-remove]').forEach((btn) => {
         btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); appliedCoupon = null; render(); });
+      });
+      container.querySelectorAll('[data-step]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const c = getCart();
+          const p = products.find((x) => x.id === btn.dataset.step);
+          c[btn.dataset.step] = Math.max(1, Math.min(p.stock, (c[btn.dataset.step] || 1) + Number(btn.dataset.d)));
+          setCart(c);
+          appliedCoupon = null;
+          render();
+        });
       });
 
       document.getElementById('apply-coupon').addEventListener('click', async () => {

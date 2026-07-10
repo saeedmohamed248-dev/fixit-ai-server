@@ -17,7 +17,21 @@ export function calcDiscount(coupon, subtotal) {
 export async function findCoupon(code) {
   if (!code) return null;
   const coupons = await getCoupons();
-  return coupons.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase() && c.active) || null;
+  const coupon = coupons.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase() && c.active);
+  if (!coupon) return null;
+  // كوبون بعدد استخدامات محدود (الهدايا مرة واحدة)
+  if (coupon.maxUses > 0 && (coupon.usedCount || 0) >= coupon.maxUses) return null;
+  return coupon;
+}
+
+// تسجيل استخدام الكوبون بعد إتمام الطلب
+export async function markCouponUsed(code) {
+  const coupons = await getCoupons();
+  const coupon = coupons.find((c) => c.code === code);
+  if (coupon) {
+    coupon.usedCount = (coupon.usedCount || 0) + 1;
+    await saveCoupons(coupons);
+  }
 }
 
 export default async function handler(req, res) {
@@ -55,6 +69,8 @@ export default async function handler(req, res) {
         minTotal: Number(minTotal) || 0,
         gift: Boolean(req.body.gift),
         giftFor: req.body.giftFor || '',
+        maxUses: Number(req.body.maxUses) || (req.body.gift ? 1 : 0), // الهدية مرة واحدة افتراضياً
+        usedCount: 0,
         active: true,
         createdAt: new Date().toISOString(),
       };

@@ -190,6 +190,7 @@ function productCard(p) {
       <div class="card-badges">
         ${conditionBadge(p)}
         <span class="badge badge-brand">${esc(p.brand)}</span>
+        ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-used">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
       </div>
       <h3 class="card-title">${esc(pname(p))}</h3>
       <div class="card-models">${p.models.map((m) => esc(m)).join(' • ')}</div>
