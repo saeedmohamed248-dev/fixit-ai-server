@@ -67,7 +67,7 @@
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة' };
-    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎' };
+    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔' };
     let products = [];
     let ordersCache = [];
     let customersCache = [];
@@ -120,6 +120,7 @@
         <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
         <button data-tab="orders">📦 الطلبات</button>
         <button data-tab="requests">🔎 طلبات القطع</button>
+        <button data-tab="questions">❓ الأسئلة</button>
         <button data-tab="products">🔧 المنتجات والمخزون</button>
         <button data-tab="coupons">🎟️ خصومات وهدايا</button>
         <button data-tab="customers">👥 العملاء</button>
@@ -147,7 +148,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -248,7 +249,8 @@
             <td>${o.items.length} قطعة</td>
             <td>${PAY_AR[o.payment] || '💵'}</td>
             <td><b>${money(o.total)}</b></td>
-            <td><span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span></td>
+            <td><span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span>
+              ${o.returnRequest ? '<br><span class="status-pill st-cancelled" style="margin-top: 4px; display: inline-block;">↩️ إرجاع مطلوب</span>' : ''}</td>
           </tr>`;
         box.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
@@ -295,12 +297,37 @@
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const requests = await api('/requests', { headers: authHeaders() });
-        if (requests.length === 0) {
+        const [requests, notifyList] = await Promise.all([
+          api('/requests', { headers: authHeaders() }),
+          api('/notify', { headers: authHeaders() }).catch(() => []),
+        ]);
+        // 🔔 المستنيين توفر قطع خالصة
+        const notifyHtml = notifyList.length ? `
+        <h3 style="margin: 24px 0 10px;">🔔 مستنيين التوفر (${notifyList.length})</h3>
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 10px;">عملاء سابوا أرقامهم على قطع خالصة — أول ما توفرها كلمهم وامسحهم من القائمة</p>
+        <div class="table-wrap"><table class="table" style="min-width: auto;">
+          <tr><th>القطعة</th><th>SKU</th><th>العميل</th><th>التاريخ</th><th></th></tr>
+          ${notifyList.map((n) => `<tr>
+            <td>${esc(n.productName)}</td><td dir="ltr">${esc(n.sku)}</td>
+            <td>${esc(n.name) || '—'}<br><small dir="ltr" style="color: var(--muted);">${esc(n.phone)}</small></td>
+            <td>${new Date(n.createdAt).toLocaleDateString('ar-EG')}</td>
+            <td style="white-space: nowrap;">
+              <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(n.phone)}?text=${encodeURIComponent('أهلاً 👋 القطعة اللي كنت مستنيها "' + n.productName + '" توفرت في ' + SITE.name + '! اطلبها قبل ما تخلص')}">💬 بلّغه</a>
+              <button class="btn btn-sm btn-danger" data-ndel="${esc(n.id)}">تم ✓</button>
+            </td>
+          </tr>`).join('')}
+        </table></div>` : '';
+
+        if (requests.length === 0 && !notifyList.length) {
           box.innerHTML = '<div class="empty-state"><span class="icon">🔎</span>مفيش طلبات توفير قطع لسه — العملاء بيبعتوها من صفحة "اطلب قطعتك"</div>';
           return;
         }
-        box.innerHTML = `
+        if (requests.length === 0) {
+          box.innerHTML = notifyHtml;
+          bindNotifyDelete(box);
+          return;
+        }
+        box.innerHTML = notifyHtml + `
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">طلبات العملاء لقطع مش موجودة في المتجر — وفّرها وكسبت عميل 💪</p>
         <div class="table-wrap"><table class="table">
           <tr><th>الرقم</th><th>التاريخ</th><th>القطعة المطلوبة</th><th>العربية / الشاسيه</th><th>العميل</th><th>الحالة</th><th></th></tr>
@@ -326,6 +353,60 @@
               });
               toast('تم التحديث ✓');
             } catch (e) { toast('⚠️ ' + e.message); }
+          }));
+        bindNotifyDelete(box);
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    function bindNotifyDelete(scope) {
+      scope.querySelectorAll('[data-ndel]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          await api('/notify?id=' + b.dataset.ndel, { method: 'DELETE', headers: authHeaders() });
+          toast('تمام ✓');
+          loadRequests();
+        }));
+    }
+
+    /* ==================== ❓ الأسئلة ==================== */
+    async function loadQuestions() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const [questions, prods] = await Promise.all([
+          api('/questions', { headers: authHeaders() }),
+          api('/products'),
+        ]);
+        const pname2 = (pid) => prods.find((p) => p.id === pid)?.name || '؟';
+        box.innerHTML = questions.length ? `
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">أسئلة العملاء على المنتجات — ردك بيظهر لكل الزوار على صفحة المنتج</p>
+        ${questions.map((q) => `
+          <div class="qa-item">
+            <div class="q">❓ ${esc(q.question)}
+              <small style="color: var(--muted); font-weight: 400;">— ${esc(q.name)} • على "${esc(pname2(q.productId))}" • ${new Date(q.createdAt).toLocaleDateString('ar-EG')}</small></div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <input data-answer="${esc(q.id)}" value="${esc(q.answer)}" placeholder="اكتب ردك هنا...">
+              <button class="btn btn-sm" data-reply="${esc(q.id)}">${q.answer ? 'تعديل' : 'رد'}</button>
+              <button class="btn btn-sm btn-danger" data-qdel="${esc(q.id)}">✕</button>
+            </div>
+          </div>`).join('')}`
+        : '<div class="empty-state"><span class="icon">❓</span>مفيش أسئلة لسه</div>';
+
+        box.querySelectorAll('[data-reply]').forEach((b) =>
+          b.addEventListener('click', async () => {
+            try {
+              await api('/questions', {
+                method: 'PUT', headers: authHeaders(),
+                body: JSON.stringify({ id: b.dataset.reply, answer: box.querySelector(`[data-answer="${b.dataset.reply}"]`).value.trim() }),
+              });
+              toast('تم نشر الرد ✓');
+            } catch (e) { toast('⚠️ ' + e.message); }
+          }));
+        box.querySelectorAll('[data-qdel]').forEach((b) =>
+          b.addEventListener('click', async () => {
+            await api('/questions?id=' + b.dataset.qdel, { method: 'DELETE', headers: authHeaders() });
+            loadQuestions();
           }));
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
@@ -367,6 +448,7 @@
         </div>
       </div>
 
+      ${o.returnRequest ? `<div class="note">↩️ <b>طلب إرجاع من العميل</b> (${new Date(o.returnRequest.at).toLocaleDateString('ar-EG')}):<br>${esc(o.returnRequest.reason) || 'بدون سبب مكتوب'}</div>` : ''}
       <div class="order-card" style="margin-bottom: 14px;">
         <b>👤 ${esc(o.customer.name)}</b>
         <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">

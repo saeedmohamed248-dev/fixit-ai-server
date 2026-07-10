@@ -125,6 +125,60 @@ function toggleWishlist(id) {
 }
 function inWishlist(id) { return getWishlist().includes(id); }
 
+/* ---------- 🚗 جراج عربيتي ---------- */
+const CAR_MODELS = ['E36', 'E46', 'E60', 'E90', 'E92', 'F10', 'F20', 'F22', 'F30', 'F32', 'F36', 'G20', 'G30', 'X1', 'X3', 'X5', 'X6', 'R50', 'R55', 'R56', 'R60', 'F54', 'F55', 'F56'];
+
+function getGarage() {
+  try { return JSON.parse(localStorage.getItem('garage')) || null; }
+  catch { return null; }
+}
+function openGarageModal() {
+  let modal = document.getElementById('garage-modal');
+  if (!modal) {
+    const garage = getGarage();
+    modal = document.createElement('div');
+    modal.id = 'garage-modal';
+    modal.className = 'modal-overlay open';
+    modal.innerHTML = `
+    <div class="modal" style="max-width: 420px;">
+      <h3>${t('garage_title')}</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 14px;">${t('garage_sub')}</p>
+      <div class="form-stack">
+        <div><label>${t('garage_model')}</label>
+          <select id="g-model">${CAR_MODELS.map((m) => `<option ${garage?.model === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+        <div><label>${t('garage_year')}</label><input id="g-year" type="number" min="1990" max="2030" value="${garage?.year || ''}"></div>
+        <button class="btn" id="g-save">${t('garage_save')}</button>
+        ${garage ? `<button class="btn btn-outline btn-sm" id="g-remove">${t('garage_remove')}</button>` : ''}
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    modal.querySelector('#g-save').addEventListener('click', () => {
+      localStorage.setItem('garage', JSON.stringify({
+        model: modal.querySelector('#g-model').value,
+        year: modal.querySelector('#g-year').value.trim(),
+      }));
+      toast(t('garage_saved'));
+      modal.remove();
+      renderLayout(window._active || '');
+    });
+    modal.querySelector('#g-remove')?.addEventListener('click', () => {
+      localStorage.removeItem('garage');
+      modal.remove();
+      renderLayout(window._active || '');
+    });
+  }
+}
+// شارة التوافق مع عربية العميل على صفحة المنتج
+function compatBadge(p) {
+  const garage = getGarage();
+  if (!garage) return '';
+  const label = garage.model + (garage.year ? ' ' + garage.year : '');
+  return p.models.includes(garage.model)
+    ? `<div class="compat compat-ok">${t('compat_ok', { m: label })}</div>`
+    : `<div class="compat compat-no">${t('compat_no', { m: label })}</div>`;
+}
+
 /* ---------- شاهدتها مؤخراً ---------- */
 function pushRecent(id) {
   let list = [];
@@ -329,6 +383,7 @@ function renderLayout(active = '') {
         </div>
         <div class="header-actions">
           <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
+          <button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
             👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>

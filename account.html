@@ -78,9 +78,10 @@
         <h1>${t('welcome')} ${esc(user.name)} 👋</h1>
         <button class="btn btn-outline btn-sm" id="logout">${t('logout')}</button>
       </div>
-      <div style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
+      <div style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">
         📱 <span dir="ltr">${esc(user.phone)}</span> ${user.email ? ' &nbsp;|&nbsp; ✉️ ' + esc(user.email) : ''}
       </div>
+      <div class="note" id="points-box" style="display: none;"></div>
       <h2 style="margin-bottom: 14px;">${t('my_orders')}</h2>
       <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`;
 
@@ -89,6 +90,15 @@
         renderLayout('account');
         showAuth();
       });
+
+      // ⭐ رصيد النقاط
+      api('/auth', { headers: userHeaders() }).then((me) => {
+        const pb = document.getElementById('points-box');
+        if (pb && me.points > 0) {
+          pb.style.display = '';
+          pb.innerHTML = `${t('points_balance', { n: me.points, v: money(me.points) })}<br><small>${t('points_hint')}</small>`;
+        }
+      }).catch(() => {});
 
       const box = document.getElementById('my-orders');
       try {
@@ -101,12 +111,29 @@
             </div>
             <div style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</div>
             <div style="font-size: 14px; margin: 8px 0;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <b>${money(o.total)}</b>
-              <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
+              <span>
+                ${o.returnRequest ? `<span class="status-pill st-cancelled">${t('return_requested')}</span>` : (o.status === 'delivered' || o.status === 'shipped') ? `<button class="btn btn-outline btn-sm" data-return="${esc(o.number)}" data-phone="${esc(o.customer.phone)}">${t('return_btn')}</button>` : ''}
+                <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
+              </span>
             </div>
           </div>`).join('')
           : `<div class="empty-state"><span class="icon">📭</span>${t('no_orders')}<br><br><a class="btn" href="/shop.html">${t('start_shopping')}</a></div>`;
+        // ↩️ طلب إرجاع
+        box.querySelectorAll('[data-return]').forEach((btn) =>
+          btn.addEventListener('click', async () => {
+            const reason = prompt(t('return_reason'));
+            if (reason === null) return;
+            try {
+              await api('/orders', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'return_request', number: btn.dataset.return, phone: btn.dataset.phone, reason }),
+              });
+              toast(t('return_sent'));
+              showAccount();
+            } catch (ex) { toast('⚠️ ' + ex.message); }
+          }));
       } catch (e) {
         clearSession();
         return showAuth();

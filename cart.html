@@ -30,7 +30,17 @@
     document.title = t('title_cart');
     const container = document.getElementById('cart-container');
     let products = [];
+    let allProducts = [];
     let appliedCoupon = null; // { code, discount }
+    let usePoints = false;
+    let myPoints = 0;
+
+    // رصيد نقاط العميل المسجّل
+    if (userToken()) {
+      api('/auth', { headers: userHeaders() })
+        .then((u) => { myPoints = u.points || 0; if (myPoints) render(); })
+        .catch(() => {});
+    }
 
     async function load() {
       const cart = getCart();
@@ -41,12 +51,34 @@
         return;
       }
       try {
-        const all = await api('/products');
-        products = all.filter((p) => ids.includes(p.id));
+        allProducts = await api('/products');
+        products = allProducts.filter((p) => ids.includes(p.id));
         render();
       } catch (e) {
         container.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
       }
+    }
+
+    // 🛒 بيتشتروا مع بعض: الأكثر مبيعاً من نفس فئات قطع السلة
+    function boughtTogether(items) {
+      const cats = [...new Set(items.map((p) => p.category))];
+      const inCart = new Set(items.map((p) => p.id));
+      const suggestions = allProducts
+        .filter((p) => cats.includes(p.category) && !inCart.has(p.id) && p.stock > 0)
+        .sort((a, b) => (b.sold || 0) - (a.sold || 0))
+        .slice(0, 3);
+      if (!suggestions.length) return '';
+      return `
+      <h3 style="margin: 22px 0 12px;">${t('bought_together')}</h3>
+      ${suggestions.map((p) => `
+        <div class="cart-item">
+          <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+          <div>
+            <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+            <div class="price" style="font-size: 15px;">${money(p.price)}</div>
+          </div>
+          <button class="btn-icon add-together" data-add="${esc(p.id)}">＋</button>
+        </div>`).join('')}`;
     }
 
     function render() {
@@ -55,7 +87,8 @@
       if (items.length === 0) return load();
       const subtotal = items.reduce((s, p) => s + p.price * cart[p.id], 0);
       const discount = appliedCoupon ? appliedCoupon.discount : 0;
-      const total = subtotal - discount;
+      const pointsDiscount = usePoints ? Math.min(myPoints, subtotal - discount) : 0;
+      const total = subtotal - discount - pointsDiscount;
       const user = currentUser();
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
 
@@ -80,12 +113,14 @@
               <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
             </div>
           </div>`).join('')}
+          ${boughtTogether(items)}
         </div>
 
         <div class="summary">
           <h3>${t('order_summary')}</h3>
           <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}</b></div>
           ${discount ? `<div class="row" style="color: var(--green);"><span>${t('discount_row')} (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
+          ${pointsDiscount ? `<div class="row" style="color: var(--green);"><span>${t('points_row')} ⭐</span><b>- ${money(pointsDiscount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
             <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
           </div>
@@ -100,6 +135,11 @@
             <input id="c-coupon" placeholder="${t('coupon_ph')}" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
             <button class="btn btn-outline btn-sm" id="apply-coupon">${appliedCoupon ? t('cancel') : t('apply')}</button>
           </div>
+          ${myPoints > 0 ? `
+          <label class="pay-option" style="margin: 0;">
+            <input type="checkbox" id="use-points" ${usePoints ? 'checked' : ''}>
+            ${t('points_use', { n: myPoints, v: money(Math.min(myPoints, subtotal - discount)) })}
+          </label>` : ''}
 
           <hr style="border-color: var(--line);">
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
@@ -146,6 +186,17 @@
         });
       });
 
+      document.getElementById('use-points')?.addEventListener('change', (e) => {
+        usePoints = e.target.checked;
+        render();
+      });
+      container.querySelectorAll('[data-add]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          addToCart(btn.dataset.add, 1);
+          products = allProducts.filter((p) => Object.keys(getCart()).includes(p.id));
+          render();
+        }));
+
       document.getElementById('apply-coupon').addEventListener('click', async () => {
         if (appliedCoupon) { appliedCoupon = null; return render(); }
         const code = document.getElementById('c-coupon').value.trim();
@@ -187,6 +238,7 @@
               notes: document.getElementById('c-notes').value.trim(),
               payment: document.querySelector('input[name="pay"]:checked').value,
               coupon: appliedCoupon ? appliedCoupon.code : '',
+              usePoints: usePoints ? myPoints : 0,
               items: Object.entries(c).map(([id, qty]) => ({ id, qty })),
             }),
           });
@@ -219,6 +271,8 @@
         <p>${t('order_no')}</p>
         <div class="order-number">${esc(order.number)}</div>
         ${order.discount ? `<p style="color: var(--green); margin-top: 8px;">${t('saved', { v: money(order.discount) })}</p>` : ''}
+        ${order.pointsUsed ? `<p style="color: var(--green); margin-top: 4px;">⭐ ${t('points_row')}: -${money(order.pointsUsed)}</p>` : ''}
+        ${order.pointsEarned ? `<p style="color: var(--amber); margin-top: 4px;">${t('points_earned', { n: order.pointsEarned })}</p>` : ''}
         ${payBox}
         <p style="color: var(--muted); margin: 14px 0;">${t('contact_confirm', { p: esc(order.customer.phone) })}<br>
         ${t('track_anytime')} <a href="/track.html?number=${esc(order.number)}&phone=${esc(order.customer.phone)}" style="color: var(--accent-dark);">${t('track_page')}</a>.</p>

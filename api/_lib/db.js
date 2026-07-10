@@ -74,6 +74,14 @@ const requestsCol = makeCollection('requests');
 export const getRequests = requestsCol.get;
 export const saveRequests = requestsCol.save;
 
+const questionsCol = makeCollection('questions');
+export const getQuestions = questionsCol.get;
+export const saveQuestions = questionsCol.save;
+
+const notifyCol = makeCollection('notify');
+export const getNotify = notifyCol.get;
+export const saveNotify = notifyCol.save;
+
 const activityCol = makeCollection('activity');
 export const getActivity = activityCol.get;
 

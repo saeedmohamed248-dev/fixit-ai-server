@@ -853,6 +853,17 @@ tr.order-row:hover td { background: var(--card2); }
 .faq-item[open] summary::after { transform: rotate(45deg); }
 .faq-item p { padding: 0 18px 16px; color: var(--muted); font-size: 14px; }
 
+/* ====== جراج عربيتي + التوافق ====== */
+.garage-chip { background: var(--accent); border-color: var(--accent); }
+.compat { border-radius: 10px; padding: 9px 14px; font-size: 14px; font-weight: 600; margin: 6px 0; }
+.compat-ok { background: #ecfdf3; color: #067647; border: 1px solid #a6f4c5; }
+.compat-no { background: #fffaeb; color: #b54708; border: 1px solid #fedf89; }
+
+/* ====== أسئلة وأجوبة ====== */
+.qa-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); font-size: 14px; }
+.qa-item .q { font-weight: 700; }
+.qa-item .a { color: var(--muted); margin-top: 6px; padding-inline-start: 14px; border-inline-start: 3px solid var(--accent); }
+
 /* ====== شريط الشحن المجاني ====== */
 .ship-progress small { color: var(--accent-dark); font-weight: 600; font-size: 13px; }
 .progress-track { height: 8px; background: var(--card2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 5px; }

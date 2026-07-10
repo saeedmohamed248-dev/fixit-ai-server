@@ -270,6 +270,51 @@ const I18N = {
   faq5_a: { ar: 'أيوه! ده شغلنا الأساسي — استخدم صفحة "اطلب قطعتك" أو ابعت رقم الشاسيه واتساب، وبنوفر أغلب القطع خلال أيام من مخازننا أو بالاستيراد.', en: 'Yes! That is our specialty — use the "Request a Part" page or send your VIN on WhatsApp. We source most parts within days from our warehouses or by import.' },
 
   ship_progress: { ar: 'فاضل {v} وتوصل للشحن المجاني 🚚', en: 'Add {v} more for free shipping 🚚' },
+
+  /* ---------- جراج عربيتي ---------- */
+  garage_btn: { ar: '🚗 عربيتك؟', en: '🚗 Your car?' },
+  garage_title: { ar: 'سجل عربيتك 🚗', en: 'Add your car 🚗' },
+  garage_sub: { ar: 'سجلها مرة واحدة وهنقولك على كل قطعة: تناسب عربيتك ولا لأ', en: "Save it once and we'll tell you if each part fits your car" },
+  garage_model: { ar: 'الموديل (كود الشاسيه)', en: 'Model (chassis code)' },
+  garage_year: { ar: 'سنة الموديل (اختياري)', en: 'Model year (optional)' },
+  garage_save: { ar: 'حفظ عربيتي ✓', en: 'Save my car ✓' },
+  garage_remove: { ar: 'مسح العربية', en: 'Remove car' },
+  garage_saved: { ar: 'تمام! هنفلترلك القطع المناسبة 🚗', en: 'Done! We will match parts to your car 🚗' },
+  compat_ok: { ar: '✓ متوافقة مع عربيتك ({m})', en: '✓ Fits your car ({m})' },
+  compat_no: { ar: '⚠️ غير مؤكدة التوافق مع عربيتك ({m}) — اسألنا قبل الشراء', en: '⚠️ May not fit your {m} — ask us before buying' },
+  garage_banner: { ar: '🚗 عربيتك {m}', en: '🚗 Your car: {m}' },
+  garage_show: { ar: 'اعرض المتوافق معاها بس ←', en: 'Show matching parts only →' },
+
+  /* ---------- أسئلة وأجوبة ---------- */
+  qa_title: { ar: 'الأسئلة والأجوبة ❓', en: 'Questions & Answers ❓' },
+  qa_ask: { ar: 'اسأل عن القطعة دي', en: 'Ask about this part' },
+  qa_ph: { ar: 'مثال: دي تنفع E92 موديل 2010؟', en: 'e.g. Does this fit a 2010 E92?' },
+  qa_send: { ar: 'إرسال السؤال', en: 'Send question' },
+  qa_pending: { ar: '⏳ في انتظار رد المتجر', en: '⏳ Awaiting store reply' },
+  qa_answer: { ar: 'رد المتجر:', en: 'Store reply:' },
+  qa_none: { ar: 'مفيش أسئلة لسه — اسأل أول سؤال!', en: 'No questions yet — ask the first one!' },
+  qa_thanks: { ar: 'وصل سؤالك — هنرد عليك قريب ✓', en: 'Question received — we will reply soon ✓' },
+
+  /* ---------- نبهني لما توفر ---------- */
+  notify_title: { ar: 'نبهني لما توفر 🔔', en: 'Notify me when available 🔔' },
+  notify_btn: { ar: '🔔 نبهني', en: '🔔 Notify me' },
+  notify_done: { ar: 'تمام! هنبلغك أول ما توفر ✓', en: 'Done! We will let you know once it is back ✓' },
+
+  /* ---------- بيتشتروا مع بعض ---------- */
+  bought_together: { ar: '🛒 بيتشتروا مع بعض', en: '🛒 Frequently bought together' },
+
+  /* ---------- نقاط الولاء ---------- */
+  points_balance: { ar: '⭐ رصيدك {n} نقطة = خصم {v}', en: '⭐ You have {n} points = {v} off' },
+  points_use: { ar: 'استخدم نقاطك ({n} نقطة = خصم {v})', en: 'Use my points ({n} pts = {v} off)' },
+  points_row: { ar: 'خصم النقاط', en: 'Points discount' },
+  points_earned: { ar: 'كسبت {n} نقطة من الطلب ده ⭐', en: 'You earned {n} points on this order ⭐' },
+  points_hint: { ar: 'بتكسب 5% من قيمة كل طلب نقاط، والنقطة = 1 ج.م', en: 'Earn 5% of every order in points — 1 point = EGP 1' },
+
+  /* ---------- الإرجاع ---------- */
+  return_btn: { ar: 'طلب إرجاع ↩️', en: 'Request return ↩️' },
+  return_reason: { ar: 'اكتب سبب الإرجاع:', en: 'Reason for the return:' },
+  return_sent: { ar: 'تم إرسال طلب الإرجاع — هنتواصل معاك ✓', en: 'Return request sent — we will contact you ✓' },
+  return_requested: { ar: '↩️ إرجاع مطلوب', en: '↩️ Return requested' },
   low_left: { ar: 'باقي {n} بس!', en: 'Only {n} left!' },
 
   /* ---------- متفرقات ---------- */

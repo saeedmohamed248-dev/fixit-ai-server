@@ -3,7 +3,7 @@
 // GET  /api/orders?track=ORD-123&phone=010  → تتبع طلب (عام)
 // GET  /api/orders                          → كل الطلبات (إدارة)
 // PUT  /api/orders                          → تغيير حالة طلب (إدارة)
-import { getProducts, saveProducts, getOrders, saveOrders, logActivity } from './_lib/db.js';
+import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity } from './_lib/db.js';
 import { getUser } from './_lib/auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
@@ -17,6 +17,27 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'POST') {
       const body = req.body || {};
+
+      // ↩️ طلب إرجاع من العميل
+      if (body.action === 'return_request') {
+        if (!rateLimit(req, res, 'returns', 5)) return;
+        const orders = await getOrders();
+        const order = orders.find(
+          (o) => o.number === String(body.number || '').trim().toUpperCase() &&
+                 o.customer.phone === String(body.phone || '').trim()
+        );
+        if (!order) return res.status(404).json({ error: 'الطلب غير موجود' });
+        if (order.returnRequest) return res.status(400).json({ error: 'فيه طلب إرجاع قائم بالفعل على الطلب ده' });
+        order.returnRequest = {
+          reason: String(body.reason || '').trim().slice(0, 400),
+          at: new Date().toISOString(),
+          status: 'pending',
+        };
+        await saveOrders(orders);
+        await logActivity('order', `↩️ طلب إرجاع على ${order.number} من ${order.customer.name}: ${order.returnRequest.reason || 'بدون سبب'}`);
+        return res.status(200).json({ ok: true });
+      }
+
       const { customer, items } = body;
 
       if (!rateLimit(req, res, 'orders', 10)) return;
@@ -63,6 +84,24 @@ export default async function handler(req, res) {
         }
       }
 
+      // ⭐ نقاط الولاء: استخدام النقاط كخصم (نقطة = جنيه) + كسب 5% من قيمة الطلب
+      const session = getUser(req);
+      let pointsUsed = 0;
+      let pointsEarned = 0;
+      let users = null;
+      let user = null;
+      if (session) {
+        users = await getUsers();
+        user = users.find((u) => u.id === session.uid);
+      }
+      if (user && Number(body.usePoints) > 0) {
+        pointsUsed = Math.min(
+          Math.floor(Number(body.usePoints)),
+          user.points || 0,
+          subtotal - discount
+        );
+      }
+
       // خصم المخزون + عدّاد المبيعات
       for (const item of orderItems) {
         const product = products.find((p) => p.id === item.id);
@@ -70,8 +109,6 @@ export default async function handler(req, res) {
         product.sold = (product.sold || 0) + item.qty;
       }
       await saveProducts(products);
-
-      const session = getUser(req);
       const order = {
         id: 'o' + Date.now(),
         number: 'ORD-' + String(Date.now()).slice(-6),
@@ -90,9 +127,18 @@ export default async function handler(req, res) {
         subtotal,
         discount,
         coupon: couponCode,
-        total: subtotal - discount,
+        pointsUsed,
+        total: subtotal - discount - pointsUsed,
         source: 'website',
       };
+
+      // تحديث رصيد النقاط: خصم المستخدَم + إضافة المكتسب
+      if (user) {
+        pointsEarned = Math.floor(order.total * 0.05);
+        user.points = (user.points || 0) - pointsUsed + pointsEarned;
+        order.pointsEarned = pointsEarned;
+        await saveUsers(users);
+      }
 
       const orders = await getOrders();
       orders.unshift(order);
