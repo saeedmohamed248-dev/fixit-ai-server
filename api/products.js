@@ -3,7 +3,7 @@
 // POST   /api/products            → إضافة منتج (إدارة)
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
-import { getProducts, saveProducts } from './_lib/db.js';
+import { getProducts, saveProducts, logActivity } from './_lib/db.js';
 import { cors, requireAdmin } from './_lib/util.js';
 
 export default async function handler(req, res) {
@@ -72,6 +72,7 @@ export default async function handler(req, res) {
       };
       products.push(product);
       await saveProducts(products);
+      await logActivity('product', `🔧 إضافة منتج جديد: ${product.name} (مخزون ${product.stock})`);
       return res.status(201).json(product);
     }
 
@@ -80,12 +81,17 @@ export default async function handler(req, res) {
       const body = req.body || {};
       const index = products.findIndex((p) => p.id === body.id);
       if (index === -1) return res.status(404).json({ error: 'المنتج غير موجود' });
-      const updated = { ...products[index], ...body, id: products[index].id };
+      const before = products[index];
+      const updated = { ...before, ...body, id: before.id };
       updated.price = Number(updated.price) || 0;
       updated.oldPrice = Number(updated.oldPrice) || 0;
       updated.stock = Number(updated.stock) || 0;
+      const stockChanged = updated.stock !== before.stock;
       products[index] = updated;
       await saveProducts(products);
+      await logActivity('product', stockChanged
+        ? `📊 تعديل مخزون "${updated.name}": من ${before.stock} إلى ${updated.stock}`
+        : `✏️ تعديل بيانات المنتج: ${updated.name}`);
       return res.status(200).json(updated);
     }
 
@@ -94,8 +100,9 @@ export default async function handler(req, res) {
       const { id } = req.query;
       const index = products.findIndex((p) => p.id === id);
       if (index === -1) return res.status(404).json({ error: 'المنتج غير موجود' });
-      products.splice(index, 1);
+      const [removed] = products.splice(index, 1);
       await saveProducts(products);
+      await logActivity('product', `🗑️ حذف المنتج: ${removed.name}`);
       return res.status(200).json({ ok: true });
     }
 

@@ -6,7 +6,7 @@ const KV_URL = process.env.UPSTASH_REDIS_REST_URL;
 const KV_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 export const hasPersistence = Boolean(KV_URL && KV_TOKEN);
 
-const memory = { products: null, orders: null, users: null, reviews: null, coupons: null };
+const memory = { products: null, orders: null, users: null, reviews: null, coupons: null, activity: null, settings: null };
 
 async function kvGet(key) {
   const r = await fetch(`${KV_URL}/get/${key}`, {
@@ -69,3 +69,30 @@ export const getReviews = reviewsCol.get;
 export const saveReviews = reviewsCol.save;
 export const getCoupons = couponsCol.get;
 export const saveCoupons = couponsCol.save;
+
+const activityCol = makeCollection('activity');
+export const getActivity = activityCol.get;
+
+// سجل العمليات: كل حاجة بتحصل في المتجر بتتسجل هنا (آخر 300 عملية)
+export async function logActivity(type, message) {
+  try {
+    const list = await activityCol.get();
+    list.unshift({
+      id: 'a' + Date.now() + Math.random().toString(36).slice(2, 5),
+      at: new Date().toISOString(),
+      type,
+      message,
+    });
+    await activityCol.save(list.slice(0, 300));
+  } catch { /* السجل ميوقفش العملية الأساسية أبداً */ }
+}
+
+// إعدادات المتجر (الألوان، الاسم، الأرقام...) — بتتغير من لوحة التحكم
+export async function getSettings() {
+  if (hasPersistence) return (await kvGet('settings')) || {};
+  return memory.settings || {};
+}
+export async function saveSettings(settings) {
+  if (hasPersistence) await kvSet('settings', settings);
+  else memory.settings = settings;
+}

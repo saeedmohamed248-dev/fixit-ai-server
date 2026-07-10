@@ -3,7 +3,7 @@
 // GET  /api/orders?track=ORD-123&phone=010  → تتبع طلب (عام)
 // GET  /api/orders                          → كل الطلبات (إدارة)
 // PUT  /api/orders                          → تغيير حالة طلب (إدارة)
-import { getProducts, saveProducts, getOrders, saveOrders } from './_lib/db.js';
+import { getProducts, saveProducts, getOrders, saveOrders, logActivity } from './_lib/db.js';
 import { getUser } from './_lib/auth.js';
 import { findCoupon, calcDiscount } from './coupons.js';
 import { cors, requireAdmin } from './_lib/util.js';
@@ -91,6 +91,7 @@ export default async function handler(req, res) {
       orders.unshift(order);
       await saveOrders(orders);
 
+      await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)`);
       return res.status(201).json(order);
     }
 
@@ -132,8 +133,11 @@ export default async function handler(req, res) {
       const orders = await getOrders();
       const order = orders.find((o) => o.id === id);
       if (!order) return res.status(404).json({ error: 'الطلب غير موجود' });
+      const STATUS_AR = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
       order.status = status;
+      if (typeof req.body.adminNote === 'string') order.adminNote = req.body.adminNote;
       await saveOrders(orders);
+      await logActivity('status', `📦 الطلب ${order.number} اتغيرت حالته إلى "${STATUS_AR[status]}"`);
       return res.status(200).json(order);
     }
 

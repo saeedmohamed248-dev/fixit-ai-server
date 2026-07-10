@@ -24,6 +24,8 @@ const apiHandlers = {
   '/api/auth': () => import('../api/auth.js'),
   '/api/reviews': () => import('../api/reviews.js'),
   '/api/coupons': () => import('../api/coupons.js'),
+  '/api/settings': () => import('../api/settings.js'),
+  '/api/activity': () => import('../api/activity.js'),
 };
 
 function readBody(req) {

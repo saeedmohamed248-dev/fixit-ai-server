@@ -51,6 +51,11 @@
     </div>
   </div>
 
+  <!-- نافذة تفاصيل الطلب -->
+  <div class="modal-overlay" id="order-modal">
+    <div class="modal" id="order-modal-body"></div>
+  </div>
+
   <script src="/js/config.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
@@ -59,8 +64,18 @@
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة' };
+    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄' };
     let products = [];
+    let ordersCache = [];
+    let customersCache = [];
     let editingId = null;
+
+    // دخول سريع بالرابط: /admin.html?token=XXX
+    const _urlToken = new URLSearchParams(location.search).get('token');
+    if (_urlToken) {
+      localStorage.setItem('admin_token', _urlToken);
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
 
     function token() { return localStorage.getItem('admin_token') || ''; }
     function authHeaders() { return { Authorization: 'Bearer ' + token() }; }
@@ -74,7 +89,7 @@
         <input type="password" id="login-token" placeholder="رمز الدخول (ADMIN_TOKEN)">
         <button class="btn" style="width: 100%;" id="login-btn">دخول</button>
       </div>`;
-      document.getElementById('login-btn').addEventListener('click', async () => {
+      document.getElementById('login-btn').addEventListener('click', () => {
         localStorage.setItem('admin_token', document.getElementById('login-token').value.trim());
         init();
       });
@@ -85,22 +100,27 @@
       if (!token()) return showLogin();
       container.innerHTML = '<div class="spinner">جاري التحقق...</div>';
       try {
-        await api('/orders', { headers: authHeaders() }); // اختبار الصلاحية
+        ordersCache = await api('/orders', { headers: authHeaders() });
       } catch (e) {
         localStorage.removeItem('admin_token');
         return showLogin(e.message);
       }
       container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-        <h1>لوحة التحكم</h1>
-        <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
+        <h1>لوحة التحكم 🎛️</h1>
+        <div style="display: flex; gap: 8px;">
+          <a class="btn btn-outline btn-sm" href="/index.html" target="_blank">عرض المتجر ↗</a>
+          <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
+        </div>
       </div>
       <div class="admin-tabs">
         <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
         <button data-tab="orders">📦 الطلبات</button>
-        <button data-tab="products">🔧 المنتجات</button>
-        <button data-tab="coupons">🎟️ الكوبونات</button>
+        <button data-tab="products">🔧 المنتجات والمخزون</button>
+        <button data-tab="coupons">🎟️ خصومات وهدايا</button>
         <button data-tab="customers">👥 العملاء</button>
+        <button data-tab="activity">📝 سجل العمليات</button>
+        <button data-tab="settings">⚙️ إعدادات المتجر</button>
         <button data-tab="sync">🔄 المزامنة</button>
       </div>
       <div id="tab-content"></div>`;
@@ -115,116 +135,262 @@
           showTab(b.dataset.tab);
         });
       });
-      showTab('dashboard');
+      // فتح تاب معين من الرابط: /admin.html#orders أو #settings ...
+      const hashTab = location.hash.replace('#', '');
+      const initial = container.querySelector(`.admin-tabs [data-tab="${hashTab}"]`) ? hashTab : 'dashboard';
+      container.querySelectorAll('.admin-tabs button').forEach((x) => x.classList.toggle('active', x.dataset.tab === initial));
+      showTab(initial);
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, sync: showSync };
+      const fns = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
-    /* ---------- نظرة عامة ---------- */
+    /* ==================== 📊 نظرة عامة ==================== */
     async function loadDashboard() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const [orders, prods] = await Promise.all([
+        const [orders, prods, customers] = await Promise.all([
           api('/orders', { headers: authHeaders() }),
           api('/products'),
+          api('/auth?action=customers', { headers: authHeaders() }).catch(() => []),
         ]);
+        ordersCache = orders;
         const active = orders.filter((o) => o.status !== 'cancelled');
         const sales = active.reduce((s, o) => s + o.total, 0);
         const newOrders = orders.filter((o) => o.status === 'new').length;
         const lowStock = prods.filter((p) => p.stock <= 2);
         const topSold = [...prods].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 5).filter((p) => p.sold);
 
+        // مبيعات آخر 7 أيام
+        const days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(); d.setDate(d.getDate() - (6 - i));
+          const key = d.toISOString().slice(0, 10);
+          const total = active.filter((o) => o.createdAt.slice(0, 10) === key).reduce((s, o) => s + o.total, 0);
+          return { label: d.toLocaleDateString('ar-EG', { weekday: 'short' }), total };
+        });
+        const maxDay = Math.max(...days.map((d) => d.total), 1);
+
         box.innerHTML = `
         <div class="stats-grid">
-          <div class="stat-card"><div class="label">إجمالي المبيعات</div><div class="value">${money(sales)}</div></div>
-          <div class="stat-card"><div class="label">عدد الطلبات</div><div class="value">${orders.length}</div></div>
-          <div class="stat-card"><div class="label">طلبات جديدة تحتاج تأكيد</div><div class="value" style="color: var(--amber);">${newOrders}</div></div>
-          <div class="stat-card"><div class="label">عدد المنتجات</div><div class="value">${prods.length}</div></div>
+          <div class="stat-card"><div class="label">💰 إجمالي المبيعات</div><div class="value">${money(sales)}</div></div>
+          <div class="stat-card"><div class="label">📦 عدد الطلبات</div><div class="value">${orders.length}</div></div>
+          <div class="stat-card"><div class="label">🆕 طلبات تحتاج تأكيد</div><div class="value" style="color: var(--amber);">${newOrders}</div></div>
+          <div class="stat-card"><div class="label">👥 عملاء مسجّلين</div><div class="value">${customers.length}</div></div>
+          <div class="stat-card"><div class="label">🔧 المنتجات</div><div class="value">${prods.length}</div></div>
         </div>
+
+        <div class="order-card" style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 14px;">📈 مبيعات آخر ٧ أيام</h3>
+          <div class="chart-bars">
+            ${days.map((d) => `
+              <div class="chart-col" title="${money(d.total)}">
+                <div class="chart-val">${d.total ? money(d.total) : ''}</div>
+                <div class="chart-bar" style="height: ${Math.max(4, (d.total / maxDay) * 120)}px;"></div>
+                <small>${d.label}</small>
+              </div>`).join('')}
+          </div>
+        </div>
+
         <div class="cart-layout">
           <div>
+            <h3 style="margin-bottom: 12px;">🕐 أحدث الطلبات</h3>
+            ${orders.slice(0, 5).map((o) => `
+              <div class="order-card order-row" data-open-order="${esc(o.id)}" style="cursor: pointer;">
+                <div class="head">
+                  <b>${esc(o.number)}</b>
+                  <span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                  <span>${esc(o.customer.name)}</span><b>${money(o.total)}</b>
+                </div>
+              </div>`).join('') || '<p style="color: var(--muted);">لسه مفيش طلبات</p>'}
+          </div>
+          <div>
             <h3 style="margin-bottom: 12px;">⭐ الأكثر مبيعاً</h3>
-            ${topSold.length ? `<div class="table-wrap"><table class="table">
+            ${topSold.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
               <tr><th>المنتج</th><th>مبيعات</th><th>المخزون</th></tr>
               ${topSold.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.sold}</td><td>${p.stock}</td></tr>`).join('')}
             </table></div>` : '<p style="color: var(--muted);">لسه مفيش مبيعات كافية</p>'}
-          </div>
-          <div>
-            <h3 style="margin-bottom: 12px;">⚠️ مخزون منخفض (2 أو أقل)</h3>
+            <h3 style="margin: 18px 0 12px;">⚠️ مخزون منخفض</h3>
             ${lowStock.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
               <tr><th>المنتج</th><th>المتبقي</th></tr>
               ${lowStock.map((p) => `<tr><td>${esc(p.name)}</td><td style="color: var(--red); font-weight: 700;">${p.stock}</td></tr>`).join('')}
             </table></div>` : '<p style="color: var(--muted);">كل المخزون تمام ✓</p>'}
           </div>
         </div>`;
+        bindOrderRows(box);
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
     }
 
-    /* ---------- الطلبات ---------- */
+    /* ==================== 📦 الطلبات ==================== */
     async function loadOrders() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const orders = await api('/orders', { headers: authHeaders() });
-        if (orders.length === 0) {
+        ordersCache = await api('/orders', { headers: authHeaders() });
+        if (ordersCache.length === 0) {
           box.innerHTML = '<div class="empty-state"><span class="icon">📭</span>لا توجد طلبات بعد</div>';
           return;
         }
-        box.innerHTML = `<div class="table-wrap"><table class="table">
-          <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الموبايل</th><th>القطع</th><th>الدفع</th><th>الإجمالي</th><th>الحالة</th></tr>
-          ${orders.map((o) => `<tr>
+        box.innerHTML = `
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">💡 دوس على أي طلب لعرض التفاصيل الكاملة والفاتورة</p>
+        <div class="table-wrap"><table class="table">
+          <tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>القطع</th><th>الدفع</th><th>الإجمالي</th><th>الحالة</th></tr>
+          ${ordersCache.map((o) => `<tr class="order-row" data-open-order="${esc(o.id)}" style="cursor: pointer;">
             <td><b>${esc(o.number)}</b>${o.coupon ? `<br><small style="color: var(--green);">🎟️ ${esc(o.coupon)}</small>` : ''}</td>
             <td>${new Date(o.createdAt).toLocaleDateString('ar-EG')}</td>
-            <td>${esc(o.customer.name)}<br><small style="color: var(--muted);">${esc(o.customer.city)} — ${esc(o.customer.address)}</small></td>
-            <td dir="ltr">${esc(o.customer.phone)}</td>
-            <td>${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join('<br>')}</td>
+            <td>${esc(o.customer.name)}<br><small style="color: var(--muted);" dir="ltr">${esc(o.customer.phone)}</small></td>
+            <td>${o.items.length} قطعة</td>
             <td>${PAY_AR[o.payment] || '💵'}</td>
-            <td><b>${money(o.total)}</b>${o.discount ? `<br><small style="color: var(--green);">خصم ${money(o.discount)}</small>` : ''}</td>
-            <td><select data-order="${esc(o.id)}">
-              ${Object.entries(STATUS_AR).map(([k, v]) => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`).join('')}
-            </select></td>
+            <td><b>${money(o.total)}</b></td>
+            <td><span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span></td>
           </tr>`).join('')}
         </table></div>`;
-        box.querySelectorAll('[data-order]').forEach((sel) => {
-          sel.addEventListener('change', async () => {
-            try {
-              await api('/orders', {
-                method: 'PUT', headers: authHeaders(),
-                body: JSON.stringify({ id: sel.dataset.order, status: sel.value }),
-              });
-              toast('تم تحديث حالة الطلب ✓');
-            } catch (e) { toast('⚠️ ' + e.message); }
-          });
-        });
+        bindOrderRows(box);
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
     }
 
-    /* ---------- المنتجات ---------- */
+    function bindOrderRows(scope) {
+      scope.querySelectorAll('[data-open-order]').forEach((row) =>
+        row.addEventListener('click', () => openOrder(row.dataset.openOrder)));
+    }
+
+    function openOrder(id) {
+      const o = ordersCache.find((x) => x.id === id);
+      if (!o) return;
+      const modal = document.getElementById('order-modal');
+      const body = document.getElementById('order-modal-body');
+      body.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <h3>طلب ${esc(o.number)}</h3>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('order-modal').classList.remove('open')">✕ إغلاق</button>
+      </div>
+      <div style="color: var(--muted); font-size: 13px; margin-bottom: 14px;">
+        ${new Date(o.createdAt).toLocaleString('ar-EG')} — ${PAY_AR[o.payment] || ''}
+      </div>
+
+      <div class="table-wrap" style="margin-bottom: 14px;"><table class="table" style="min-width: auto;">
+        <tr><th>القطعة</th><th>SKU</th><th>سعر</th><th>كمية</th><th>إجمالي</th></tr>
+        ${o.items.map((i) => `<tr>
+          <td>${esc(i.name)}</td><td dir="ltr">${esc(i.sku)}</td>
+          <td>${money(i.price)}</td><td>${i.qty}</td><td><b>${money(i.price * i.qty)}</b></td>
+        </tr>`).join('')}
+      </table></div>
+
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 14px;">
+        <div style="min-width: 220px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between;"><span>الإجمالي</span><b>${money(o.subtotal ?? o.total)}</b></div>
+          ${o.discount ? `<div style="display: flex; justify-content: space-between; color: var(--green);"><span>خصم (${esc(o.coupon)})</span><b>- ${money(o.discount)}</b></div>` : ''}
+          <div style="display: flex; justify-content: space-between; font-size: 17px; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px;"><span>المطلوب</span><b style="color: var(--accent-dark);">${money(o.total)}</b></div>
+        </div>
+      </div>
+
+      <div class="order-card" style="margin-bottom: 14px;">
+        <b>👤 ${esc(o.customer.name)}</b>
+        <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">
+          📱 <span dir="ltr">${esc(o.customer.phone)}</span><br>
+          📍 ${esc(o.customer.city)} — ${esc(o.customer.address)}
+          ${o.notes ? `<br>📝 ملاحظات العميل: ${esc(o.notes)}` : ''}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label>حالة الطلب</label>
+        <select id="om-status">
+          ${Object.entries(STATUS_AR).map(([k, v]) => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label>ملاحظة داخلية (ليك إنت بس)</label>
+        <textarea id="om-note" rows="2">${esc(o.adminNote || '')}</textarea>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-sm" id="om-save">💾 حفظ التغييرات</button>
+        <a class="btn btn-green btn-sm" target="_blank" rel="noopener"
+           href="https://wa.me/2${esc(o.customer.phone.replace(/^0/, '0'))}?text=${encodeURIComponent('أهلاً ' + o.customer.name + '، بخصوص طلبك رقم ' + o.number + ' من ' + SITE.name)}">
+           💬 كلم العميل واتساب</a>
+        <button class="btn btn-outline btn-sm" id="om-print">🖨️ طباعة فاتورة</button>
+      </div>`;
+      modal.classList.add('open');
+
+      document.getElementById('om-save').addEventListener('click', async () => {
+        try {
+          const updated = await api('/orders', {
+            method: 'PUT', headers: authHeaders(),
+            body: JSON.stringify({
+              id: o.id,
+              status: document.getElementById('om-status').value,
+              adminNote: document.getElementById('om-note').value.trim(),
+            }),
+          });
+          Object.assign(o, updated);
+          toast('تم الحفظ ✓');
+          modal.classList.remove('open');
+          loadOrders();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
+
+      document.getElementById('om-print').addEventListener('click', () => printInvoice(o));
+    }
+
+    function printInvoice(o) {
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة ${o.number}</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 30px; color: #111; }
+        h1 { font-size: 22px; } .muted { color: #666; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: right; font-size: 14px; }
+        th { background: #f5f5f5; }
+        .total { font-size: 18px; font-weight: bold; text-align: left; }
+        .head { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; }
+      </style></head><body>
+      <div class="head">
+        <div><h1>🔧 ${SITE.name}</h1><div class="muted">قطع غيار BMW & MINI — ${SITE.phoneDisplay}</div></div>
+        <div style="text-align: left;"><b>فاتورة ${o.number}</b><br><span class="muted">${new Date(o.createdAt).toLocaleDateString('ar-EG')}</span></div>
+      </div>
+      <p><b>العميل:</b> ${o.customer.name} — ${o.customer.phone}<br><b>العنوان:</b> ${o.customer.city} ${o.customer.address}</p>
+      <table><tr><th>القطعة</th><th>SKU</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th></tr>
+      ${o.items.map((i) => `<tr><td>${i.name}</td><td>${i.sku}</td><td>${i.price}</td><td>${i.qty}</td><td>${i.price * i.qty}</td></tr>`).join('')}
+      </table>
+      ${o.discount ? `<p style="text-align: left;">خصم (${o.coupon}): -${o.discount} ج.م</p>` : ''}
+      <p class="total">الإجمالي المطلوب: ${o.total} ج.م — ${PAY_AR[o.payment] || ''}</p>
+      <p class="muted">شكراً لتعاملك مع ${SITE.name} 🧡</p>
+      <script>window.print();<\/script></body></html>`);
+      win.document.close();
+    }
+
+    /* ==================== 🔧 المنتجات والمخزون ==================== */
     async function loadProducts() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       products = await api('/products');
       box.innerHTML = `
-      <div style="margin-bottom: 14px;"><button class="btn btn-sm" id="add-product">+ إضافة منتج</button></div>
+      <div style="margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-sm" id="add-product">+ إضافة منتج</button>
+        <span style="color: var(--muted); font-size: 13px; align-self: center;">💡 عدّل المخزون مباشرة بأزرار + و −</span>
+      </div>
       <div class="table-wrap"><table class="table">
-        <tr><th>المنتج</th><th>SKU</th><th>الماركة</th><th>الحالة</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
+        <tr><th>المنتج</th><th>SKU</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
         ${products.map((p) => `<tr>
-          <td>${esc(p.name)}</td>
+          <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'}</small></td>
           <td dir="ltr">${esc(p.sku)}</td>
-          <td>${esc(p.brand)}</td>
-          <td>${p.condition === 'used' ? 'مستعمل' : 'جديد'}</td>
           <td>${money(p.price)}</td>
-          <td style="${p.stock <= 0 ? 'color: var(--red); font-weight: 700;' : ''}">${p.stock}</td>
+          <td style="white-space: nowrap;">
+            <button class="stock-btn" data-stock="${esc(p.id)}" data-delta="-1">−</button>
+            <b style="display: inline-block; min-width: 30px; text-align: center; ${p.stock <= 0 ? 'color: var(--red);' : p.stock <= 2 ? 'color: var(--amber);' : ''}">${p.stock}</b>
+            <button class="stock-btn" data-stock="${esc(p.id)}" data-delta="1">+</button>
+          </td>
           <td>${p.sold || 0}</td>
-          <td>${p.ratingCount ? `${p.ratingAvg} ⭐ (${p.ratingCount})` : '—'}</td>
+          <td>${p.ratingCount ? `${p.ratingAvg} ⭐` : '—'}</td>
           <td style="white-space: nowrap;">
             <button class="btn btn-sm btn-outline" data-edit="${esc(p.id)}">تعديل</button>
             <button class="btn btn-sm btn-danger" data-del="${esc(p.id)}">حذف</button>
@@ -240,6 +406,18 @@
           try {
             await api('/products?id=' + b.dataset.del, { method: 'DELETE', headers: authHeaders() });
             toast('تم الحذف');
+            loadProducts();
+          } catch (e) { toast('⚠️ ' + e.message); }
+        }));
+      box.querySelectorAll('[data-stock]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          const p = products.find((x) => x.id === b.dataset.stock);
+          const newStock = Math.max(0, p.stock + Number(b.dataset.delta));
+          try {
+            await api('/products', {
+              method: 'PUT', headers: authHeaders(),
+              body: JSON.stringify({ id: p.id, stock: newStock }),
+            });
             loadProducts();
           } catch (e) { toast('⚠️ ' + e.message); }
         }));
@@ -281,33 +459,66 @@
       } catch (e) { toast('⚠️ ' + e.message); }
     });
 
-    /* ---------- الكوبونات ---------- */
+    /* ==================== 🎟️ خصومات وهدايا ==================== */
     async function loadCoupons() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const coupons = await api('/coupons', { headers: authHeaders() });
+        const [coupons, customers] = await Promise.all([
+          api('/coupons', { headers: authHeaders() }),
+          api('/auth?action=customers', { headers: authHeaders() }).catch(() => []),
+        ]);
+        customersCache = customers;
         box.innerHTML = `
-        <div class="summary" style="max-width: 640px; margin-bottom: 20px;">
-          <h3>إنشاء كوبون جديد</h3>
-          <div class="form-grid">
-            <div><label>الكود (مثال: WELCOME10)</label><input id="cp-code" dir="ltr"></div>
-            <div><label>نوع الخصم</label>
-              <select id="cp-type"><option value="percent">نسبة %</option><option value="fixed">مبلغ ثابت</option></select></div>
-            <div><label>قيمة الخصم</label><input id="cp-value" type="number" min="1"></div>
-            <div><label>حد أدنى للطلب (اختياري)</label><input id="cp-min" type="number" min="0"></div>
+        <div class="cart-layout" style="margin-bottom: 20px;">
+          <div class="summary">
+            <h3>🎟️ كوبون خصم عام</h3>
+            <p style="color: var(--muted); font-size: 13px;">كود ينفع لأي عميل — انشره على صفحاتك</p>
+            <div class="form-grid">
+              <div><label>الكود (مثال: SALE20)</label><input id="cp-code" dir="ltr"></div>
+              <div><label>نوع الخصم</label>
+                <select id="cp-type"><option value="percent">نسبة %</option><option value="fixed">مبلغ ثابت</option></select></div>
+              <div><label>قيمة الخصم</label><input id="cp-value" type="number" min="1"></div>
+              <div><label>حد أدنى للطلب (اختياري)</label><input id="cp-min" type="number" min="0"></div>
+            </div>
+            <button class="btn btn-sm" id="cp-add">إنشاء الكوبون</button>
           </div>
-          <button class="btn btn-sm" id="cp-add">إنشاء الكوبون</button>
+
+          <div class="summary">
+            <h3>🎁 هدية لعميل معيّن</h3>
+            <p style="color: var(--muted); font-size: 13px;">كود خصم شخصي بيتبعت للعميل على واتساب</p>
+            <div><label>العميل</label>
+              <select id="g-customer">
+                <option value="">— اكتب يدوي —</option>
+                ${customers.map((c) => `<option value="${esc(c.phone)}" data-name="${esc(c.name)}">${esc(c.name)} (${esc(c.phone)})</option>`).join('')}
+              </select></div>
+            <div class="form-grid">
+              <div><label>اسم العميل</label><input id="g-name"></div>
+              <div><label>رقم الموبايل</label><input id="g-phone" dir="ltr"></div>
+              <div><label>نوع الهدية</label>
+                <select id="g-type"><option value="percent">خصم %</option><option value="fixed">مبلغ ثابت</option></select></div>
+              <div><label>القيمة</label><input id="g-value" type="number" min="1" value="10"></div>
+            </div>
+            <button class="btn btn-green btn-sm" id="g-send">🎁 إنشاء وإرسال واتساب</button>
+          </div>
         </div>
+
         ${coupons.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
-          <tr><th>الكود</th><th>الخصم</th><th>حد أدنى</th><th></th></tr>
+          <tr><th>الكود</th><th>النوع</th><th>الخصم</th><th>حد أدنى</th><th></th></tr>
           ${coupons.map((c) => `<tr>
             <td dir="ltr"><b>${esc(c.code)}</b></td>
+            <td>${c.gift ? '🎁 هدية لـ ' + esc(c.giftFor) : '🎟️ عام'}</td>
             <td>${c.type === 'percent' ? c.value + '%' : money(c.value)}</td>
             <td>${c.minTotal ? money(c.minTotal) : '—'}</td>
             <td><button class="btn btn-sm btn-danger" data-cp-del="${esc(c.code)}">حذف</button></td>
           </tr>`).join('')}
-        </table></div>` : '<p style="color: var(--muted);">مفيش كوبونات لسه — اعمل أول كوبون وانشره على صفحاتك 🎟️</p>'}`;
+        </table></div>` : '<p style="color: var(--muted);">مفيش كوبونات لسه</p>'}`;
+
+        document.getElementById('g-customer').addEventListener('change', (e) => {
+          const opt = e.target.selectedOptions[0];
+          document.getElementById('g-phone').value = e.target.value;
+          document.getElementById('g-name').value = opt.dataset.name || '';
+        });
 
         document.getElementById('cp-add').addEventListener('click', async () => {
           try {
@@ -324,6 +535,27 @@
             loadCoupons();
           } catch (e) { toast('⚠️ ' + e.message); }
         });
+
+        document.getElementById('g-send').addEventListener('click', async () => {
+          const name = document.getElementById('g-name').value.trim();
+          const phone = document.getElementById('g-phone').value.trim();
+          const type = document.getElementById('g-type').value;
+          const value = Number(document.getElementById('g-value').value);
+          if (!name || !phone || !value) return toast('⚠️ اكتب اسم العميل ورقمه وقيمة الهدية');
+          const code = 'GIFT-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+          try {
+            await api('/coupons', {
+              method: 'POST', headers: authHeaders(),
+              body: JSON.stringify({ code, type, value, minTotal: 0, gift: true, giftFor: name }),
+            });
+            const valueLabel = type === 'percent' ? value + '%' : value + ' جنيه';
+            const msg = `أهلاً ${name} 🧡\nعندك هدية من ${SITE.name}! 🎁\nكود خصم ${valueLabel} خاص بيك: ${code}\nاستخدمه في طلبك الجاي من الموقع 🚗`;
+            window.open(`https://wa.me/2${phone.replace(/^0/, '0')}?text=${encodeURIComponent(msg)}`, '_blank');
+            toast('🎁 الهدية اتعملت — كمل الإرسال في واتساب');
+            loadCoupons();
+          } catch (e) { toast('⚠️ ' + e.message); }
+        });
+
         box.querySelectorAll('[data-cp-del]').forEach((b) =>
           b.addEventListener('click', async () => {
             await api('/coupons?code=' + encodeURIComponent(b.dataset.cpDel), { method: 'DELETE', headers: authHeaders() });
@@ -335,26 +567,119 @@
       }
     }
 
-    /* ---------- العملاء ---------- */
+    /* ==================== 👥 العملاء ==================== */
     async function loadCustomers() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const customers = await api('/auth?action=customers', { headers: authHeaders() });
-        box.innerHTML = customers.length ? `<div class="table-wrap"><table class="table" style="min-width: auto;">
-          <tr><th>الاسم</th><th>الموبايل</th><th>الإيميل</th></tr>
-          ${customers.map((u) => `<tr>
+        const [customers, orders] = await Promise.all([
+          api('/auth?action=customers', { headers: authHeaders() }),
+          api('/orders', { headers: authHeaders() }),
+        ]);
+        const statsFor = (u) => {
+          const theirs = orders.filter((o) => o.userId === u.id || o.customer.phone === u.phone);
+          return { count: theirs.length, total: theirs.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0) };
+        };
+        box.innerHTML = customers.length ? `<div class="table-wrap"><table class="table">
+          <tr><th>الاسم</th><th>الموبايل</th><th>الإيميل</th><th>طلبات</th><th>إجمالي مشترياته</th><th></th></tr>
+          ${customers.map((u) => {
+            const s = statsFor(u);
+            return `<tr>
             <td>${esc(u.name)}</td>
             <td dir="ltr">${esc(u.phone)}</td>
             <td dir="ltr">${esc(u.email) || '—'}</td>
-          </tr>`).join('')}
-        </table></div>` : '<div class="empty-state"><span class="icon">👥</span>مفيش عملاء مسجّلين لسه</div>';
+            <td>${s.count}</td>
+            <td><b>${money(s.total)}</b></td>
+            <td style="white-space: nowrap;">
+              <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(u.phone)}?text=${encodeURIComponent('أهلاً ' + u.name + ' من ' + SITE.name + ' 🧡')}">💬</a>
+            </td>
+          </tr>`; }).join('')}
+        </table></div>
+        <p style="color: var(--muted); font-size: 13px; margin-top: 10px;">🎁 عشان تبعت هدية لعميل: روح لتاب "خصومات وهدايا"</p>`
+        : '<div class="empty-state"><span class="icon">👥</span>مفيش عملاء مسجّلين لسه</div>';
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
     }
 
-    /* ---------- المزامنة ---------- */
+    /* ==================== 📝 سجل العمليات ==================== */
+    async function loadActivity() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const activity = await api('/activity', { headers: authHeaders() });
+        box.innerHTML = activity.length ? `
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 14px;">كل حاجة بتحصل في المتجر بتتسجل هنا تلقائياً — آخر ٣٠٠ عملية</p>
+        ${activity.map((a) => `
+          <div class="activity-item">
+            <span class="act-icon">${ACT_ICONS[a.type] || '📌'}</span>
+            <div style="flex: 1;">
+              <div>${esc(a.message)}</div>
+              <small style="color: var(--muted);">${new Date(a.at).toLocaleString('ar-EG')}</small>
+            </div>
+          </div>`).join('')}`
+        : '<div class="empty-state"><span class="icon">📝</span>السجل فاضي لسه — أول ما يحصل أي عملية هتتسجل هنا</div>';
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ==================== ⚙️ إعدادات المتجر ==================== */
+    const PRESET_COLORS = ['#f97316', '#e11d48', '#2563eb', '#16a34a', '#9333ea', '#0891b2', '#111827'];
+    async function loadSettings() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const s = await api('/settings');
+        box.innerHTML = `
+        <div class="summary" style="max-width: 720px;">
+          <h3>⚙️ إعدادات المتجر</h3>
+          <p style="color: var(--muted); font-size: 13px;">التغييرات هنا بتنطبق على الموقع كله فوراً — من غير ما تلمس أي كود</p>
+
+          <div class="form-grid">
+            <div><label>اسم المتجر</label><input id="s-storeName" value="${esc(s.storeName || 'FixIt')}"></div>
+            <div>
+              <label>اللون الأساسي للموقع</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="color" id="s-accent" value="${esc(s.accent || '#f97316')}" style="width: 60px; height: 42px; padding: 3px;">
+                <div style="display: flex; gap: 5px;">
+                  ${PRESET_COLORS.map((c) => `<span class="swatch" data-color="${c}" style="background: ${c};"></span>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div><label>رقم الواتساب (بكود الدولة: 2010...)</label><input id="s-whatsapp" dir="ltr" value="${esc(s.whatsapp || SITE.whatsapp)}"></div>
+            <div><label>الرقم المعروض في الموقع</label><input id="s-phoneDisplay" dir="ltr" value="${esc(s.phoneDisplay || SITE.phoneDisplay)}"></div>
+            <div><label>رقم انستاباي</label><input id="s-instapay" dir="ltr" value="${esc(s.instapay || SITE.instapay)}"></div>
+            <div><label>رقم المحفظة الإلكترونية</label><input id="s-wallet" dir="ltr" value="${esc(s.wallet || SITE.wallet)}"></div>
+            <div><label>شحن مجاني فوق (ج.م) — اكتب 0 للإلغاء</label><input id="s-freeShippingOver" type="number" min="0" value="${s.freeShippingOver ?? SITE.freeShippingOver}"></div>
+            <div></div>
+            <div class="full"><label>رسالة الشريط العلوي (عربي) — سيبها فاضية للافتراضي</label><input id="s-topbarAr" value="${esc(s.topbarAr || '')}" placeholder="🚚 شحن لجميع المحافظات — مجاني فوق ٥٬٠٠٠ ج.م"></div>
+            <div class="full"><label>رسالة الشريط العلوي (إنجليزي)</label><input id="s-topbarEn" dir="ltr" value="${esc(s.topbarEn || '')}" placeholder="🚚 Delivery all over Egypt"></div>
+          </div>
+          <button class="btn" id="s-save">💾 حفظ وتطبيق على الموقع</button>
+        </div>`;
+
+        box.querySelectorAll('.swatch').forEach((sw) =>
+          sw.addEventListener('click', () => { document.getElementById('s-accent').value = sw.dataset.color; }));
+
+        document.getElementById('s-save').addEventListener('click', async () => {
+          try {
+            const body = {};
+            ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn']
+              .forEach((k) => { body[k] = document.getElementById('s-' + k).value.trim(); });
+            const saved = await api('/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+            localStorage.setItem('site_settings', JSON.stringify(saved));
+            applySettings(saved);
+            renderLayout('');
+            toast('✅ الإعدادات اتحفظت واتطبقت على الموقع');
+          } catch (e) { toast('⚠️ ' + e.message); }
+        });
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ==================== 🔄 المزامنة ==================== */
     function showSync() {
       const base = location.origin;
       document.getElementById('tab-content').innerHTML = `

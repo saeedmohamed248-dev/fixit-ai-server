@@ -1,6 +1,47 @@
 // كود مشترك بين كل الصفحات: الهيدر، الفوتر، السلة، الحساب، المفضلة، الاتصال بالـ API
 const API = '/api';
 
+/* ---------- إعدادات المتجر (من لوحة التحكم) ---------- */
+window.SETTINGS = {};
+
+// تغميق لون hex بنسبة معينة (لاشتقاق درجات اللون الأساسي)
+function shadeColor(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c) => Math.max(0, Math.min(255, Math.round(c * (1 + pct / 100))));
+  const r = f((n >> 16) & 255), g = f((n >> 8) & 255), b = f(n & 255);
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+function applySettings(s) {
+  if (!s || typeof s !== 'object') return;
+  window.SETTINGS = s;
+  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent)) {
+    const root = document.documentElement.style;
+    root.setProperty('--accent', s.accent);
+    root.setProperty('--accent-dark', shadeColor(s.accent, -14));
+    root.setProperty('--accent-deep', shadeColor(s.accent, -28));
+  }
+  if (s.storeName) SITE.name = s.storeName;
+  if (s.whatsapp) SITE.whatsapp = s.whatsapp;
+  if (s.phoneDisplay) SITE.phoneDisplay = s.phoneDisplay;
+  if (s.instapay) SITE.instapay = s.instapay;
+  if (s.wallet) SITE.wallet = s.wallet;
+  if (s.freeShippingOver !== undefined && s.freeShippingOver !== '') {
+    SITE.freeShippingOver = Number(s.freeShippingOver) || 0;
+  }
+}
+
+// نطبق نسخة متخزنة فوراً (من غير وميض)، وبعدين نحدّث من السيرفر
+try { applySettings(JSON.parse(localStorage.getItem('site_settings'))); } catch {}
+fetch(API + '/settings')
+  .then((r) => r.json())
+  .then((s) => {
+    localStorage.setItem('site_settings', JSON.stringify(s));
+    applySettings(s);
+    if (window._layoutRendered) renderLayout(window._active || '');
+  })
+  .catch(() => {});
+
 /* ---------- API ---------- */
 async function api(path, options = {}) {
   const res = await fetch(API + path, {
@@ -228,18 +269,28 @@ function initHeaderSearch() {
 /* ---------- الهيدر والفوتر ---------- */
 function siteName() { return LANG === 'en' ? SITE.name : SITE.nameAr + ' FixIt'; }
 
+function logoHtml() {
+  // لو الاسم اتغير من الإعدادات نعرضه زي ما هو، غير كده نعرض FixIt بتلوين مميز
+  if (SITE.name && SITE.name !== 'FixIt') return esc(SITE.name);
+  return 'Fix<em>It</em>';
+}
+
 function renderLayout(active = '') {
+  window._layoutRendered = true;
+  window._active = active;
   const user = currentUser();
   const otherLang = LANG === 'ar' ? 'en' : 'ar';
+  const topbarMsg = (LANG === 'en' ? SETTINGS.topbarEn : SETTINGS.topbarAr) ||
+    `${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''}`;
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar">${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a></div>
+    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo" href="/index.html">
           <span class="logo-mark">🔧</span>
-          <span class="logo-text">Fix<em>It</em><small>${t('brand_tag')}</small></span>
+          <span class="logo-text">${logoHtml()}<small>${t('brand_tag')}</small></span>
         </a>
         <div class="hdr-search-wrap">
           <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
@@ -280,7 +331,7 @@ function renderLayout(active = '') {
     <footer class="footer">
       <div class="container footer-grid">
         <div>
-          <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">Fix<em>It</em></span></div>
+          <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span></div>
           <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
           <div class="pay-badges">${t('pay_badges')}</div>
         </div>
@@ -304,7 +355,7 @@ function renderLayout(active = '') {
           <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
         </div>
       </div>
-      <div class="footer-bottom">© ${new Date().getFullYear()} FixIt — ${t('footer_rights')}</div>
+      <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — ${t('footer_rights')}</div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>`;
   }

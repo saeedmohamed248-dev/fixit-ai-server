@@ -8,7 +8,7 @@
 //       (اربط webhook "orders/create" من شوبيفاي على الرابط ده مع ?secret=)
 //
 // لازم ضبط متغير SYNC_SECRET في إعدادات Vercel قبل الاستخدام.
-import { getProducts, saveProducts } from './_lib/db.js';
+import { getProducts, saveProducts, logActivity } from './_lib/db.js';
 import { cors } from './_lib/util.js';
 
 function checkSecret(req, res) {
@@ -66,6 +66,9 @@ export default async function handler(req, res) {
       }
 
       await saveProducts(products);
+      if (updated.length) {
+        await logActivity('sync', `🔄 مزامنة خارجية: خصم مخزون ${updated.map((u) => u.sku).join('، ')}`);
+      }
       return res.status(200).json({ ok: true, updated, notFound });
     }
 

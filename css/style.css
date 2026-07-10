@@ -728,6 +728,64 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
 
 .spinner { text-align: center; color: var(--muted); padding: 50px; font-size: 15px; }
 
+/* ====== لوحة التحكم: إضافات ====== */
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  height: 170px;
+  padding-top: 20px;
+}
+.chart-col { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.chart-bar {
+  width: 70%;
+  max-width: 46px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+}
+.chart-val { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.chart-col small { color: var(--muted); font-size: 11px; }
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  box-shadow: var(--shadow);
+}
+.act-icon { font-size: 20px; }
+
+.stock-btn {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card2);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.stock-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.swatch {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid var(--line);
+  display: inline-block;
+  transition: 0.15s;
+}
+.swatch:hover { transform: scale(1.15); }
+
+.order-row:hover { background: var(--card2); }
+tr.order-row:hover td { background: var(--card2); }
+
 /* ====== موبايل ====== */
 @media (max-width: 900px) {
   .header-inner { flex-wrap: wrap; gap: 10px; }

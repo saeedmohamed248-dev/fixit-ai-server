@@ -3,7 +3,7 @@
 // GET    /api/coupons            → قائمة الكوبونات (إدارة)
 // POST   /api/coupons { code, type, value, minTotal } → إنشاء (إدارة)
 // DELETE /api/coupons?code=X     → حذف (إدارة)
-import { getCoupons, saveCoupons } from './_lib/db.js';
+import { getCoupons, saveCoupons, logActivity } from './_lib/db.js';
 import { cors, requireAdmin } from './_lib/util.js';
 
 export function calcDiscount(coupon, subtotal) {
@@ -53,19 +53,26 @@ export default async function handler(req, res) {
         type: type === 'percent' ? 'percent' : 'fixed',
         value: Number(value),
         minTotal: Number(minTotal) || 0,
+        gift: Boolean(req.body.gift),
+        giftFor: req.body.giftFor || '',
         active: true,
         createdAt: new Date().toISOString(),
       };
       coupons.push(coupon);
       await saveCoupons(coupons);
+      const valueLabel = coupon.type === 'percent' ? coupon.value + '%' : coupon.value + ' ج.م';
+      await logActivity(coupon.gift ? 'gift' : 'coupon', coupon.gift
+        ? `🎁 هدية للعميل ${coupon.giftFor}: كود ${coupon.code} بخصم ${valueLabel}`
+        : `🎟️ كوبون جديد: ${coupon.code} بخصم ${valueLabel}`);
       return res.status(201).json(coupon);
     }
 
     if (req.method === 'DELETE') {
       const index = coupons.findIndex((c) => c.code === req.query.code);
       if (index === -1) return res.status(404).json({ error: 'الكوبون غير موجود' });
-      coupons.splice(index, 1);
+      const [removed] = coupons.splice(index, 1);
       await saveCoupons(coupons);
+      await logActivity('coupon', `🗑️ حذف الكوبون: ${removed.code}`);
       return res.status(200).json({ ok: true });
     }
 
