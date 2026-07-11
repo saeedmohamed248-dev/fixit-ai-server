@@ -32,6 +32,7 @@
 | `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` | حفظ دائم للمنتجات والطلبات (مجاني من [upstash.com](https://upstash.com)) | ✅ للإنتاج |
 | `OPENAI_KEY` | تشغيل "اسأل الخبير" | اختياري |
 | `MOUSSTEC_WEBHOOK_URL` + `MOUSSTEC_SECRET` | إرسال طلبات الموقع لسيستم Mouss Tec كفواتير مسودة | عند ربط موس تك |
+| `PAYMOB_API_KEY` + `PAYMOB_INTEGRATION_ID` + `PAYMOB_IFRAME_ID` + `PAYMOB_HMAC_SECRET` | الدفع أونلاين بالبطاقة (فيزا/ماستركارد) عبر Paymob | عند تفعيل الدفع بالكارت |
 
 > ⚠️ **مهم**: من غير Upstash، البيانات بتتخزن مؤقتاً في الذاكرة وبترجع للبيانات التجريبية
 > مع كل نشر جديد. إنشاء قاعدة Upstash مجانية بياخد دقيقتين، وانسخ منها المتغيرين المذكورين.

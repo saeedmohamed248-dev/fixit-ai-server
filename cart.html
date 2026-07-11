@@ -34,6 +34,10 @@
     let appliedCoupon = null; // { code, discount }
     let usePoints = false;
     let myPoints = 0;
+    let cardEnabled = false;
+
+    // هل الدفع بالبطاقة (Paymob) مفعّل؟
+    api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
 
     // رصيد نقاط العميل المسجّل
     if (userToken()) {
@@ -153,6 +157,7 @@
             <label>${t('pay_method')}</label>
             <div class="pay-options">
               <label class="pay-option"><input type="radio" name="pay" value="cod" checked> ${t('pay_cod')}</label>
+              ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
               <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
               <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
@@ -243,6 +248,20 @@
             }),
           });
           setCart({});
+          // 💳 الدفع بالبطاقة: تحويل مباشر لصفحة Paymob الآمنة
+          if (order.payment === 'card') {
+            btn.textContent = t('pay_redirect');
+            try {
+              const pay = await api('/pay', {
+                method: 'POST',
+                body: JSON.stringify({ number: order.number, phone: order.customer.phone }),
+              });
+              location.href = pay.iframe_url;
+              return;
+            } catch (payErr) {
+              toast('⚠️ ' + payErr.message);
+            }
+          }
           showSuccess(order);
         } catch (err) {
           errBox.textContent = err.message;
@@ -254,11 +273,13 @@
 
     function showSuccess(order) {
       const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
-      const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet') }[order.payment];
+      const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[order.payment];
       const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${LANG === 'en' ? 'EGP' : 'جنيه'}`;
 
       let payBox = '';
-      if (order.payment === 'instapay') {
+      if (order.payment === 'card' && !order.paid) {
+        payBox = `<button class="btn" onclick='payCard("${esc(order.number)}", "${esc(order.customer.phone)}")'>${t('pay_now')}</button>`;
+      } else if (order.payment === 'instapay') {
         payBox = `<div class="note" style="text-align: start;">${t('pay_step_instapay', { v: money(order.total), n: esc(SITE.instapay) })}</div>`;
       } else if (order.payment === 'wallet') {
         payBox = `<div class="note" style="text-align: start;">${t('pay_step_wallet', { v: money(order.total), n: esc(SITE.wallet) })}</div>`;
@@ -281,6 +302,13 @@
         <a href="/shop.html" style="color: var(--accent-dark);">${t('back_shop')}</a>
       </div>`;
       window.scrollTo(0, 0);
+    }
+
+    async function payCard(number, phone) {
+      try {
+        const pay = await api('/pay', { method: 'POST', body: JSON.stringify({ number, phone }) });
+        location.href = pay.iframe_url;
+      } catch (e) { toast('⚠️ ' + e.message); }
     }
 
     load();

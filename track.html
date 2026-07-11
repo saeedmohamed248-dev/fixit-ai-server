@@ -62,7 +62,7 @@
           return;
         }
         const currentIndex = STEPS.findIndex((s) => s.key === o.status);
-        const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet') }[o.payment] || '';
+        const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[o.payment] || '';
         result.innerHTML = `
         <div class="order-card">
           <div class="head">
@@ -93,6 +93,9 @@
     document.getElementById('t-btn').addEventListener('click', track);
     // لو جاي من صفحة حسابي بالرابط
     const params = new URLSearchParams(location.search);
+    // راجع من صفحة الدفع
+    if (params.get('paid') === '1') toast(t('paid_ok'));
+    else if (params.get('paid') === '0') toast(t('paid_fail'));
     if (params.get('number')) {
       document.getElementById('t-number').value = params.get('number');
       document.getElementById('t-phone').value = params.get('phone') || '';

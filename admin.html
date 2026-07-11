@@ -66,7 +66,7 @@
     renderLayout('');
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
-    const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة' };
+    const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
     const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔' };
     let products = [];
     let ordersCache = [];
@@ -247,7 +247,7 @@
             <td>${new Date(o.createdAt).toLocaleDateString('ar-EG')}</td>
             <td>${esc(o.customer.name)}<br><small style="color: var(--muted);" dir="ltr">${esc(o.customer.phone)}</small></td>
             <td>${o.items.length} قطعة</td>
-            <td>${PAY_AR[o.payment] || '💵'}</td>
+            <td>${PAY_AR[o.payment] || '💵'}${o.paid ? '<br><span class="status-pill st-confirmed">✓ مدفوع</span>' : ''}</td>
             <td><b>${money(o.total)}</b></td>
             <td><span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span>
               ${o.returnRequest ? '<br><span class="status-pill st-cancelled" style="margin-top: 4px; display: inline-block;">↩️ إرجاع مطلوب</span>' : ''}</td>

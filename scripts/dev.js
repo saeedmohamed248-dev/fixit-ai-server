@@ -36,6 +36,7 @@ const apiHandlers = {
   '/api/requests': () => import('../api/requests.js'),
   '/api/questions': () => import('../api/questions.js'),
   '/api/notify': () => import('../api/notify.js'),
+  '/api/pay': () => import('../api/pay.js'),
   '/api/sitemap': () => import('../api/sitemap.js'),
   '/sitemap.xml': () => import('../api/sitemap.js'),
 };
