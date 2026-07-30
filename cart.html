@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="cart-container">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('cart');
+    document.title = t('title_cart');
+    const container = document.getElementById('cart-container');
+    let products = [];
+    let allProducts = [];
+    let appliedCoupon = null; // { code, discount }
+    let usePoints = false;
+    let myPoints = 0;
+    let cardEnabled = false;
+
+    // هل الدفع بالبطاقة (Paymob) مفعّل؟
+    api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
+
+    // رصيد نقاط العميل المسجّل
+    if (userToken()) {
+      api('/auth', { headers: userHeaders() })
+        .then((u) => { myPoints = u.points || 0; if (myPoints) render(); })
+        .catch(() => {});
+    }
+
+    async function load() {
+      const cart = getCart();
+      const ids = Object.keys(cart);
+      if (ids.length === 0) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">🛒</span>
+          ${t('cart_empty')}<br><br><a class="btn" href="/shop.html">${t('browse')}</a></div>`;
+        return;
+      }
+      try {
+        allProducts = await api('/products');
+        products = allProducts.filter((p) => ids.includes(p.id));
+        render();
+      } catch (e) {
+        container.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
+      }
+    }
+
+    // 🛒 بيتشتروا مع بعض: الأكثر مبيعاً من نفس فئات قطع السلة
+    function boughtTogether(items) {
+      const cats = [...new Set(items.map((p) => p.category))];
+      const inCart = new Set(items.map((p) => p.id));
+      const suggestions = allProducts
+        .filter((p) => cats.includes(p.category) && !inCart.has(p.id) && p.stock > 0)
+        .sort((a, b) => (b.sold || 0) - (a.sold || 0))
+        .slice(0, 3);
+      if (!suggestions.length) return '';
+      return `
+      <h3 style="margin: 22px 0 12px;">${t('bought_together')}</h3>
+      ${suggestions.map((p) => `
+        <div class="cart-item">
+          <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+          <div>
+            <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+            <div class="price" style="font-size: 15px;">${money(p.price)}</div>
+          </div>
+          <button class="btn-icon add-together" data-add="${esc(p.id)}">＋</button>
+        </div>`).join('')}`;
+    }
+
+    function render() {
+      const cart = getCart();
+      const items = products.filter((p) => cart[p.id]);
+      if (items.length === 0) return load();
+      const subtotal = items.reduce((s, p) => s + p.price * cart[p.id], 0);
+      const discount = appliedCoupon ? appliedCoupon.discount : 0;
+      const pointsDiscount = usePoints ? Math.min(myPoints, subtotal - discount) : 0;
+      const total = subtotal - discount - pointsDiscount;
+      const user = currentUser();
+      const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
+
+      container.innerHTML = `
+      <h1 style="margin-bottom: 20px;">${t('cart')} (${items.length})</h1>
+      <div class="cart-layout">
+        <div>
+          ${items.map((p) => `
+          <div class="cart-item">
+            <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+            <div>
+              <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+              <div class="sub">${conditionBadge(p)} ${esc(p.sku)}</div>
+              <div class="price" style="font-size: 15px;">${money(p.price)}</div>
+            </div>
+            <div class="actions">
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="-1">−</button>
+                <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="1">+</button>
+              </div>
+              <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
+            </div>
+          </div>`).join('')}
+          ${boughtTogether(items)}
+        </div>
+
+        <div class="summary">
+          <h3>${t('order_summary')}</h3>
+          <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}</b></div>
+          ${discount ? `<div class="row" style="color: var(--green);"><span>${t('discount_row')} (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
+          ${pointsDiscount ? `<div class="row" style="color: var(--green);"><span>${t('points_row')} ⭐</span><b>- ${money(pointsDiscount)}</b></div>` : ''}
+          <div class="row" style="color: var(--muted); font-size: 13px;">
+            <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
+          </div>
+          ${SITE.freeShippingOver && !freeShip ? `
+          <div class="ship-progress">
+            <small>${t('ship_progress', { v: money(SITE.freeShippingOver - total) })}</small>
+            <div class="progress-track"><div class="progress-fill" style="width: ${Math.min(100, Math.round(total / SITE.freeShippingOver * 100))}%;"></div></div>
+          </div>` : ''}
+          <div class="row total"><span>${t('total_due')}</span><span>${money(total)}</span></div>
+
+          <div style="display: flex; gap: 8px;">
+            <input id="c-coupon" placeholder="${t('coupon_ph')}" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
+            <button class="btn btn-outline btn-sm" id="apply-coupon">${appliedCoupon ? t('cancel') : t('apply')}</button>
+          </div>
+          ${myPoints > 0 ? `
+          <label class="pay-option" style="margin: 0;">
+            <input type="checkbox" id="use-points" ${usePoints ? 'checked' : ''}>
+            ${t('points_use', { n: myPoints, v: money(Math.min(myPoints, subtotal - discount)) })}
+          </label>` : ''}
+
+          <hr style="border-color: var(--line);">
+          ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
+          <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
+          <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
+          <div><label>${t('city')}</label><input id="c-city" placeholder="${t('city_ph')}"></div>
+          <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
+          <div><label>${t('notes')}</label><textarea id="c-notes" rows="2"></textarea></div>
+
+          <div>
+            <label>${t('pay_method')}</label>
+            <div class="pay-options">
+              <label class="pay-option"><input type="radio" name="pay" value="cod" checked> ${t('pay_cod')}</label>
+              ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
+              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
+              <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
+            </div>
+          </div>
+
+          <button class="btn" id="submit-order">${t('confirm_order')}</button>
+          <div id="order-error" style="color: var(--red); font-size: 14px;"></div>
+        </div>
+      </div>`;
+
+      container.querySelectorAll('[data-qty]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const c = getCart();
+          c[input.dataset.qty] = Math.max(1, Number(input.value) || 1);
+          setCart(c);
+          appliedCoupon = null;
+          render();
+        });
+      });
+      container.querySelectorAll('[data-remove]').forEach((btn) => {
+        btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); appliedCoupon = null; render(); });
+      });
+      container.querySelectorAll('[data-step]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const c = getCart();
+          const p = products.find((x) => x.id === btn.dataset.step);
+          c[btn.dataset.step] = Math.max(1, Math.min(p.stock, (c[btn.dataset.step] || 1) + Number(btn.dataset.d)));
+          setCart(c);
+          appliedCoupon = null;
+          render();
+        });
+      });
+
+      document.getElementById('use-points')?.addEventListener('change', (e) => {
+        usePoints = e.target.checked;
+        render();
+      });
+      container.querySelectorAll('[data-add]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          addToCart(btn.dataset.add, 1);
+          products = allProducts.filter((p) => Object.keys(getCart()).includes(p.id));
+          render();
+        }));
+
+      document.getElementById('apply-coupon').addEventListener('click', async () => {
+        if (appliedCoupon) { appliedCoupon = null; return render(); }
+        const code = document.getElementById('c-coupon').value.trim();
+        if (!code) return;
+        try {
+          const data = await api('/coupons', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'validate', code, subtotal }),
+          });
+          appliedCoupon = data;
+          toast(t('coupon_ok', { v: money(data.discount) }));
+          render();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
+
+      document.getElementById('submit-order').addEventListener('click', async (e) => {
+        const btn = e.target;
+        const errBox = document.getElementById('order-error');
+        errBox.textContent = '';
+        const customer = {
+          name: document.getElementById('c-name').value.trim(),
+          phone: document.getElementById('c-phone').value.trim(),
+          city: document.getElementById('c-city').value.trim(),
+          address: document.getElementById('c-address').value.trim(),
+        };
+        if (!customer.name || !customer.phone || !customer.address) {
+          errBox.textContent = t('fill_required');
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = t('sending');
+        try {
+          const c = getCart();
+          const order = await api('/orders', {
+            method: 'POST',
+            headers: userHeaders(),
+            body: JSON.stringify({
+              customer,
+              notes: document.getElementById('c-notes').value.trim(),
+              payment: document.querySelector('input[name="pay"]:checked').value,
+              coupon: appliedCoupon ? appliedCoupon.code : '',
+              usePoints: usePoints ? myPoints : 0,
+              items: Object.entries(c).map(([id, qty]) => ({ id, qty })),
+            }),
+          });
+          setCart({});
+          // 💳 الدفع بالبطاقة: تحويل مباشر لصفحة Paymob الآمنة
+          if (order.payment === 'card') {
+            btn.textContent = t('pay_redirect');
+            try {
+              const pay = await api('/pay', {
+                method: 'POST',
+                body: JSON.stringify({ number: order.number, phone: order.customer.phone }),
+              });
+              location.href = pay.iframe_url;
+              return;
+            } catch (payErr) {
+              toast('⚠️ ' + payErr.message);
+            }
+          }
+          showSuccess(order);
+        } catch (err) {
+          errBox.textContent = err.message;
+          btn.disabled = false;
+          btn.textContent = t('confirm_order');
+        }
+      });
+    }
+
+    function showSuccess(order) {
+      const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
+      const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[order.payment];
+      const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${LANG === 'en' ? 'EGP' : 'جنيه'}`;
+
+      let payBox = '';
+      if (order.payment === 'card' && !order.paid) {
+        payBox = `<button class="btn" onclick='payCard("${esc(order.number)}", "${esc(order.customer.phone)}")'>${t('pay_now')}</button>`;
+      } else if (order.payment === 'instapay') {
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_instapay', { v: money(order.total), n: esc(SITE.instapay) })}</div>`;
+      } else if (order.payment === 'wallet') {
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_wallet', { v: money(order.total), n: esc(SITE.wallet) })}</div>`;
+      }
+
+      container.innerHTML = `
+      <div class="success-box">
+        <span class="icon">✅</span>
+        <h2>${t('order_success')}</h2>
+        <p>${t('order_no')}</p>
+        <div class="order-number">${esc(order.number)}</div>
+        ${order.discount ? `<p style="color: var(--green); margin-top: 8px;">${t('saved', { v: money(order.discount) })}</p>` : ''}
+        ${order.pointsUsed ? `<p style="color: var(--green); margin-top: 4px;">⭐ ${t('points_row')}: -${money(order.pointsUsed)}</p>` : ''}
+        ${order.pointsEarned ? `<p style="color: var(--amber); margin-top: 4px;">${t('points_earned', { n: order.pointsEarned })}</p>` : ''}
+        ${payBox}
+        <p style="color: var(--muted); margin: 14px 0;">${t('contact_confirm', { p: esc(order.customer.phone) })}<br>
+        ${t('track_anytime')} <a href="/track.html?number=${esc(order.number)}&phone=${esc(order.customer.phone)}" style="color: var(--accent-dark);">${t('track_page')}</a>.</p>
+        <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(waText)}">${t('confirm_wa')}</a>
+        <br><br>
+        <a href="/shop.html" style="color: var(--accent-dark);">${t('back_shop')}</a>
+      </div>`;
+      window.scrollTo(0, 0);
+    }
+
+    async function payCard(number, phone) {
+      try {
+        const pay = await api('/pay', { method: 'POST', body: JSON.stringify({ number, phone }) });
+        location.href = pay.iframe_url;
+      } catch (e) { toast('⚠️ ' + e.message); }
+    }
+
+    load();
+  </script>
+</body>
+</html>

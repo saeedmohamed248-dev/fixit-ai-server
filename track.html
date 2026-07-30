@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" style="max-width: 680px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 data-i18n="track_title"></h1>
+        <p style="color: var(--muted);" data-i18n="track_sub"></p>
+      </div>
+      <div class="summary" style="margin-bottom: 24px;">
+        <div><label data-i18n="order_number"></label><input id="t-number" dir="ltr" style="text-align: start;" placeholder="ORD-123456"></div>
+        <div><label id="t-phone-label"></label><input id="t-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
+        <button class="btn" id="t-btn" data-i18n="track_btn"></button>
+        <div id="t-error" style="color: var(--red); font-size: 14px;"></div>
+      </div>
+      <div id="t-result"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('track');
+    document.title = t('title_track');
+    document.getElementById('t-phone-label').textContent = t('phone').replace(' *', '');
+
+    const STEPS = [
+      { key: 'new', label: t('tl_received'), icon: '📥' },
+      { key: 'confirmed', label: t('tl_confirmed'), icon: '✅' },
+      { key: 'shipped', label: t('tl_shipped'), icon: '🚚' },
+      { key: 'delivered', label: t('tl_delivered'), icon: '📦' },
+    ];
+
+    async function track() {
+      const number = document.getElementById('t-number').value.trim();
+      const phone = document.getElementById('t-phone').value.trim();
+      const err = document.getElementById('t-error');
+      const result = document.getElementById('t-result');
+      err.textContent = '';
+      result.innerHTML = '';
+      if (!number || !phone) { err.textContent = t('track_missing'); return; }
+      try {
+        const o = await api(`/orders?track=${encodeURIComponent(number)}&phone=${encodeURIComponent(phone)}`);
+        if (o.status === 'cancelled') {
+          result.innerHTML = `<div class="note">${t('order_cancelled', { n: esc(o.number) })}</div>`;
+          return;
+        }
+        const currentIndex = STEPS.findIndex((s) => s.key === o.status);
+        const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[o.payment] || '';
+        result.innerHTML = `
+        <div class="order-card">
+          <div class="head">
+            <b style="font-size: 18px;">${esc(o.number)}</b>
+            <span style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</span>
+          </div>
+          <div class="timeline">
+            ${STEPS.map((s, i) => `
+              <div class="tl-step ${i < currentIndex ? 'done' : ''} ${i === currentIndex ? 'current' : ''}">
+                <div class="tl-dot">${i < currentIndex ? '✓' : s.icon}</div>
+                <small>${s.label}</small>
+              </div>`).join('')}
+          </div>
+          <div style="font-size: 14px; margin-bottom: 8px;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
+          <div style="display: flex; justify-content: space-between;">
+            <b>${money(o.total)}</b>
+            <span style="color: var(--muted); font-size: 13px;">${payLabel}</span>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 14px;">
+          <a class="btn btn-green btn-sm" target="_blank" rel="noopener" href="${waLink((LANG === 'en' ? 'Question about order ' : 'استفسار عن الطلب رقم ') + o.number)}">${t('ask_order_wa')}</a>
+        </div>`;
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    }
+
+    document.getElementById('t-btn').addEventListener('click', track);
+    // لو جاي من صفحة حسابي بالرابط
+    const params = new URLSearchParams(location.search);
+    // راجع من صفحة الدفع
+    if (params.get('paid') === '1') toast(t('paid_ok'));
+    else if (params.get('paid') === '0') toast(t('paid_fail'));
+    if (params.get('number')) {
+      document.getElementById('t-number').value = params.get('number');
+      document.getElementById('t-phone').value = params.get('phone') || '';
+      if (params.get('phone')) track();
+    }
+  </script>
+</body>
+</html>

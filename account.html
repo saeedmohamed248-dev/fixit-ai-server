@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="account-container" style="max-width: 720px;">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('account');
+    document.title = t('title_account');
+    const container = document.getElementById('account-container');
+
+    function showAuth(mode = 'login') {
+      container.innerHTML = `
+      <div class="login-box" style="max-width: 440px; text-align: start;">
+        <h2 style="text-align: center;">👤 ${mode === 'login' ? t('login_title') : t('register_title')}</h2>
+        <div class="auth-tabs">
+          <button class="${mode === 'login' ? 'active' : ''}" data-mode="login">${t('tab_login')}</button>
+          <button class="${mode === 'register' ? 'active' : ''}" data-mode="register">${t('tab_register')}</button>
+        </div>
+        <div class="form-stack">
+          ${mode === 'register' ? `<div><label>${t('name_label')}</label><input id="a-name"></div>` : ''}
+          <div><label>${t('phone').replace(' *', '')}</label><input id="a-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
+          ${mode === 'register' ? `<div><label>${t('email_label')}</label><input id="a-email" type="email" dir="ltr"></div>` : ''}
+          <div><label>${t('password')}</label><input id="a-pass" type="password"></div>
+          <button class="btn" id="a-submit">${mode === 'login' ? t('btn_login') : t('btn_register')}</button>
+          <div id="a-error" style="color: var(--red); font-size: 14px;"></div>
+        </div>
+      </div>`;
+      container.querySelectorAll('[data-mode]').forEach((b) =>
+        b.addEventListener('click', () => showAuth(b.dataset.mode)));
+      document.getElementById('a-submit').addEventListener('click', async () => {
+        const err = document.getElementById('a-error');
+        err.textContent = '';
+        try {
+          const body = {
+            action: mode,
+            phone: document.getElementById('a-phone').value.trim(),
+            password: document.getElementById('a-pass').value,
+          };
+          if (mode === 'register') {
+            body.name = document.getElementById('a-name').value.trim();
+            body.email = document.getElementById('a-email').value.trim();
+          }
+          const data = await api('/auth', { method: 'POST', body: JSON.stringify(body) });
+          setSession(data.token, data.user);
+          toast((LANG === 'en' ? 'Welcome ' : 'أهلاً بيك ') + data.user.name + ' 👋');
+          showAccount();
+          renderLayout('account');
+        } catch (e) { err.textContent = e.message; }
+      });
+    }
+
+    async function showAccount() {
+      const user = currentUser();
+      container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <h1>${t('welcome')} ${esc(user.name)} 👋</h1>
+        <button class="btn btn-outline btn-sm" id="logout">${t('logout')}</button>
+      </div>
+      <div style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">
+        📱 <span dir="ltr">${esc(user.phone)}</span> ${user.email ? ' &nbsp;|&nbsp; ✉️ ' + esc(user.email) : ''}
+      </div>
+      <div class="note" id="points-box" style="display: none;"></div>
+      <h2 style="margin-bottom: 14px;">${t('my_orders')}</h2>
+      <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`;
+
+      document.getElementById('logout').addEventListener('click', () => {
+        clearSession();
+        renderLayout('account');
+        showAuth();
+      });
+
+      // ⭐ رصيد النقاط
+      api('/auth', { headers: userHeaders() }).then((me) => {
+        const pb = document.getElementById('points-box');
+        if (pb && me.points > 0) {
+          pb.style.display = '';
+          pb.innerHTML = `${t('points_balance', { n: me.points, v: money(me.points) })}<br><small>${t('points_hint')}</small>`;
+        }
+      }).catch(() => {});
+
+      const box = document.getElementById('my-orders');
+      try {
+        const orders = await api('/orders?mine=1', { headers: userHeaders() });
+        box.innerHTML = orders.length ? orders.map((o) => `
+          <div class="order-card">
+            <div class="head">
+              <b>${esc(o.number)}</b>
+              <span class="status-pill st-${esc(o.status)}">${t('st_' + o.status)}</span>
+            </div>
+            <div style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</div>
+            <div style="font-size: 14px; margin: 8px 0;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <b>${money(o.total)}</b>
+              <span>
+                ${o.returnRequest ? `<span class="status-pill st-cancelled">${t('return_requested')}</span>` : (o.status === 'delivered' || o.status === 'shipped') ? `<button class="btn btn-outline btn-sm" data-return="${esc(o.number)}" data-phone="${esc(o.customer.phone)}">${t('return_btn')}</button>` : ''}
+                <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
+              </span>
+            </div>
+          </div>`).join('')
+          : `<div class="empty-state"><span class="icon">📭</span>${t('no_orders')}<br><br><a class="btn" href="/shop.html">${t('start_shopping')}</a></div>`;
+        // ↩️ طلب إرجاع
+        box.querySelectorAll('[data-return]').forEach((btn) =>
+          btn.addEventListener('click', async () => {
+            const reason = prompt(t('return_reason'));
+            if (reason === null) return;
+            try {
+              await api('/orders', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'return_request', number: btn.dataset.return, phone: btn.dataset.phone, reason }),
+              });
+              toast(t('return_sent'));
+              showAccount();
+            } catch (ex) { toast('⚠️ ' + ex.message); }
+          }));
+      } catch (e) {
+        clearSession();
+        return showAuth();
+      }
+    }
+
+    if (currentUser() && userToken()) showAccount();
+    else showAuth();
+  </script>
+</body>
+</html>

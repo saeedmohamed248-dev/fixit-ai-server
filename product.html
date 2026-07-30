@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="product-container">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+
+    <div class="container section" id="reviews-section" style="display: none; padding-bottom: 0;">
+      <div class="section-head"><h2 data-i18n="reviews_title"></h2></div>
+      <div class="cart-layout">
+        <div id="reviews-list"></div>
+        <div class="summary">
+          <h3 data-i18n="rate_product"></h3>
+          <div class="star-input" id="star-input" data-value="0">
+            <span data-star="1">★</span><span data-star="2">★</span><span data-star="3">★</span><span data-star="4">★</span><span data-star="5">★</span>
+          </div>
+          <div><label data-i18n="your_name"></label><input id="rv-name"></div>
+          <div><label data-i18n="your_review"></label><textarea id="rv-comment" rows="3"></textarea></div>
+          <button class="btn" id="rv-submit" data-i18n="submit_review"></button>
+          <div id="rv-error" style="color: var(--red); font-size: 14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container section" id="qa-section" style="display: none; padding-bottom: 0;">
+      <div class="section-head"><h2 data-i18n="qa_title"></h2></div>
+      <div class="cart-layout">
+        <div id="qa-list"></div>
+        <div class="summary">
+          <h3 data-i18n="qa_ask"></h3>
+          <div><label data-i18n="your_name"></label><input id="qa-name"></div>
+          <div><label data-i18n="qa_ask"></label><textarea id="qa-question" rows="3" data-i18n-ph="qa_ph"></textarea></div>
+          <button class="btn" id="qa-submit" data-i18n="qa_send"></button>
+          <div id="qa-error" style="color: var(--red); font-size: 14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container section" id="related-section" style="display: none; padding-bottom: 0;">
+      <div class="section-head"><h2 data-i18n="related"></h2></div>
+      <div class="products-grid" id="related-grid"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('shop');
+    const container = document.getElementById('product-container');
+    const id = new URLSearchParams(location.search).get('id');
+    let product = null;
+
+    function galleryHtml(p) {
+      const images = [p.image, ...(p.images || [])].filter(Boolean);
+      if (images.length === 0) return `<div class="product-img-box">${productImage(p)}</div>`;
+      return `
+      <div>
+        <div class="product-img-box"><img class="card-img" id="main-img" src="${esc(images[0])}" alt="${esc(pname(p))}"></div>
+        ${images.length > 1 ? `<div class="gallery-thumbs">
+          ${images.map((src, i) => `<img src="${esc(src)}" class="${i === 0 ? 'active' : ''}" data-src="${esc(src)}" alt="">`).join('')}
+        </div>` : ''}
+      </div>`;
+    }
+
+    async function load() {
+      if (!id) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">❓</span>${t('not_found')}</div>`;
+        return;
+      }
+      try {
+        const p = product = await api('/products?id=' + encodeURIComponent(id));
+        document.title = pname(p) + ' | FixIt';
+        pushRecent(p.id);
+        const out = p.stock <= 0;
+        const wished = inWishlist(p.id);
+        container.innerHTML = `
+        <nav class="breadcrumbs">
+          <a href="/index.html">${t('nav_home')}</a><span>←</span>
+          <a href="/shop.html?category=${encodeURIComponent(p.category)}">${catName(p.category)}</a><span>←</span>
+          ${esc(pname(p))}
+        </nav>
+        <div class="product-layout">
+          ${galleryHtml(p)}
+          <div class="product-info">
+            <div class="card-badges">${conditionBadge(p)} <span class="badge badge-brand">${esc(p.brand)}</span>
+              ${(p.sold || 0) >= 5 ? `<span class="badge badge-new">${t('best_seller')}</span>` : ''}</div>
+            <h1>${esc(pname(p))}</h1>
+            ${p.ratingCount ? `<div>${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
+            <div>
+              ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
+              <span class="price">${money(p.price)}</span>
+            </div>
+            ${compatBadge(p)}
+            ${!getGarage() ? `<button class="btn btn-outline btn-sm" onclick="openGarageModal()" style="margin: 4px 0;">${t('garage_btn')} — ${t('garage_sub').split('—')[0].slice(0, 40)}...</button>` : ''}
+            <table class="meta-table">
+              <tr><td>${t('sku')}</td><td dir="ltr" style="text-align: start;">${esc(p.sku) || '—'}</td></tr>
+              <tr><td>${t('oem')}</td><td dir="ltr" style="text-align: start;">${esc(p.oem) || '—'}</td></tr>
+              <tr><td>${t('condition')}</td><td>${p.condition === 'used' ? t('used_checked') : t('cond_new')}</td></tr>
+              <tr><td>${t('fits')}</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
+              <tr><td>${t('available')}</td><td>${out ? `<span style="color: var(--red);">${t('out_stock')}</span>` : p.stock <= 2 ? `<span style="color: var(--amber);">${t('low_stock', { n: p.stock })}</span>` : p.stock + ' ' + t('pieces')}</td></tr>
+            </table>
+            <p style="color: var(--muted);">${esc(pdesc(p))}</p>
+            ${out ? `
+              <div class="summary" style="margin-top: 16px;">
+                <b>${t('notify_title')}</b>
+                <div style="display: flex; gap: 8px;">
+                  <input id="nt-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx">
+                  <button class="btn btn-sm" id="nt-btn">${t('notify_btn')}</button>
+                </div>
+                <div id="nt-msg" style="font-size: 13px;"></div>
+              </div>
+              <a class="btn btn-green" style="margin-top: 10px;" target="_blank" rel="noopener"
+                 href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('reserve_wa')}</a>
+            ` : `
+              <div class="qty-row">
+                <label style="margin: 0;">${t('qty')}</label>
+                <input type="number" id="qty" value="1" min="1" max="${p.stock}">
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn" id="add-cart">${t('add_cart')}</button>
+                <button class="btn btn-outline" id="wish-btn">${wished ? t('wish_in') : t('wish_out')}</button>
+                <a class="btn btn-green" target="_blank" rel="noopener"
+                   href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('ask_wa')}</a>
+                <button class="btn btn-outline" id="share-btn" title="${t('share')}">↗️</button>
+              </div>
+            `}
+          </div>
+        </div>`;
+
+        // معرض الصور
+        container.querySelectorAll('.gallery-thumbs img').forEach((thumb) => {
+          thumb.addEventListener('click', () => {
+            document.getElementById('main-img').src = thumb.dataset.src;
+            container.querySelectorAll('.gallery-thumbs img').forEach((tm) => tm.classList.remove('active'));
+            thumb.classList.add('active');
+          });
+        });
+
+        const addBtn = document.getElementById('add-cart');
+        if (addBtn) addBtn.addEventListener('click', () => {
+          const qty = Math.max(1, Math.min(p.stock, Number(document.getElementById('qty').value) || 1));
+          addToCart(p.id, qty);
+        });
+        const wishBtn = document.getElementById('wish-btn');
+        if (wishBtn) wishBtn.addEventListener('click', () => {
+          const nowIn = toggleWishlist(p.id);
+          wishBtn.textContent = nowIn ? t('wish_in') : t('wish_out');
+        });
+
+        // زرار المشاركة: مشاركة أصلية من الموبايل أو نسخ الرابط
+        const shareBtn = document.getElementById('share-btn');
+        if (shareBtn) shareBtn.addEventListener('click', async () => {
+          const data = { title: pname(p) + ' | ' + SITE.name, url: location.href };
+          if (navigator.share) { navigator.share(data).catch(() => {}); }
+          else {
+            await navigator.clipboard.writeText(location.href).catch(() => {});
+            toast(t('link_copied'));
+          }
+        });
+
+        // بيانات SEO للمنتج (Google Rich Results)
+        const ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.textContent = JSON.stringify({
+          '@context': 'https://schema.org', '@type': 'Product',
+          name: pname(p), sku: p.sku, mpn: p.oem, brand: { '@type': 'Brand', name: p.brand },
+          description: pdesc(p),
+          ...(firstImage(p) ? { image: firstImage(p) } : {}),
+          offers: {
+            '@type': 'Offer', priceCurrency: 'EGP', price: p.price,
+            availability: p.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            itemCondition: p.condition === 'used' ? 'https://schema.org/UsedCondition' : 'https://schema.org/NewCondition',
+          },
+          ...(p.ratingCount ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: p.ratingAvg, reviewCount: p.ratingCount } } : {}),
+        });
+        document.head.appendChild(ld);
+
+        // 🔔 نبهني لما توفر
+        const ntBtn = document.getElementById('nt-btn');
+        if (ntBtn) ntBtn.addEventListener('click', async () => {
+          const msg = document.getElementById('nt-msg');
+          try {
+            await api('/notify', {
+              method: 'POST',
+              body: JSON.stringify({ productId: id, phone: document.getElementById('nt-phone').value.trim(), name: currentUser()?.name || '' }),
+            });
+            msg.style.color = 'var(--green)';
+            msg.textContent = t('notify_done');
+          } catch (ex) {
+            msg.style.color = 'var(--red)';
+            msg.textContent = ex.message;
+          }
+        });
+
+        loadReviews();
+        loadQA();
+
+        // منتجات مشابهة من نفس الفئة
+        const related = (await api('/products?category=' + encodeURIComponent(p.category)))
+          .filter((r) => r.id !== p.id).slice(0, 4);
+        if (related.length) {
+          document.getElementById('related-section').style.display = '';
+          document.getElementById('related-grid').innerHTML = related.map(productCard).join('');
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span>${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ---------- المراجعات ---------- */
+    async function loadReviews() {
+      document.getElementById('reviews-section').style.display = '';
+      const list = document.getElementById('reviews-list');
+      try {
+        const reviews = await api('/reviews?productId=' + encodeURIComponent(id));
+        const avg = product.ratingAvg || 0;
+        list.innerHTML = (reviews.length ? `
+          <div class="rating-summary">
+            <span class="big">${avg}</span>
+            <div>${starsHtml(avg, reviews.length)}<br><small style="color: var(--muted);">${t('based_on', { n: reviews.length })}</small></div>
+          </div>` : `<p style="color: var(--muted); margin-bottom: 14px;">${t('no_reviews')}</p>`)
+          + reviews.map((r) => `
+          <div class="review-item">
+            <div class="review-head">
+              <b>${esc(r.name)}</b>
+              ${r.verified ? `<span class="verified-badge">${t('verified')}</span>` : ''}
+              <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+              <span class="review-date">${new Date(r.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG')}</span>
+            </div>
+            ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
+          </div>`).join('');
+      } catch {
+        list.innerHTML = '';
+      }
+    }
+
+    /* ---------- الأسئلة والأجوبة ---------- */
+    async function loadQA() {
+      document.getElementById('qa-section').style.display = '';
+      applyI18n();
+      const list = document.getElementById('qa-list');
+      try {
+        const questions = await api('/questions?productId=' + encodeURIComponent(id));
+        list.innerHTML = questions.length ? questions.map((q) => `
+          <div class="qa-item">
+            <div class="q">س: ${esc(q.question)} <small style="color: var(--muted); font-weight: 400;">— ${esc(q.name)}</small></div>
+            ${q.answer
+              ? `<div class="a"><b>${t('qa_answer')}</b> ${esc(q.answer)}</div>`
+              : `<div class="a" style="border-color: var(--amber);">${t('qa_pending')}</div>`}
+          </div>`).join('')
+          : `<p style="color: var(--muted);">${t('qa_none')}</p>`;
+      } catch { list.innerHTML = ''; }
+    }
+    if (currentUser()) document.getElementById('qa-name').value = currentUser().name;
+    document.getElementById('qa-submit').addEventListener('click', async () => {
+      const err = document.getElementById('qa-error');
+      err.textContent = '';
+      try {
+        await api('/questions', {
+          method: 'POST',
+          body: JSON.stringify({
+            productId: id,
+            name: document.getElementById('qa-name').value.trim(),
+            question: document.getElementById('qa-question').value.trim(),
+          }),
+        });
+        toast(t('qa_thanks'));
+        document.getElementById('qa-question').value = '';
+        loadQA();
+      } catch (ex) { err.textContent = ex.message; }
+    });
+
+    // نجوم الإدخال
+    const starInput = document.getElementById('star-input');
+    starInput.querySelectorAll('span').forEach((s) => {
+      s.addEventListener('click', () => {
+        const val = Number(s.dataset.star);
+        starInput.dataset.value = val;
+        starInput.querySelectorAll('span').forEach((x) =>
+          x.classList.toggle('lit', Number(x.dataset.star) <= val));
+      });
+    });
+    // لو العميل مسجّل، حط اسمه تلقائياً
+    if (currentUser()) document.getElementById('rv-name').value = currentUser().name;
+
+    document.getElementById('rv-submit').addEventListener('click', async () => {
+      const err = document.getElementById('rv-error');
+      err.textContent = '';
+      try {
+        await api('/reviews', {
+          method: 'POST',
+          headers: userHeaders(),
+          body: JSON.stringify({
+            productId: id,
+            rating: Number(starInput.dataset.value),
+            name: document.getElementById('rv-name').value.trim(),
+            comment: document.getElementById('rv-comment').value.trim(),
+          }),
+        });
+        toast(t('review_thanks'));
+        document.getElementById('rv-comment').value = '';
+        starInput.dataset.value = 0;
+        starInput.querySelectorAll('span').forEach((x) => x.classList.remove('lit'));
+        product = await api('/products?id=' + encodeURIComponent(id));
+        loadReviews();
+      } catch (e) { err.textContent = e.message; }
+    });
+
+    load();
+  </script>
+</body>
+</html>

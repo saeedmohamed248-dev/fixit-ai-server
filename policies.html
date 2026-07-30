@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" style="max-width: 800px;">
+      <h1 style="margin-bottom: 24px;" data-i18n="pol_title"></h1>
+
+      <div class="feature" style="margin-bottom: 14px;"><span class="icon">🚚</span><div>
+        <h3 data-i18n="pol1_t"></h3>
+        <p data-i18n="pol1_d"></p>
+      </div></div>
+
+      <div class="feature" style="margin-bottom: 14px;"><span class="icon">↩️</span><div>
+        <h3 data-i18n="pol2_t"></h3>
+        <p data-i18n="pol2_d"></p>
+      </div></div>
+
+      <div class="feature" style="margin-bottom: 14px;"><span class="icon">🛡️</span><div>
+        <h3 data-i18n="pol3_t"></h3>
+        <p data-i18n="pol3_d"></p>
+      </div></div>
+
+      <div class="feature" style="margin-bottom: 14px;"><span class="icon">💳</span><div>
+        <h3 data-i18n="pol4_t"></h3>
+        <p data-i18n="pol4_d"></p>
+      </div></div>
+
+      <div class="feature"><span class="icon">🔧</span><div>
+        <h3 data-i18n="pol5_t"></h3>
+        <p data-i18n="pol5_d"></p>
+      </div></div>
+
+      <h2 style="margin: 34px 0 16px;" data-i18n="faq_title"></h2>
+      <details class="faq-item"><summary data-i18n="faq1_q"></summary><p data-i18n="faq1_a"></p></details>
+      <details class="faq-item"><summary data-i18n="faq2_q"></summary><p data-i18n="faq2_a"></p></details>
+      <details class="faq-item"><summary data-i18n="faq3_q"></summary><p data-i18n="faq3_a"></p></details>
+      <details class="faq-item"><summary data-i18n="faq4_q"></summary><p data-i18n="faq4_a"></p></details>
+      <details class="faq-item"><summary data-i18n="faq5_q"></summary><p data-i18n="faq5_a"></p></details>
+
+      <div style="text-align: center; margin-top: 28px;">
+        <a class="btn btn-green" id="pol-wa" target="_blank" rel="noopener" data-i18n="pol_wa"></a>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('');
+    document.title = t('title_policies');
+    document.getElementById('pol-wa').href = waLink(t('wa_greeting'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المتجر | FixIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container">
+      <div class="shop-layout">
+        <!-- الفلاتر -->
+        <aside class="filters">
+          <h3 data-i18n="filters"></h3>
+          <div>
+            <label data-i18n="f_search"></label>
+            <input type="search" id="f-q" data-i18n-ph="f_search_ph">
+          </div>
+          <div>
+            <label data-i18n="f_brand"></label>
+            <select id="f-brand">
+              <option value="" data-i18n="all"></option>
+              <option value="BMW">BMW</option>
+              <option value="MINI">MINI Cooper</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="f_model"></label>
+            <select id="f-model"><option value="" data-i18n="all"></option></select>
+          </div>
+          <div>
+            <label data-i18n="f_cat"></label>
+            <select id="f-category"><option value="" data-i18n="all"></option></select>
+          </div>
+          <div>
+            <label data-i18n="f_cond"></label>
+            <select id="f-condition">
+              <option value="" data-i18n="all"></option>
+              <option value="new" data-i18n="cond_new"></option>
+              <option value="used" data-i18n="cond_used"></option>
+            </select>
+          </div>
+          <button class="btn btn-outline btn-sm" id="f-reset" data-i18n="clear_filters"></button>
+        </aside>
+
+        <!-- النتائج -->
+        <div>
+          <div class="shop-toolbar">
+            <span class="count" id="results-count"></span>
+            <select id="f-sort">
+              <option value="" data-i18n="sort_new"></option>
+              <option value="best" data-i18n="sort_best"></option>
+              <option value="rating" data-i18n="sort_rating"></option>
+              <option value="price_asc" data-i18n="sort_asc"></option>
+              <option value="price_desc" data-i18n="sort_desc"></option>
+            </select>
+          </div>
+          <div class="products-grid" id="products-grid"></div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('shop');
+    document.title = t('title_shop');
+
+    const grid = document.getElementById('products-grid');
+    const fields = ['q', 'brand', 'model', 'category', 'condition', 'sort'];
+
+    // تعبئة الفلاتر من رابط الصفحة
+    const params = new URLSearchParams(location.search);
+    fields.forEach((f) => {
+      const el = document.getElementById('f-' + f);
+      if (params.get(f)) el.value = params.get(f);
+    });
+
+    const PER_PAGE = 12;
+    let currentPage = 1;
+    let lastResults = [];
+
+    function renderPage() {
+      const pages = Math.max(1, Math.ceil(lastResults.length / PER_PAGE));
+      currentPage = Math.min(currentPage, pages);
+      const slice = lastResults.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+      const currentQ = document.getElementById('f-q').value.trim();
+      grid.innerHTML = slice.map(productCard).join('') ||
+        `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a>
+        <br><br><a class="btn" href="/request.html?q=${encodeURIComponent(currentQ)}">${t('req_link')} 🔎</a></div>`;
+      const pag = document.getElementById('pagination');
+      pag.innerHTML = pages > 1
+        ? Array.from({ length: pages }, (_, i) =>
+            `<button class="${i + 1 === currentPage ? 'active' : ''}" data-page="${i + 1}">${i + 1}</button>`).join('')
+        : '';
+      pag.querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          currentPage = Number(b.dataset.page);
+          renderPage();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }));
+    }
+
+    async function load() {
+      grid.innerHTML = skeletonCards(9);
+      const qs = new URLSearchParams();
+      fields.forEach((f) => {
+        const v = document.getElementById('f-' + f).value.trim();
+        if (v) qs.set(f, v);
+      });
+      history.replaceState(null, '', qs.toString() ? '?' + qs : location.pathname);
+      try {
+        lastResults = await api('/products?' + qs);
+        currentPage = 1;
+        document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
+        renderPage();
+      } catch (e) {
+        grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
+      }
+    }
+
+    // قوائم الموديلات والفئات من البيانات نفسها
+    api('/products').then((products) => {
+      const models = [...new Set(products.flatMap((p) => p.models))].sort();
+      const cats = [...new Set(products.map((p) => p.category))];
+      const mSel = document.getElementById('f-model');
+      const cSel = document.getElementById('f-category');
+      mSel.innerHTML += models.map((m) => `<option>${esc(m)}</option>`).join('');
+      cSel.innerHTML += cats.map((c) => `<option value="${esc(c)}">${catName(c)}</option>`).join('');
+      if (params.get('model')) mSel.value = params.get('model');
+      if (params.get('category')) cSel.value = params.get('category');
+      load();
+    });
+
+    fields.forEach((f) => {
+      const el = document.getElementById('f-' + f);
+      el.addEventListener(f === 'q' ? 'input' : 'change', () => {
+        clearTimeout(window._ft);
+        window._ft = setTimeout(load, f === 'q' ? 400 : 0);
+      });
+    });
+    document.getElementById('f-reset').addEventListener('click', () => {
+      fields.forEach((f) => (document.getElementById('f-' + f).value = ''));
+      load();
+    });
+  </script>
+</body>
+</html>

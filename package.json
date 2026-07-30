@@ -1,0 +1,10 @@
+{
+  "name": "fixit-parts-store",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "متجر قطع غيار BMW & MINI - استيراد جديد ومستعمل",
+  "scripts": {
+    "dev": "node scripts/dev.js"
+  }
+}

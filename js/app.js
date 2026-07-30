@@ -1,0 +1,459 @@
+// كود مشترك بين كل الصفحات: الهيدر، الفوتر، السلة، الحساب، المفضلة، الاتصال بالـ API
+const API = '/api';
+
+/* ---------- إعدادات المتجر (من لوحة التحكم) ---------- */
+window.SETTINGS = {};
+
+// تغميق لون hex بنسبة معينة (لاشتقاق درجات اللون الأساسي)
+function shadeColor(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c) => Math.max(0, Math.min(255, Math.round(c * (1 + pct / 100))));
+  const r = f((n >> 16) & 255), g = f((n >> 8) & 255), b = f(n & 255);
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+function applySettings(s) {
+  if (!s || typeof s !== 'object') return;
+  window.SETTINGS = s;
+  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent)) {
+    const root = document.documentElement.style;
+    root.setProperty('--accent', s.accent);
+    root.setProperty('--accent-dark', shadeColor(s.accent, -14));
+    root.setProperty('--accent-deep', shadeColor(s.accent, -28));
+  }
+  if (s.storeName) SITE.name = s.storeName;
+  if (s.whatsapp) SITE.whatsapp = s.whatsapp;
+  if (s.phoneDisplay) SITE.phoneDisplay = s.phoneDisplay;
+  if (s.instapay) SITE.instapay = s.instapay;
+  if (s.wallet) SITE.wallet = s.wallet;
+  if (s.freeShippingOver !== undefined && s.freeShippingOver !== '') {
+    SITE.freeShippingOver = Number(s.freeShippingOver) || 0;
+  }
+}
+
+// نطبق نسخة متخزنة فوراً (من غير وميض)، وبعدين نحدّث من السيرفر
+try { applySettings(JSON.parse(localStorage.getItem('site_settings'))); } catch {}
+fetch(API + '/settings')
+  .then((r) => r.json())
+  .then((s) => {
+    localStorage.setItem('site_settings', JSON.stringify(s));
+    applySettings(s);
+    if (window._layoutRendered) renderLayout(window._active || '');
+  })
+  .catch(() => {});
+
+/* ---------- API ---------- */
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || (LANG === 'en' ? 'Something went wrong, try again' : 'حصل خطأ، حاول تاني'));
+  return data;
+}
+
+/* ---------- حساب العميل ---------- */
+function currentUser() {
+  try { return JSON.parse(localStorage.getItem('user')) || null; }
+  catch { return null; }
+}
+function userToken() { return localStorage.getItem('user_token') || ''; }
+function setSession(token, user) {
+  localStorage.setItem('user_token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+}
+function clearSession() {
+  localStorage.removeItem('user_token');
+  localStorage.removeItem('user');
+}
+function userHeaders() {
+  return userToken() ? { Authorization: 'Bearer ' + userToken() } : {};
+}
+
+/* ---------- السلة (localStorage) ---------- */
+function getCart() {
+  try { return JSON.parse(localStorage.getItem('cart')) || {}; }
+  catch { return {}; }
+}
+function setCart(cart) {
+  localStorage.setItem('cart', JSON.stringify(cart));
+  updateCartBadge();
+}
+function addToCart(id, qty = 1) {
+  const cart = getCart();
+  cart[id] = (cart[id] || 0) + qty;
+  setCart(cart);
+  toast(t('toast_added'));
+}
+function removeFromCart(id) {
+  const cart = getCart();
+  delete cart[id];
+  setCart(cart);
+}
+function cartCount() {
+  return Object.values(getCart()).reduce((a, b) => a + b, 0);
+}
+function updateCartBadge() {
+  const badge = document.querySelector('.cart-badge');
+  if (badge) {
+    const n = cartCount();
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'grid' : 'none';
+  }
+  const wBadge = document.querySelector('.wish-badge');
+  if (wBadge) {
+    const n = getWishlist().length;
+    wBadge.textContent = n;
+    wBadge.style.display = n > 0 ? 'grid' : 'none';
+  }
+}
+
+/* ---------- المفضلة ---------- */
+function getWishlist() {
+  try { return JSON.parse(localStorage.getItem('wishlist')) || []; }
+  catch { return []; }
+}
+function toggleWishlist(id) {
+  let list = getWishlist();
+  const has = list.includes(id);
+  list = has ? list.filter((x) => x !== id) : [...list, id];
+  localStorage.setItem('wishlist', JSON.stringify(list));
+  updateCartBadge();
+  toast(has ? t('wish_removed') : t('wish_added'));
+  return !has;
+}
+function inWishlist(id) { return getWishlist().includes(id); }
+
+/* ---------- 🚗 جراج عربيتي ---------- */
+const CAR_MODELS = ['E36', 'E46', 'E60', 'E90', 'E92', 'F10', 'F20', 'F22', 'F30', 'F32', 'F36', 'G20', 'G30', 'X1', 'X3', 'X5', 'X6', 'R50', 'R55', 'R56', 'R60', 'F54', 'F55', 'F56'];
+
+function getGarage() {
+  try { return JSON.parse(localStorage.getItem('garage')) || null; }
+  catch { return null; }
+}
+function openGarageModal() {
+  let modal = document.getElementById('garage-modal');
+  if (!modal) {
+    const garage = getGarage();
+    modal = document.createElement('div');
+    modal.id = 'garage-modal';
+    modal.className = 'modal-overlay open';
+    modal.innerHTML = `
+    <div class="modal" style="max-width: 420px;">
+      <h3>${t('garage_title')}</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 14px;">${t('garage_sub')}</p>
+      <div class="form-stack">
+        <div><label>${t('garage_model')}</label>
+          <select id="g-model">${CAR_MODELS.map((m) => `<option ${garage?.model === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+        <div><label>${t('garage_year')}</label><input id="g-year" type="number" min="1990" max="2030" value="${garage?.year || ''}"></div>
+        <button class="btn" id="g-save">${t('garage_save')}</button>
+        ${garage ? `<button class="btn btn-outline btn-sm" id="g-remove">${t('garage_remove')}</button>` : ''}
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    modal.querySelector('#g-save').addEventListener('click', () => {
+      localStorage.setItem('garage', JSON.stringify({
+        model: modal.querySelector('#g-model').value,
+        year: modal.querySelector('#g-year').value.trim(),
+      }));
+      toast(t('garage_saved'));
+      modal.remove();
+      renderLayout(window._active || '');
+    });
+    modal.querySelector('#g-remove')?.addEventListener('click', () => {
+      localStorage.removeItem('garage');
+      modal.remove();
+      renderLayout(window._active || '');
+    });
+  }
+}
+// شارة التوافق مع عربية العميل على صفحة المنتج
+function compatBadge(p) {
+  const garage = getGarage();
+  if (!garage) return '';
+  const label = garage.model + (garage.year ? ' ' + garage.year : '');
+  return p.models.includes(garage.model)
+    ? `<div class="compat compat-ok">${t('compat_ok', { m: label })}</div>`
+    : `<div class="compat compat-no">${t('compat_no', { m: label })}</div>`;
+}
+
+/* ---------- شاهدتها مؤخراً ---------- */
+function pushRecent(id) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('recent')) || []; } catch {}
+  list = [id, ...list.filter((x) => x !== id)].slice(0, 8);
+  localStorage.setItem('recent', JSON.stringify(list));
+}
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem('recent')) || []; }
+  catch { return []; }
+}
+
+/* ---------- أدوات عرض ---------- */
+function money(n) {
+  if (LANG === 'en') return SITE.currencyEn + ' ' + new Intl.NumberFormat('en-EG').format(n);
+  return new Intl.NumberFormat('ar-EG').format(n) + ' ' + SITE.currency;
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// اسم المنتج ووصفه باللغة الحالية
+function pname(p) { return LANG === 'en' && p.nameEn ? p.nameEn : p.name; }
+function pdesc(p) { return LANG === 'en' && p.descriptionEn ? p.descriptionEn : p.description; }
+
+const CATEGORY_ICONS = {
+  'فرامل': '🛑', 'فلاتر وصيانة': '🛢️', 'عفشة وتعليق': '🔩',
+  'كهرباء وإشعال': '⚡', 'تبريد': '❄️', 'وقود': '⛽', 'هيكل وإكسسوارات': '🚗',
+};
+function categoryIcon(cat) { return CATEGORY_ICONS[cat] || '🔧'; }
+
+function firstImage(p) {
+  return p.image || (Array.isArray(p.images) && p.images[0]) || '';
+}
+function productImage(p, cssClass = 'card-img') {
+  const src = firstImage(p);
+  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy">`;
+  return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
+}
+
+function conditionBadge(p) {
+  return p.condition === 'used'
+    ? `<span class="badge badge-used">${t('cond_used')}</span>`
+    : `<span class="badge badge-new">${t('cond_new')}</span>`;
+}
+
+function starsHtml(avg, count) {
+  if (!count) return '';
+  const full = Math.round(avg);
+  return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> <span class="stars-count">(${count})</span>`;
+}
+
+function productCard(p) {
+  const out = p.stock <= 0;
+  const discount = p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+  return `
+  <a class="card ${out ? 'card-out' : ''}" href="/product.html?id=${esc(p.id)}">
+    <div class="card-img-wrap">
+      ${productImage(p)}
+      ${discount ? `<span class="discount-tag">${LANG === 'en' ? discount + '% ' + t('discount') : t('discount') + ' ' + discount + '%'}</span>` : ''}
+    </div>
+    <div class="card-body">
+      <div class="card-badges">
+        ${conditionBadge(p)}
+        <span class="badge badge-brand">${esc(p.brand)}</span>
+        ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-used">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
+      </div>
+      <h3 class="card-title">${esc(pname(p))}</h3>
+      <div class="card-models">${p.models.map((m) => esc(m)).join(' • ')}</div>
+      ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
+      <div class="card-footer">
+        <div class="card-price">
+          ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
+          <span class="price">${money(p.price)}</span>
+        </div>
+        ${out
+          ? `<span class="stock-out">${t('out_stock')}</span>`
+          : `<button class="btn-icon add-btn" data-id="${esc(p.id)}" title="${t('add_cart')}">🛒</button>`}
+      </div>
+    </div>
+  </a>`;
+}
+
+// زرار الإضافة للسلة داخل الكروت
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.add-btn');
+  if (btn) {
+    e.preventDefault();
+    addToCart(btn.dataset.id, 1);
+  }
+});
+
+// كروت تحميل هيكلية (Skeleton) بدل نص "جاري التحميل"
+function skeletonCards(n = 8) {
+  return Array.from({ length: n }, () => `
+    <div class="card skeleton-card">
+      <div class="sk sk-img"></div>
+      <div class="card-body">
+        <div class="sk sk-line" style="width: 40%;"></div>
+        <div class="sk sk-line" style="width: 85%;"></div>
+        <div class="sk sk-line" style="width: 60%;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ظهور تدريجي للعناصر مع السكرول
+function initReveal() {
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  const observeAll = () => document.querySelectorAll('.card:not(.shown), .feature:not(.shown), .cat-card:not(.shown)').forEach((el) => {
+    el.classList.add('reveal');
+    io.observe(el);
+  });
+  observeAll();
+  new MutationObserver(observeAll).observe(document.body, { childList: true, subtree: true });
+}
+document.addEventListener('DOMContentLoaded', initReveal);
+
+function toast(msg) {
+  let el = document.querySelector('.toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function waLink(text) {
+  return `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(text)}`;
+}
+
+/* ---------- البحث الفوري في الهيدر ---------- */
+function initHeaderSearch() {
+  const input = document.getElementById('hdr-search');
+  const box = document.getElementById('hdr-suggest');
+  if (!input || !box) return;
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { box.classList.remove('open'); return; }
+    timer = setTimeout(async () => {
+      try {
+        const results = (await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
+        box.innerHTML = results.length
+          ? results.map((p) => `
+            <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
+              <span class="suggest-icon">${categoryIcon(p.category)}</span>
+              <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
+              <b>${money(p.price)}</b>
+            </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
+          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/assistant.html">${t('ask_expert')}</a></div>`;
+        box.classList.add('open');
+      } catch {}
+    }, 300);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') location.href = '/shop.html?q=' + encodeURIComponent(input.value.trim());
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.hdr-search-wrap')) box.classList.remove('open');
+  });
+}
+
+/* ---------- الهيدر والفوتر ---------- */
+function siteName() { return LANG === 'en' ? SITE.name : SITE.nameAr + ' FixIt'; }
+
+function logoHtml() {
+  // لو الاسم اتغير من الإعدادات نعرضه زي ما هو، غير كده نعرض FixIt بتلوين مميز
+  if (SITE.name && SITE.name !== 'FixIt') return esc(SITE.name);
+  return 'Fix<em>It</em>';
+}
+
+function renderLayout(active = '') {
+  window._layoutRendered = true;
+  window._active = active;
+  const user = currentUser();
+  const otherLang = LANG === 'ar' ? 'en' : 'ar';
+  const topbarMsg = (LANG === 'en' ? SETTINGS.topbarEn : SETTINGS.topbarAr) ||
+    `${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''}`;
+  const header = document.getElementById('site-header');
+  if (header) {
+    header.innerHTML = `
+    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a></div>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="/index.html">
+          <span class="logo-mark">🔧</span>
+          <span class="logo-text">${logoHtml()}<small>${t('brand_tag')}</small></span>
+        </a>
+        <div class="hdr-search-wrap">
+          <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
+          <div class="hdr-suggest" id="hdr-suggest"></div>
+        </div>
+        <div class="header-actions">
+          <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
+          <button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>
+          <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
+            👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
+          </a>
+          <a class="hdr-icon wish-link" href="/wishlist.html" title="${t('footer_wish')}">
+            ❤️ <span class="wish-badge">0</span>
+          </a>
+          <a class="hdr-icon cart-link" href="/cart.html" title="${t('cart')}">
+            🛒 <span class="cart-badge">0</span>
+          </a>
+        </div>
+      </div>
+      <nav class="nav-bar">
+        <div class="container nav" id="main-nav">
+          <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
+          <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
+          <a href="/shop.html?brand=BMW">BMW</a>
+          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?condition=used">${t('nav_used')}</a>
+          <a href="/shop.html?condition=new">${t('nav_new')}</a>
+          <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
+          <a href="/assistant.html" class="${active === 'assistant' ? 'active' : ''}">${t('nav_expert')}</a>
+        </div>
+      </nav>
+    </header>`;
+    initHeaderSearch();
+  }
+
+  const footer = document.getElementById('site-footer');
+  if (footer) {
+    footer.innerHTML = `
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span></div>
+          <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
+          <div class="pay-badges">${t('pay_badges')}</div>
+        </div>
+        <div>
+          <h4>${t('footer_shop')}</h4>
+          <a href="/shop.html">${t('footer_all')}</a>
+          <a href="/shop.html?brand=BMW">${t('footer_bmw')}</a>
+          <a href="/shop.html?brand=MINI">${t('footer_mini')}</a>
+          <a href="/wishlist.html">${t('footer_wish')}</a>
+        </div>
+        <div>
+          <h4>${t('footer_service')}</h4>
+          <a href="/request.html">${t('req_link')} 🔎</a>
+          <a href="/track.html">${t('footer_track')}</a>
+          <a href="/account.html">${t('footer_account')}</a>
+          <a href="/policies.html">${t('footer_policies')}</a>
+          <a href="/assistant.html">${t('footer_expert')}</a>
+        </div>
+        <div>
+          <h4>${t('footer_contact')}</h4>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a>
+          <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
+        </div>
+      </div>
+      <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — ${t('footer_rights')}</div>
+    </footer>
+    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
+    <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
+
+    const topBtn = document.getElementById('scroll-top');
+    window.addEventListener('scroll', () => {
+      topBtn.classList.toggle('show', window.scrollY > 500);
+    }, { passive: true });
+    topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  applyI18n();
+  updateCartBadge();
+}
