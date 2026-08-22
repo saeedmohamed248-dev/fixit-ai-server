@@ -64,7 +64,7 @@ wallet: '01125157767',      // ← رقم المحفظة الإلكترونية
 **1) لما قطعة تتباع في النظام الخارجي** → يبعت طلب هنا فيتخصم المخزون:
 
 ```
-POST https://your-site.vercel.app/api/sync?secret=YOUR_SECRET
+POST https://fixitauto.parts/api/sync?secret=YOUR_SECRET
 Content-Type: application/json
 
 { "sku": "BP-34116850568", "quantity": 1 }
@@ -76,7 +76,7 @@ Content-Type: application/json
 **3) النظام الخارجي يسحب المخزون الحالي**:
 
 ```
-GET https://your-site.vercel.app/api/sync?secret=YOUR_SECRET
+GET https://fixitauto.parts/api/sync?secret=YOUR_SECRET
 ```
 
 **4) البيع من الموقع نفسه** بيخصم المخزون تلقائياً، وكل الطلبات بتظهر في لوحة التحكم.
