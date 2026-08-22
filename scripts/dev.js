@@ -23,23 +23,14 @@ const MIME = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
 };
 
-const apiHandlers = {
-  '/api/products': () => import('../api/products.js'),
-  '/api/orders': () => import('../api/orders.js'),
-  '/api/sync': () => import('../api/sync.js'),
-  '/api/diagnose': () => import('../api/diagnose.js'),
-  '/api/auth': () => import('../api/auth.js'),
-  '/api/reviews': () => import('../api/reviews.js'),
-  '/api/coupons': () => import('../api/coupons.js'),
-  '/api/settings': () => import('../api/settings.js'),
-  '/api/activity': () => import('../api/activity.js'),
-  '/api/requests': () => import('../api/requests.js'),
-  '/api/questions': () => import('../api/questions.js'),
-  '/api/notify': () => import('../api/notify.js'),
-  '/api/pay': () => import('../api/pay.js'),
-  '/api/sitemap': () => import('../api/sitemap.js'),
-  '/sitemap.xml': () => import('../api/sitemap.js'),
-};
+// كل الـ handlers بقت في api/_lib/routes/ (نقطة دخول واحدة على Vercel)
+const ROUTE_NAMES = ['products', 'orders', 'sync', 'diagnose', 'auth', 'reviews',
+  'coupons', 'settings', 'activity', 'requests', 'questions', 'notify', 'pay', 'sitemap'];
+const apiHandlers = {};
+for (const name of ROUTE_NAMES) {
+  apiHandlers['/api/' + name] = () => import(`../api/_lib/routes/${name}.js`);
+}
+apiHandlers['/sitemap.xml'] = () => import('../api/_lib/routes/sitemap.js');
 
 function readBody(req) {
   return new Promise((resolve) => {

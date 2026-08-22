@@ -3,8 +3,8 @@
 // POST   /api/products            → إضافة منتج (إدارة)
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
-import { getProducts, saveProducts, logActivity } from './_lib/db.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { getProducts, saveProducts, logActivity } from '../db.js';
+import { cors, requireAdmin } from '../util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;

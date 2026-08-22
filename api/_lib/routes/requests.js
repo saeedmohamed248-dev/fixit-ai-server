@@ -2,8 +2,8 @@
 // POST /api/requests → طلب جديد (عام)
 // GET  /api/requests → القائمة (إدارة)
 // PUT  /api/requests → تغيير الحالة (إدارة) { id, status: open|sourced|done }
-import { getRequests, saveRequests, logActivity } from './_lib/db.js';
-import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
+import { getRequests, saveRequests, logActivity } from '../db.js';
+import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;

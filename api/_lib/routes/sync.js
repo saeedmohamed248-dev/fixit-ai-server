@@ -8,8 +8,8 @@
 //       (اربط webhook "orders/create" من شوبيفاي على الرابط ده مع ?secret=)
 //
 // لازم ضبط متغير SYNC_SECRET في إعدادات Vercel قبل الاستخدام.
-import { getProducts, saveProducts, logActivity } from './_lib/db.js';
-import { cors } from './_lib/util.js';
+import { getProducts, saveProducts, logActivity } from '../db.js';
+import { cors } from '../util.js';
 
 function checkSecret(req, res) {
   if (!process.env.SYNC_SECRET) {

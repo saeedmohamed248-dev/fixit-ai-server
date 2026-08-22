@@ -3,8 +3,8 @@
 // POST   /api/questions               → سؤال جديد { productId, name, question }
 // PUT    /api/questions               → رد المتجر (إدارة) { id, answer }
 // DELETE /api/questions?id=           → حذف (إدارة)
-import { getQuestions, saveQuestions, getProducts, logActivity } from './_lib/db.js';
-import { cors, requireAdmin, rateLimit } from './_lib/util.js';
+import { getQuestions, saveQuestions, getProducts, logActivity } from '../db.js';
+import { cors, requireAdmin, rateLimit } from '../util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;

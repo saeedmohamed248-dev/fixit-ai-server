@@ -2,8 +2,8 @@
 // POST   /api/notify            → { productId, name, phone }
 // GET    /api/notify            → القائمة (إدارة)
 // DELETE /api/notify?id=        → تم الإبلاغ / حذف (إدارة)
-import { getNotify, saveNotify, getProducts, logActivity } from './_lib/db.js';
-import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
+import { getNotify, saveNotify, getProducts, logActivity } from '../db.js';
+import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;

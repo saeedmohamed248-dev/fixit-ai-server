@@ -1,6 +1,6 @@
 // خريطة الموقع لمحركات البحث — بتتولد تلقائياً وتشمل كل المنتجات
 // متاحة على /sitemap.xml (عبر إعادة التوجيه في vercel.json)
-import { getProducts } from './_lib/db.js';
+import { getProducts } from '../db.js';
 
 export default async function handler(req, res) {
   try {
