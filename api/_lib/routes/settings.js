@@ -1,8 +1,8 @@
 // إعدادات المتجر — بتتغير من لوحة التحكم وبتنطبق على الموقع كله
 // GET /api/settings → الإعدادات الحالية (عام — الموقع بيقراها)
 // PUT /api/settings → تعديل (إدارة)
-import { getSettings, saveSettings, logActivity } from './_lib/db.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { getSettings, saveSettings, logActivity } from '../db.js';
+import { cors, requireAdmin } from '../util.js';
 
 // المفاتيح المسموح تعديلها من اللوحة
 const KEYS = [

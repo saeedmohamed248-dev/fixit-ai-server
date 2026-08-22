@@ -3,8 +3,8 @@
 // GET    /api/coupons            → قائمة الكوبونات (إدارة)
 // POST   /api/coupons { code, type, value, minTotal } → إنشاء (إدارة)
 // DELETE /api/coupons?code=X     → حذف (إدارة)
-import { getCoupons, saveCoupons, logActivity } from './_lib/db.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { getCoupons, saveCoupons, logActivity } from '../db.js';
+import { cors, requireAdmin } from '../util.js';
 
 export function calcDiscount(coupon, subtotal) {
   if (subtotal < (coupon.minTotal || 0)) return 0;

@@ -8,8 +8,8 @@
 // المتغيرات المطلوبة في Vercel:
 //   PAYMOB_API_KEY, PAYMOB_INTEGRATION_ID, PAYMOB_IFRAME_ID, PAYMOB_HMAC_SECRET
 import crypto from 'crypto';
-import { getOrders, saveOrders, logActivity } from './_lib/db.js';
-import { cors } from './_lib/util.js';
+import { getOrders, saveOrders, logActivity } from '../db.js';
+import { cors } from '../util.js';
 
 const PAYMOB = 'https://accept.paymob.com/api';
 

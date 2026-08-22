@@ -2,9 +2,9 @@
 // GET    /api/reviews?productId=p1  → مراجعات منتج
 // POST   /api/reviews               → إضافة مراجعة { productId, rating, name, comment }
 // DELETE /api/reviews?id=r1         → حذف مراجعة (إدارة)
-import { getProducts, saveProducts, getReviews, saveReviews } from './_lib/db.js';
-import { getUser } from './_lib/auth.js';
-import { cors, requireAdmin, rateLimit } from './_lib/util.js';
+import { getProducts, saveProducts, getReviews, saveReviews } from '../db.js';
+import { getUser } from '../auth.js';
+import { cors, requireAdmin, rateLimit } from '../util.js';
 
 async function recalcRating(productId) {
   const [products, reviews] = [await getProducts(), await getReviews()];

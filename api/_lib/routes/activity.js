@@ -1,7 +1,7 @@
 // سجل العمليات — كل حاجة حصلت في المتجر
 // GET /api/activity → القائمة (إدارة)
-import { getActivity } from './_lib/db.js';
-import { cors, requireAdmin } from './_lib/util.js';
+import { getActivity } from '../db.js';
+import { cors, requireAdmin } from '../util.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;

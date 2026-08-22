@@ -3,10 +3,10 @@
 // GET  /api/orders?track=ORD-123&phone=010  → تتبع طلب (عام)
 // GET  /api/orders                          → كل الطلبات (إدارة)
 // PUT  /api/orders                          → تغيير حالة طلب (إدارة)
-import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity } from './_lib/db.js';
-import { getUser } from './_lib/auth.js';
+import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity } from '../db.js';
+import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
-import { cors, requireAdmin, rateLimit, validPhone } from './_lib/util.js';
+import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 const PAYMENTS = ['cod', 'instapay', 'wallet', 'card'];
