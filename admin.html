@@ -93,7 +93,12 @@
         <button class="btn" style="width: 100%;" id="login-btn">دخول</button>
       </div>`;
       document.getElementById('login-btn').addEventListener('click', () => {
-        localStorage.setItem('admin_token', document.getElementById('login-token').value.trim());
+        const val = document.getElementById('login-token').value.trim();
+        // هيدر HTTP بيقبل حروف Latin-1 فقط — نمنع العربي/الإيموجي برسالة واضحة
+        if (!/^[\x20-\x7E]+$/.test(val)) {
+          return showLogin('رمز الدخول لازم يكون حروف وأرقام إنجليزية فقط (من غير عربي أو رموز غريبة). عدّل قيمة ADMIN_TOKEN في Vercel لتبقى إنجليزية.');
+        }
+        localStorage.setItem('admin_token', val);
         init();
       });
     }
