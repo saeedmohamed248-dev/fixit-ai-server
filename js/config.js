@@ -34,10 +34,12 @@ window.SITE = {
     addressAr: 'المنطقة الحرة، الشارقة، الإمارات',
     addressEn: 'Free Zone, Sharjah, UAE',
     minOrderNote: true,            // إظهار ملاحظة "أسعار جملة — الطلب بيتأكد على واتساب"
-    // 💵 شروط الدفع: دفعة مقدّمة من الموقع + الباقي عند وصول الجمارك
+    // 💵 شروط الدفع حسب الدولة:
+    // مصر: دفعة مقدّمة + الباقي عند وصول الجمارك.
+    // أي دولة تانية: دفع كامل مقدّماً، ونشحن ونبعت البوليصة (غير مسؤولين بعد الشحن).
     payment: {
-      depositPct: 65,   // يُدفع مقدّماً (كاش/تحويل) عند تأكيد الطلب
-      balancePct: 35,   // يُدفع عند وصول البضاعة للجمارك
+      EG: { depositPct: 65, balancePct: 35 },
+      DEFAULT: { fullUpfront: true },
     },
     // 📊 تسعير متدرّج حسب الكمية — كل ما الكمية تكبر السعر يقل (خصم % على سعر الجملة الأساسي)
     tiers: [
@@ -86,7 +88,7 @@ window.SITE = {
     trust: {
       leadTimeAr: '3–7 أيام عمل', leadTimeEn: '3–7 business days',
       shippingAr: 'شحن جوي وبحري لكل البلاد', shippingEn: 'Air & sea freight worldwide',
-      paymentAr: '65% مقدّم + 35% عند وصول الجمارك', paymentEn: '65% upfront + 35% on customs arrival',
+      paymentAr: 'مصر: 65% مقدّم + 35% عند الجمارك · باقي الدول: 100% مقدّم', paymentEn: 'Egypt: 65% + 35% on customs · Others: 100% upfront',
       cartonAr: 'تغليف تصدير بالكرتونة', cartonEn: 'Export carton packing',
       countriesAr: '20+ دولة', countriesEn: '20+ countries',
       warrantyAr: 'قطع مفحوصة ومضمونة', warrantyEn: 'Tested & guaranteed parts',

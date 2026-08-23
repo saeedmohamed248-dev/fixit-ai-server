@@ -120,6 +120,8 @@ const I18N = {
   pay_deposit: { ar: 'دفعة مقدّمة ({p}%) — عند تأكيد الطلب', en: 'Deposit ({p}%) — on order confirmation' },
   pay_balance: { ar: 'الباقي ({p}%) — عند وصول البضاعة للجمارك', en: 'Balance ({p}%) — on customs arrival' },
   pay_terms_note: { ar: 'الدفع كاش/تحويل من الموقع: {d}% مقدّم و{b}% عند وصول الجمارك', en: 'Cash/transfer: {d}% upfront, {b}% on customs arrival' },
+  pay_full: { ar: 'دفع كامل (100%) مقدّماً — عند تأكيد الطلب', en: 'Full payment (100%) upfront — on order confirmation' },
+  pay_full_note: { ar: 'بعد الدفع الكامل نشحن ونبعتلك بوليصة الشحن. الشركة غير مسؤولة عن أي شيء بعد الشحن.', en: 'After full payment we ship and send you the bill of lading. The company is not responsible for anything after shipment.' },
   /* Share a Container */
   share_title: { ar: 'شارك في حاوية', en: 'Share a Container' },
   share_sub: { ar: 'احجز مساحة في حاوية مجدولة وادفع حصتك فقط حسب حجمك', en: 'Book space in a scheduled container and pay only your CBM share' },

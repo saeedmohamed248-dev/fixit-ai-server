@@ -170,12 +170,22 @@
             ${q.insurance ? `<div class="row"><span>${t('ship_insurance')}</span><span>${usdMoney(q.insurance)}</span></div>` : ''}
             ${q.customs ? `<div class="row" style="color:var(--amber);"><span>${t('ship_customs')}</span><span>${usdMoney(q.customs)}</span></div>` : ''}
             <div class="row total" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;"><span>${t('ship_grand')}</span><span>${usdMoney(q.total)}</span></div>
-            ${(() => { const pay = wsConf().payment || {}; const dp = Number(pay.depositPct) || 0; const bp = Number(pay.balancePct) || 0; return (dp || bp) ? `
-            <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
-              <div class="ship-head" style="font-size:13px;">💵 ${t('pay_terms_title')}</div>
-              <div class="row" style="color:var(--green);"><span>${t('pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
-              <div class="row"><span>${t('pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
-            </div>` : ''; })()}
+            ${(() => {
+              const pay = paymentTerms(cc);
+              if (pay.fullUpfront) return `
+              <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
+                <div class="ship-head" style="font-size:13px;">💵 ${t('pay_terms_title')}</div>
+                <div class="row" style="color:var(--green);"><span>${t('pay_full')}</span><b>${usdMoney(q.total)}</b></div>
+                <div class="note" style="margin:6px 0 0;font-size:11.5px;">${t('pay_full_note')}</div>
+              </div>`;
+              const dp = Number(pay.depositPct) || 0, bp = Number(pay.balancePct) || 0;
+              return (dp || bp) ? `
+              <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
+                <div class="ship-head" style="font-size:13px;">💵 ${t('pay_terms_title')}</div>
+                <div class="row" style="color:var(--green);"><span>${t('pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
+                <div class="row"><span>${t('pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
+              </div>` : '';
+            })()}
             <div class="note" style="margin:8px 0 0;font-size:12px;">${t('ship_usd_note')}${q.customs ? '<br>⚠️ ' + t('ship_customs_note') : ''}</div>
           </div>
 
@@ -241,12 +251,16 @@
           q.customs ? `${t('ship_customs')}: ${usdMoney(q.customs)}` : '',
           `${t('ship_grand')}: ${usdMoney(q.total)}`,
         ].filter(Boolean).join('\n');
-        const pay = wsConf().payment || {};
-        const payTxt = (pay.depositPct || pay.balancePct) ? '\n' + [
+        const pay = paymentTerms(cc);
+        const payTxt = '\n' + (pay.fullUpfront ? [
+          `— ${t('pay_terms_title')} —`,
+          `${t('pay_full')}: ${usdMoney(q.total)}`,
+          t('pay_full_note'),
+        ].join('\n') : [
           `— ${t('pay_terms_title')} —`,
           `${t('pay_deposit', { p: pay.depositPct })}: ${usdMoney(q.total * (pay.depositPct || 0) / 100)}`,
           `${t('pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
-        ].join('\n') : '';
+        ].join('\n'));
         const msg = [head, who, '', lines, '', totalTxt, '', ship, payTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
         window.open(waLink(msg), '_blank');
       });
