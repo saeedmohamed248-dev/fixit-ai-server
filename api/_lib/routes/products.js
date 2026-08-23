@@ -61,6 +61,7 @@ export default async function handler(req, res) {
         condition: body.condition === 'used' ? 'used' : 'new',
         price: Number(body.price) || 0,
         oldPrice: Number(body.oldPrice) || 0,
+        wholesalePrice: Number(body.wholesalePrice) || 0,
         stock: Number(body.stock) || 0,
         oem: body.oem || '',
         image: body.image || '',
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
       const updated = { ...before, ...body, id: before.id };
       updated.price = Number(updated.price) || 0;
       updated.oldPrice = Number(updated.oldPrice) || 0;
+      updated.wholesalePrice = Number(updated.wholesalePrice) || 0;
       updated.stock = Number(updated.stock) || 0;
       const stockChanged = updated.stock !== before.stock;
       products[index] = updated;

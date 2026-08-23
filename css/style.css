@@ -163,6 +163,40 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   transition: 0.2s;
 }
 .lang-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+/* 🇪🇬🇦🇪 مبدّل الفرع (قطاعي/جملة) ومبدّل العملة */
+.branch-switch, .cur-switch {
+  display: inline-flex;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 999px;
+  padding: 2px;
+  margin-inline-end: 6px;
+}
+.branch-switch button, .cur-switch button {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+.branch-switch button.active, .cur-switch button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.cur-switch button { padding: 4px 10px; }
+.price-lock {
+  color: var(--accent-dark) !important;
+  font-size: 13px !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+.price-req { color: var(--muted) !important; font-size: 14px !important; }
 .hdr-icon {
   position: relative;
   font-size: 20px;
@@ -886,6 +920,7 @@ tr.order-row:hover td { background: var(--card2); }
 /* ====== موبايل ====== */
 @media (max-width: 900px) {
   .header-inner { flex-wrap: wrap; gap: 10px; }
+  .header-actions { flex-wrap: wrap; justify-content: flex-end; }
   .hdr-search-wrap { order: 3; max-width: 100%; flex-basis: 100%; }
   .hdr-icon small { display: none; }
   .logo-text small { display: none; }

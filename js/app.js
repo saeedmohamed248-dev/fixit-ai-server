@@ -1,6 +1,54 @@
 // كود مشترك بين كل الصفحات: الهيدر، الفوتر، السلة، الحساب، المفضلة، الاتصال بالـ API
 const API = '/api';
 
+/* ---------- 🇪🇬🇦🇪 الفرع: قطاعي (مصر) / جملة (الإمارات) ---------- */
+// الوضع محفوظ في المتصفح، والافتراضي القطاعي (مصر). العملة في الجملة: درهم/دولار
+window.MODE = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
+window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
+function isWholesale() { return MODE === 'wholesale'; }
+function wsConf() { return SITE.wholesale || {}; }
+function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
+function setMode(m) {
+  localStorage.setItem('mode', m === 'wholesale' ? 'wholesale' : 'retail');
+  location.href = '/index.html';
+}
+function setWCur(c) {
+  localStorage.setItem('wcur', c === 'usd' ? 'usd' : 'aed');
+  location.reload();
+}
+// رقم الواتساب حسب الفرع (جملة الإمارات ليها رقمها)
+function waNumber() {
+  return isWholesale() && wsConf().whatsapp ? wsConf().whatsapp : SITE.whatsapp;
+}
+function phoneDisplay() {
+  return isWholesale() && wsConf().phoneDisplay ? wsConf().phoneDisplay : SITE.phoneDisplay;
+}
+// سعر العرض للمنتج حسب الفرع والعملة — يرجّع رقم، أو null لو مفيش سعر جملة
+function dispPrice(p) {
+  if (isWholesale()) {
+    const aed = Number(p.wholesalePrice) || 0;
+    if (aed <= 0) return null;
+    return WCUR === 'usd' ? aed / usdRate() : aed;
+  }
+  return Number(p.price) || 0;
+}
+// السعر قبل الخصم (الشطب) — للقطاعي فقط
+function dispOld(p) {
+  if (isWholesale()) return 0;
+  return Number(p.oldPrice) || 0;
+}
+// أسعار الجملة تظهر بس للتجار المسجّلين
+function wsLocked() { return isWholesale() && !currentUser(); }
+// كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
+function priceBlock(p) {
+  if (wsLocked()) return `<a class="price price-lock" href="/account.html">🔒 ${t('ws_login_price')}</a>`;
+  const d = dispPrice(p);
+  if (d === null) return `<span class="price price-req">${t('price_request')}</span>`;
+  const old = dispOld(p);
+  const showOld = old > (Number(p.price) || 0);
+  return `${showOld ? `<span class="old-price">${money(old)}</span>` : ''}<span class="price">${money(d)}</span>`;
+}
+
 /* ---------- إعدادات المتجر (من لوحة التحكم) ---------- */
 window.SETTINGS = {};
 
@@ -193,6 +241,14 @@ function getRecent() {
 
 /* ---------- أدوات عرض ---------- */
 function money(n) {
+  if (isWholesale()) {
+    if (WCUR === 'usd') {
+      const v = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
+      return '$ ' + v;
+    }
+    const v = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'ar-EG', { maximumFractionDigits: 2 }).format(n);
+    return LANG === 'en' ? 'AED ' + v : v + ' د.إ';
+  }
   if (LANG === 'en') return SITE.currencyEn + ' ' + new Intl.NumberFormat('en-EG').format(n);
   return new Intl.NumberFormat('ar-EG').format(n) + ' ' + SITE.currency;
 }
@@ -233,7 +289,7 @@ function starsHtml(avg, count) {
 
 function productCard(p) {
   const out = p.stock <= 0;
-  const discount = p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+  const discount = !isWholesale() && p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
   return `
   <a class="card ${out ? 'card-out' : ''}" href="/product.html?id=${esc(p.id)}">
     <div class="card-img-wrap">
@@ -251,8 +307,7 @@ function productCard(p) {
       ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
       <div class="card-footer">
         <div class="card-price">
-          ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
-          <span class="price">${money(p.price)}</span>
+          ${priceBlock(p)}
         </div>
         ${out
           ? `<span class="stock-out">${t('out_stock')}</span>`
@@ -315,7 +370,7 @@ function toast(msg) {
 }
 
 function waLink(text) {
-  return `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${waNumber()}?text=${encodeURIComponent(text)}`;
 }
 
 /* ---------- البحث الفوري في الهيدر ---------- */
@@ -336,7 +391,7 @@ function initHeaderSearch() {
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
               <span class="suggest-icon">${categoryIcon(p.category)}</span>
               <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
-              <b>${money(p.price)}</b>
+              <b>${wsLocked() ? '🔒' : (dispPrice(p) === null ? t('price_request') : money(dispPrice(p)))}</b>
             </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
           : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/assistant.html">${t('ask_expert')}</a></div>`;
         box.classList.add('open');
@@ -365,12 +420,26 @@ function renderLayout(active = '') {
   window._active = active;
   const user = currentUser();
   const otherLang = LANG === 'ar' ? 'en' : 'ar';
-  const topbarMsg = (LANG === 'en' ? SETTINGS.topbarEn : SETTINGS.topbarAr) ||
-    `${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''}`;
+  const topbarMsg = isWholesale()
+    ? `🇦🇪 ${t('ws_topbar')}`
+    : ((LANG === 'en' ? SETTINGS.topbarEn : SETTINGS.topbarAr) ||
+      `${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''}`);
+  // مبدّل الفرع: قطاعي مصر ⇄ جملة الإمارات
+  const branchSwitch = `
+    <div class="branch-switch" title="${t('branch_hint')}">
+      <button class="${!isWholesale() ? 'active' : ''}" onclick="setMode('retail')">🇪🇬 ${t('branch_retail')}</button>
+      <button class="${isWholesale() ? 'active' : ''}" onclick="setMode('wholesale')">🇦🇪 ${t('branch_wholesale')}</button>
+    </div>`;
+  // مبدّل العملة (يظهر في الجملة فقط)
+  const curSwitch = isWholesale() ? `
+    <div class="cur-switch" title="${t('cur_hint')}">
+      <button class="${WCUR === 'aed' ? 'active' : ''}" onclick="setWCur('aed')">${t('cur_aed')}</button>
+      <button class="${WCUR === 'usd' ? 'active' : ''}" onclick="setWCur('usd')">${t('cur_usd')}</button>
+    </div>` : '';
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a></div>
+    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(phoneDisplay())}</a></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo" href="/index.html">
@@ -382,6 +451,8 @@ function renderLayout(active = '') {
           <div class="hdr-suggest" id="hdr-suggest"></div>
         </div>
         <div class="header-actions">
+          ${branchSwitch}
+          ${curSwitch}
           <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
           <button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
@@ -438,8 +509,10 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_contact')}</h4>
-          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(SITE.phoneDisplay)}</a>
-          <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
+          <span>📍 ${isWholesale()
+            ? (LANG === 'en' ? esc(wsConf().addressEn || 'UAE') : esc(wsConf().addressAr || 'الإمارات'))
+            : (LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address))}</span>
         </div>
       </div>
       <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — ${t('footer_rights')}</div>
