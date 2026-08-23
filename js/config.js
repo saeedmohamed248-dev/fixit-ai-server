@@ -31,9 +31,16 @@ window.SITE = {
     phoneDisplay: '+971 55 880 3171', // ← الرقم زي ما بيتعرض للعميل
     email: 'trade@fixitauto.parts',
     usdRate: 3.6725,               // كام درهم في الدولار الواحد (الدولار بيتحسب من الدرهم)
-    addressAr: 'المنطقة الحرة، دبي، الإمارات',
-    addressEn: 'Free Zone, Dubai, UAE',
+    addressAr: 'المنطقة الحرة، الشارقة، الإمارات',
+    addressEn: 'Free Zone, Sharjah, UAE',
     minOrderNote: true,            // إظهار ملاحظة "أسعار جملة — الطلب بيتأكد على واتساب"
+    // 💵 شروط الدفع حسب الدولة:
+    // مصر: دفعة مقدّمة + الباقي عند وصول الجمارك.
+    // أي دولة تانية: دفع كامل مقدّماً، ونشحن ونبعت البوليصة (غير مسؤولين بعد الشحن).
+    payment: {
+      EG: { depositPct: 65, balancePct: 35 },
+      DEFAULT: { fullUpfront: true },
+    },
     // 📊 تسعير متدرّج حسب الكمية — كل ما الكمية تكبر السعر يقل (خصم % على سعر الجملة الأساسي)
     tiers: [
       { min: 1, off: 0 },
@@ -81,7 +88,7 @@ window.SITE = {
     trust: {
       leadTimeAr: '3–7 أيام عمل', leadTimeEn: '3–7 business days',
       shippingAr: 'شحن جوي وبحري لكل البلاد', shippingEn: 'Air & sea freight worldwide',
-      paymentAr: 'تحويل بنكي / T-T • دفعة مقدّمة', paymentEn: 'Bank transfer / T-T • deposit',
+      paymentAr: 'مصر: 65% مقدّم + 35% عند الجمارك · باقي الدول: 100% مقدّم', paymentEn: 'Egypt: 65% + 35% on customs · Others: 100% upfront',
       cartonAr: 'تغليف تصدير بالكرتونة', cartonEn: 'Export carton packing',
       countriesAr: '20+ دولة', countriesEn: '20+ countries',
       warrantyAr: 'قطع مفحوصة ومضمونة', warrantyEn: 'Tested & guaranteed parts',

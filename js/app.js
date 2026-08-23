@@ -132,6 +132,11 @@ function dealerCountryCode() { return countryCode(currentUser()?.country); }
 function lane(code) { return (wsConf().freight?.lanes || {})[code] || (wsConf().freight?.lanes || {}).DEFAULT || {}; }
 function countryPolicy(code) { return (wsConf().countryPolicy || {})[code] || (wsConf().countryPolicy || {}).DEFAULT || { incoterms: ['FOB', 'CIF'], customs: false }; }
 function incotermDef(c) { return (wsConf().incoterms || {})[c] || {}; }
+// شروط الدفع حسب الدولة (مصر: 65/35 · غيرها: كامل مقدّماً)
+function paymentTerms(code) {
+  const p = wsConf().payment || {};
+  return p[code] || p.DEFAULT || { fullUpfront: true };
+}
 function freightMarkup() { return Number(wsConf().freight?.markupPct) || 0; }
 // تكلفة الشحن الخام (دولار) قبل الهامش
 function rawFreightUsd(code, plan) {
