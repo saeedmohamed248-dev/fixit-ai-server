@@ -56,6 +56,7 @@ window.SITE = {
       { code: '40HC', nameAr: 'حاوية 40 قدم عالية', nameEn: "40ft HC", usableCbm: 68, maxKg: 26000, sort: 3 },
     ],
     lclMaxCbm: 15,          // أقل من كده = شحن مجمّع LCL
+    leadBufferPct: 40,      // هامش احتياطي (30–50%) يضاف على مدة الشحن اللي يقدّرها البوت
     // 💵 أسعار الشحن من دبي لكل وجهة (بالدولار) — عدّلها أو حدّثها دورياً
     freight: {
       markupPct: 30,        // هامش المنصة على تكلفة الشحن
@@ -86,7 +87,7 @@ window.SITE = {
     },
     // 🌍 لوحة الثقة الدولية — بيانات ثابتة تظهر للتجار
     trust: {
-      leadTimeAr: '3–7 أيام عمل', leadTimeEn: '3–7 business days',
+      leadTimeAr: 'حسب الوجهة والشحن — تُحسب عند الطلب', leadTimeEn: 'By destination & mode — quoted at checkout',
       shippingAr: 'شحن جوي وبحري لكل البلاد', shippingEn: 'Air & sea freight worldwide',
       paymentAr: 'مصر: 65% مقدّم + 35% عند الجمارك · باقي الدول: 100% مقدّم', paymentEn: 'Egypt: 65% + 35% on customs · Others: 100% upfront',
       cartonAr: 'تغليف تصدير بالكرتونة', cartonEn: 'Export carton packing',

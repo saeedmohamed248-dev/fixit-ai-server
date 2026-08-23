@@ -38,6 +38,8 @@
     let myCredit = 0;
     let cardEnabled = false;
     let wsIncoterm = null; // 🚢 شرط التسليم المختار في الجملة
+    let wsShipMode = 'sea'; // وسيلة الشحن: بحري/جوي
+    let wsLeadText = ''; // آخر مدة توريد محسوبة (للواتساب)
 
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
@@ -86,6 +88,23 @@
           </div>
           <button class="btn-icon add-together" data-add="${esc(p.id)}">＋</button>
         </div>`).join('')}`;
+    }
+
+    // 🕒 تقدير مدة التوريد من البوت (يخزّن في الجلسة عشان مايتكررش)
+    async function loadLead(country, mode) {
+      const el = document.getElementById('lead-val');
+      if (!el) return;
+      const key = `lead_${countryCode(country)}_${mode}`;
+      let cached = null;
+      try { cached = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch {}
+      const apply = (d) => { const txt = fmtLead(d.minDays, d.maxDays); wsLeadText = txt; el.textContent = txt; };
+      if (cached) { apply(cached); return; }
+      try {
+        const d = await api('/leadtime', { method: 'POST', body: JSON.stringify({ country, mode, bufferPct: (SITE.wholesale?.leadBufferPct) || 40 }) });
+        try { sessionStorage.setItem(key, JSON.stringify(d)); } catch {}
+        // نطبّق فقط لو لسه على نفس الوسيلة
+        if (wsShipMode === mode) apply(d);
+      } catch { el.textContent = '—'; }
     }
 
     // 🇦🇪 وضع الجملة: عرض بأسعار الجملة + إتمام الطلب عبر واتساب فرع الإمارات
@@ -160,6 +179,14 @@
             <div class="ship-head">📦 ${t('ship_title')}</div>
             <div class="row"><span>${t('ship_dest')}</span><b>${esc(currentUser().country || '—')}${q.port ? ` · ${esc(q.port)}` : ''}</b></div>
             <div style="margin:8px 0;">
+              <label>${t('ship_mode')}</label>
+              <div class="mode-switch">
+                <button type="button" class="${wsShipMode === 'sea' ? 'active' : ''}" data-mode="sea">${t('mode_sea')}</button>
+                <button type="button" class="${wsShipMode === 'air' ? 'active' : ''}" data-mode="air">${t('mode_air')}</button>
+              </div>
+            </div>
+            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${t('lead_loading')}</b></div>
+            <div style="margin:8px 0;">
               <label>${t('ship_incoterm')}</label>
               <select id="w-incoterm">
                 ${allowed.map((c) => `<option value="${c}" ${c === wsIncoterm ? 'selected' : ''}>${esc(incName(c))}</option>`).join('')}
@@ -213,6 +240,10 @@
         wsIncoterm = e.target.value;
         renderWholesale();
       });
+      container.querySelectorAll('.mode-switch [data-mode]').forEach((btn) =>
+        btn.addEventListener('click', () => { wsShipMode = btn.dataset.mode; renderWholesale(); }));
+      // 🕒 تقدير مدة التوريد بالبوت (مع كاش لكل دولة+وسيلة)
+      loadLead(currentUser().country, wsShipMode);
       container.querySelectorAll('[data-step]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const c = getCart();
@@ -243,6 +274,8 @@
         const ship = [
           `— ${t('ship_title')} —`,
           `${t('ship_dest')}: ${currentUser().country || '-'}${q.port ? ' / ' + q.port : ''}`,
+          `${t('ship_mode')}: ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`,
+          wsLeadText ? `${t('lead_title')}: ${wsLeadText}` : '',
           `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})`,
           `${t('ship_incoterm')}: ${incName(wsIncoterm)}`,
           `${t('ship_goods')}: ${usdMoney(q.goods)}`,

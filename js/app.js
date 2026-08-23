@@ -178,6 +178,20 @@ function freightQuote(items, incotermCode, code) {
   return { cbm, kg, plan, goods, freight, insurance, customs, total: goods + freight + insurance + customs, port: lane(code).port || '' };
 }
 function usdMoney(n) { return '$ ' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n); }
+function leadBufferPct() { return Number(wsConf().leadBufferPct) || 40; }
+// صياغة مدة التوريد: أيام + تقريب بالشهور لو طويلة
+function monthsAr(m) {
+  const map = { 0.5: 'نص شهر', 1: 'شهر', 1.5: 'شهر ونص', 2: 'شهرين', 2.5: 'شهرين ونص', 3: '3 شهور', 3.5: '3 شهور ونص', 4: '4 شهور', 4.5: '4 شهور ونص', 5: '5 شهور' };
+  return map[m] || `${m} شهر`;
+}
+function fmtLead(min, max) {
+  const days = LANG === 'en' ? `${min}–${max} days` : `${min}–${max} يوم`;
+  const avg = (min + max) / 2;
+  if (avg < 25) return days;
+  const months = Math.round(avg / 30 * 2) / 2;
+  const m = LANG === 'en' ? `≈ ${months} mo` : `≈ ${monthsAr(months)}`;
+  return `${days} (${m})`;
+}
 // وصف الحمولة الموصى بها بلغة العرض
 function loadLabel(plan) {
   if (plan.mode === 'EMPTY') return '';
