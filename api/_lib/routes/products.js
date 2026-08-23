@@ -6,6 +6,12 @@
 import { getProducts, saveProducts, logActivity } from '../db.js';
 import { cors, requireAdmin } from '../util.js';
 
+// حساب الحجم بالمتر المكعب من الأبعاد (سم): الطول×العرض×الارتفاع ÷ مليون
+function cbmFromDims(o) {
+  const l = Number(o.lengthCm) || 0, w = Number(o.widthCm) || 0, h = Number(o.heightCm) || 0;
+  return +((l * w * h) / 1e6).toFixed(4);
+}
+
 export default async function handler(req, res) {
   if (cors(req, res)) return;
 
@@ -62,6 +68,11 @@ export default async function handler(req, res) {
         price: Number(body.price) || 0,
         oldPrice: Number(body.oldPrice) || 0,
         wholesalePrice: Number(body.wholesalePrice) || 0,
+        lengthCm: Number(body.lengthCm) || 0,
+        widthCm: Number(body.widthCm) || 0,
+        heightCm: Number(body.heightCm) || 0,
+        weightKg: Number(body.weightKg) || 0,
+        cbm: cbmFromDims(body),
         stock: Number(body.stock) || 0,
         oem: body.oem || '',
         image: body.image || '',
@@ -87,6 +98,11 @@ export default async function handler(req, res) {
       updated.price = Number(updated.price) || 0;
       updated.oldPrice = Number(updated.oldPrice) || 0;
       updated.wholesalePrice = Number(updated.wholesalePrice) || 0;
+      updated.lengthCm = Number(updated.lengthCm) || 0;
+      updated.widthCm = Number(updated.widthCm) || 0;
+      updated.heightCm = Number(updated.heightCm) || 0;
+      updated.weightKg = Number(updated.weightKg) || 0;
+      updated.cbm = cbmFromDims(updated);
       updated.stock = Number(updated.stock) || 0;
       const stockChanged = updated.stock !== before.stock;
       products[index] = updated;

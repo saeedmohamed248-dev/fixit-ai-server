@@ -42,6 +42,10 @@
         <div><label>السعر (ج.م) *</label><input id="m-price" type="number" min="0"></div>
         <div><label>السعر قبل الخصم (اختياري)</label><input id="m-oldPrice" type="number" min="0"></div>
         <div><label>🇦🇪 سعر الجملة (درهم) — فرع الإمارات</label><input id="m-wholesalePrice" type="number" min="0" step="0.01" placeholder="سعر الجملة بالدرهم"></div>
+        <div><label>📦 الطول (سم)</label><input id="m-lengthCm" type="number" min="0" step="0.1" placeholder="بالتغليف"></div>
+        <div><label>📦 العرض (سم)</label><input id="m-widthCm" type="number" min="0" step="0.1"></div>
+        <div><label>📦 الارتفاع (سم)</label><input id="m-heightCm" type="number" min="0" step="0.1"></div>
+        <div><label>⚖️ الوزن (كجم)</label><input id="m-weightKg" type="number" min="0" step="0.1" placeholder="للشحن الدولي"></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
         <div class="full"><label>📷 صورة المنتج الرئيسية</label>
           <div class="upload-row">
@@ -147,6 +151,7 @@
         <button data-tab="coupons">🎟️ خصومات وهدايا</button>
         <button data-tab="customers">👥 العملاء</button>
         <button data-tab="maintenance">🔧 الصيانة</button>
+        <button data-tab="containers">🧩 حاويات الشحن</button>
         <button data-tab="activity">📝 سجل العمليات</button>
         <button data-tab="settings">⚙️ إعدادات المتجر</button>
         <button data-tab="sync">🔄 المزامنة</button>
@@ -171,7 +176,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -652,7 +657,7 @@
         }));
     }
 
-    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'stock', 'image', 'images', 'description', 'descriptionEn'];
+    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'stock', 'image', 'images', 'description', 'descriptionEn'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';
@@ -960,6 +965,101 @@
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
+    }
+
+    /* ==================== 🧩 حاويات الشحن (Share a Container) ==================== */
+    const CNT_STATUS = { open: 'مفتوحة', filling: 'بتتملّي', full: 'ممتلئة', sealed: 'مقفولة', shipped: 'اتشحنت', delivered: 'اتسلّمت' };
+    async function loadContainers() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      const cts = (typeof containerList === 'function' ? containerList() : []);
+      const lanes = (window.SITE && SITE.wholesale && SITE.wholesale.freight && SITE.wholesale.freight.lanes) || {};
+      let list = [];
+      try { list = await api('/containers', { headers: authHeaders() }); } catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+
+      box.innerHTML = `
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="margin-bottom:10px;">🚢 حاوية جديدة للمشاركة</h3>
+        <div class="form-grid">
+          <div><label>المرجع</label><input id="c-ref" placeholder="تلقائي لو فاضي"></div>
+          <div><label>الوجهة (كود)</label><select id="c-lane">${Object.keys(lanes).map((k) => `<option value="${k}">${k}</option>`).join('') || '<option value="DEFAULT">DEFAULT</option>'}</select></div>
+          <div><label>الميناء</label><input id="c-port" placeholder="الإسكندرية..."></div>
+          <div><label>نوع الحاوية</label><select id="c-type">${cts.map((c) => `<option value="${c.code}" data-cap="${c.usableCbm}">${c.nameAr} (${c.usableCbm} م³)</option>`).join('') || '<option value="40HC" data-cap="68">40HC (68 م³)</option>'}</select></div>
+          <div><label>السعة (م³)</label><input id="c-cap" type="number" step="0.1" value="${cts[0]?.usableCbm || 68}"></div>
+          <div><label>سعر الحاوية كاملة ($) — شامل الهامش</label><input id="c-freight" type="number" step="1" placeholder="مثلاً 2500"></div>
+          <div><label>تاريخ الإقفال</label><input id="c-cutoff" type="date"></div>
+          <div><label>تاريخ الإقلاع (ETD)</label><input id="c-etd" type="date"></div>
+        </div>
+        <button class="btn btn-sm" id="c-create" style="margin-top:12px;">➕ إنشاء حاوية</button>
+      </div>
+      ${list.length ? list.map(cntCard).join('') : '<div class="empty-state"><span class="icon">🧩</span>مفيش حاويات لسه — أنشئ واحدة فوق عشان التجار يشاركوا فيها</div>'}`;
+
+      // نوع الحاوية يملأ السعة تلقائياً
+      const typeSel = document.getElementById('c-type');
+      typeSel?.addEventListener('change', () => {
+        const cap = typeSel.selectedOptions[0]?.dataset.cap;
+        if (cap) document.getElementById('c-cap').value = cap;
+      });
+
+      document.getElementById('c-create').addEventListener('click', async () => {
+        const laneCode = document.getElementById('c-lane').value;
+        const body = {
+          ref: document.getElementById('c-ref').value.trim(),
+          laneCode,
+          port: document.getElementById('c-port').value.trim() || (lanes[laneCode]?.port || ''),
+          containerCode: typeSel.value,
+          containerName: typeSel.selectedOptions[0]?.textContent.split(' (')[0] || typeSel.value,
+          capacityCbm: Number(document.getElementById('c-cap').value) || 0,
+          baseFreightUsd: Number(document.getElementById('c-freight').value) || 0,
+          cutoffDate: document.getElementById('c-cutoff').value,
+          etd: document.getElementById('c-etd').value,
+        };
+        if (!body.capacityCbm || !body.baseFreightUsd) return toast('⚠️ السعة وسعر الحاوية مطلوبين');
+        try {
+          await api('/containers', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+          toast('تم إنشاء الحاوية ✓');
+          loadContainers();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
+
+      box.querySelectorAll('[data-cnt-status]').forEach((sel) =>
+        sel.addEventListener('change', async () => {
+          try { await api('/containers', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ id: sel.dataset.cntStatus, status: sel.value }) }); toast('تم التحديث ✓'); }
+          catch (e) { toast('⚠️ ' + e.message); }
+        }));
+      box.querySelectorAll('[data-cnt-del]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          if (!confirm('حذف الحاوية وكل حجوزاتها؟')) return;
+          try { await api('/containers?id=' + encodeURIComponent(b.dataset.cntDel), { method: 'DELETE', headers: authHeaders() }); loadContainers(); }
+          catch (e) { toast('⚠️ ' + e.message); }
+        }));
+    }
+
+    function cntCard(s) {
+      const pct = Math.min(100, Math.round(s.bookedCbm / s.capacityCbm * 100));
+      const bookings = s.bookings || [];
+      return `
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div><b>${esc(s.ref)}</b> — 🚢 ${esc(s.port || s.laneCode)} · ${esc(s.containerName || s.containerCode)}<br>
+            <small class="muted">السعة ${s.capacityCbm} م³ · محجوز ${s.bookedCbm} م³ (${pct}%) · سعر الحاوية $${s.baseFreightUsd}</small></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select data-cnt-status="${esc(s.id)}">${Object.entries(CNT_STATUS).map(([k, v]) => `<option value="${k}" ${s.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            <button class="btn btn-sm btn-danger" data-cnt-del="${esc(s.id)}">🗑️</button>
+          </div>
+        </div>
+        <div style="height:20px;border-radius:8px;background:#eee;overflow:hidden;margin:10px 0;">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent-dark),var(--accent));"></div>
+        </div>
+        ${bookings.length ? `<table class="table" style="margin-top:6px;">
+          <tr><th>التاجر</th><th>الدولة</th><th>م³</th><th>الحصة ($)</th><th>موبايل</th></tr>
+          ${bookings.map((b) => `<tr>
+            <td>${esc(b.company || b.name)}</td><td>${esc(b.country) || '—'}</td>
+            <td>${b.cbm}</td><td><b>$${b.shareUsd}</b></td>
+            <td dir="ltr"><a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${esc(String(b.phone).replace(/[^\d]/g,''))}">💬 ${esc(b.phone)}</a></td>
+          </tr>`).join('')}
+        </table>` : '<small class="muted">مفيش حجوزات لسه</small>'}
+      </div>`;
     }
 
     /* ==================== 📝 سجل العمليات ==================== */

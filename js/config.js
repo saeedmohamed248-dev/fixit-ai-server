@@ -42,6 +42,39 @@ window.SITE = {
       { min: 100, off: 22 },
     ],
     moq: 1,                        // أقل كمية للطلب لكل صنف (Minimum Order Quantity)
+    // 🚢 الحاويات — الحجم القابل للتحميل فعلياً (CBM) وسقف الوزن
+    containers: [
+      { code: '20GP', nameAr: 'حاوية 20 قدم', nameEn: "20ft", usableCbm: 28, maxKg: 28000, sort: 1 },
+      { code: '40GP', nameAr: 'حاوية 40 قدم', nameEn: "40ft", usableCbm: 58, maxKg: 26500, sort: 2 },
+      { code: '40HC', nameAr: 'حاوية 40 قدم عالية', nameEn: "40ft HC", usableCbm: 68, maxKg: 26000, sort: 3 },
+    ],
+    lclMaxCbm: 15,          // أقل من كده = شحن مجمّع LCL
+    // 💵 أسعار الشحن من دبي لكل وجهة (بالدولار) — عدّلها أو حدّثها دورياً
+    freight: {
+      markupPct: 30,        // هامش المنصة على تكلفة الشحن
+      insurancePct: 1,      // نسبة التأمين من قيمة (بضاعة + شحن) لـ CIF/DDP
+      lanes: {
+        EG: { port: 'الإسكندرية', fcl: { '20GP': 1400, '40GP': 2300, '40HC': 2500 }, lclPerCbm: 95, minCharge: 350 },
+        RU: { port: 'نوفوروسيسك', fcl: { '20GP': 2600, '40GP': 4100, '40HC': 4400 }, lclPerCbm: 140, minCharge: 500 },
+        DEFAULT: { port: 'أقرب ميناء', fcl: { '20GP': 2200, '40GP': 3600, '40HC': 3900 }, lclPerCbm: 130, minCharge: 480 },
+      },
+    },
+    // 📜 شروط التسليم المتاحة (Incoterms)
+    incoterms: {
+      FOB: { nameAr: 'تسليم ميناء دبي (FOB)', nameEn: 'FOB Dubai', freight: false, insurance: false, customs: false },
+      CIF: { nameAr: 'شحن حتى ميناء الوصول (CIF)', nameEn: 'CIF Port', freight: true, insurance: true, customs: false },
+      DDP: { nameAr: 'توصيل للباب شامل الجمارك (DDP)', nameEn: 'DDP Door', freight: true, insurance: true, customs: true },
+    },
+    // 🌍 سياسة كل دولة: أي شروط تسليم مسموحة + هل نقدّر الجمارك
+    countryPolicy: {
+      EG: { incoterms: ['FOB', 'CIF', 'DDP'], customs: true },
+      RU: { incoterms: ['FOB', 'CIF'], customs: false },
+      DEFAULT: { incoterms: ['FOB', 'CIF'], customs: false },
+    },
+    // 🛃 تقدير الجمارك (للدول اللي customs=true) — نسب تقريبية
+    customs: {
+      EG: { dutyPct: 40, vatPct: 14, clearanceUsd: 150 },
+    },
     // 🌍 لوحة الثقة الدولية — بيانات ثابتة تظهر للتجار
     trust: {
       leadTimeAr: '3–7 أيام عمل', leadTimeEn: '3–7 business days',

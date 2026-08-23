@@ -39,6 +39,7 @@
     const root = document.getElementById('trade-root');
     const user = () => currentUser();
     let CATALOG = [];
+    let SHIPMENTS = [];
 
     /* ---------- لوحة الثقة الدولية ---------- */
     function trustGrid() {
@@ -141,10 +142,91 @@
       <div class="products-grid">${best.map(productCard).join('')}</div>`;
     }
 
+    /* ---------- 🧩 Share a Container ---------- */
+    function shareHtml() {
+      const open = SHIPMENTS.filter((s) => ['open', 'filling', 'full'].includes(s.status));
+      const body = !open.length
+        ? `<div class="panel-sub">${t('share_none')}</div>`
+        : `<div class="ship-list">${open.map(shipCard).join('')}</div>`;
+      return `
+      <section class="trade-panel" id="share">
+        <h2>🧩 ${t('share_title')}</h2>
+        <div class="panel-sub">${t('share_sub')}</div>
+        ${body}
+      </section>`;
+    }
+    function shipCard(s) {
+      const pct = Math.min(100, Math.round(s.bookedCbm / s.capacityCbm * 100));
+      const remaining = Math.round((s.capacityCbm - s.bookedCbm) * 100) / 100;
+      const full = s.status === 'full' || remaining <= 0;
+      const perCbm = s.baseFreightUsd / s.capacityCbm;
+      return `
+      <div class="ship-card ${full ? 'full' : ''}">
+        <div class="sc-top">
+          <div>
+            <div class="sc-route">🚢 ${esc(s.port || s.laneCode)} · ${esc(s.containerName || s.containerCode)}</div>
+            <div class="sc-meta">${esc(s.ref)} ${s.etd ? '· ' + t('share_etd') + ' ' + esc(s.etd) : ''} ${s.cutoffDate ? '· ' + t('share_closes') + ' ' + esc(s.cutoffDate) : ''}</div>
+          </div>
+          <div class="sc-meta" style="text-align:end;">$ ${new Intl.NumberFormat('en-US').format(Math.round(perCbm))}/${t('cbm_unit')}</div>
+        </div>
+        <div class="share-track">
+          <div class="used" style="width:${pct}%;">${pct >= 12 ? pct + '%' : ''}</div>
+        </div>
+        <div class="share-scale">
+          <span>${s.bookedCbm} / ${s.capacityCbm} ${t('cbm_unit')} · ${t('share_fill')} ${pct}%</span>
+          <span>${full ? t('share_full') : remaining + ' ' + t('cbm_unit') + ' ' + t('share_left')}</span>
+        </div>
+        ${full ? '' : (wsLocked()
+          ? `<div class="share-actions"><a class="btn btn-sm" href="/account.html">${t('share_login')}</a></div>`
+          : `<div class="share-actions">
+              <input type="number" min="0.5" max="${remaining}" step="0.5" placeholder="${t('cbm_unit')}" data-cbm="${esc(s.id)}">
+              <span class="sc-meta" data-cost="${esc(s.id)}"></span>
+              <button class="btn btn-sm" data-book="${esc(s.id)}">${t('share_book')}</button>
+            </div>
+            <div class="sc-meta" data-msg="${esc(s.id)}" style="margin-top:6px;"></div>`)}
+      </div>`;
+    }
+    function wireShare() {
+      document.querySelectorAll('[data-cbm]').forEach((inp) => {
+        const id = inp.dataset.cbm;
+        const s = SHIPMENTS.find((x) => x.id === id);
+        const costEl = document.querySelector(`[data-cost="${id}"]`);
+        inp.addEventListener('input', () => {
+          const cbm = Number(inp.value) || 0;
+          const share = s.baseFreightUsd * (cbm / s.capacityCbm);
+          costEl.textContent = cbm > 0 ? `${t('share_your_cost')}: $ ${new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(share)}` : '';
+        });
+      });
+      document.querySelectorAll('[data-book]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.book;
+          const u = user();
+          const cbm = Number(document.querySelector(`[data-cbm="${id}"]`).value) || 0;
+          const msg = document.querySelector(`[data-msg="${id}"]`);
+          if (cbm <= 0) { msg.style.color = 'var(--red)'; msg.textContent = t('cbm_unit'); return; }
+          btn.disabled = true; btn.textContent = t('sending');
+          try {
+            const r = await api('/containers', { method: 'POST', body: JSON.stringify({
+              action: 'book', shipmentId: id, cbm,
+              dealer: { name: u.name, phone: u.phone, company: u.company || '', country: u.country || '' },
+            }) });
+            const idx = SHIPMENTS.findIndex((x) => x.id === id);
+            if (idx >= 0) SHIPMENTS[idx] = { ...SHIPMENTS[idx], ...r.shipment };
+            toast(t('share_booked'));
+            render();
+          } catch (e) {
+            msg.style.color = 'var(--red)'; msg.textContent = e.message;
+            btn.disabled = false; btn.textContent = t('share_book');
+          }
+        });
+      });
+    }
+
     function render() {
-      root.innerHTML = heroHtml() + trustGrid() + orderPadHtml() + rfqHtml() +
+      root.innerHTML = heroHtml() + trustGrid() + orderPadHtml() + shareHtml() + rfqHtml() +
         `<div id="catalog-teaser"></div>`;
       wireOrderPad();
+      wireShare();
       wireRfq();
       document.getElementById('catalog-teaser').innerHTML = catalogTeaserHtml();
       if (location.hash) {
@@ -249,8 +331,11 @@
       });
     }
 
-    // نجيب الكتالوج مرة واحدة (للطلب السريع والتيزر)
-    api('/products').then((list) => { CATALOG = list; render(); }).catch(() => render());
+    // نجيب الكتالوج والحاويات المفتوحة
+    Promise.all([
+      api('/products').then((l) => { CATALOG = l; }).catch(() => {}),
+      api('/containers').then((l) => { SHIPMENTS = l; }).catch(() => {}),
+    ]).then(render);
   </script>
 </body>
 </html>

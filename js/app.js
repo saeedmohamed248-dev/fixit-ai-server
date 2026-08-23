@@ -94,6 +94,83 @@ function tierTableHtml(p) {
     </table>
   </div>`;
 }
+
+/* ---------- 🚢 محرك الشحن والحاويات (CBM · Load Planner · Freight · Incoterms) ---------- */
+function containerList() {
+  return [...(wsConf().containers || [])].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+}
+function lclMaxCbm() { return Number(wsConf().lclMaxCbm) || 15; }
+// حجم/وزن السلة — items = [{ p, qty }]
+function sumCbm(items) { return items.reduce((s, i) => s + (Number(i.p.cbm) || 0) * i.qty, 0); }
+function sumWeight(items) { return items.reduce((s, i) => s + (Number(i.p.weightKg) || 0) * i.qty, 0); }
+// أصغر حاوية تكفي الحجم والوزن — أو LCL أو حاويات متعددة
+function planLoad(cbm, kg) {
+  if (cbm <= 0) return { mode: 'EMPTY', cbm: 0 };
+  if (cbm < lclMaxCbm()) return { mode: 'LCL', cbm, chargeableCbm: Math.max(cbm, 1) };
+  const sizes = containerList();
+  for (const ct of sizes) {
+    if (cbm <= ct.usableCbm && kg <= ct.maxKg) {
+      return { mode: 'FCL', container: ct, count: 1, cbm, fillPct: Math.round(cbm / ct.usableCbm * 100) };
+    }
+  }
+  const big = sizes[sizes.length - 1] || { usableCbm: 68, code: '40HC' };
+  const count = Math.ceil(cbm / big.usableCbm);
+  return { mode: 'FCL_MULTI', container: big, count, cbm, fillPct: Math.round(cbm / (big.usableCbm * count) * 100) };
+}
+// كود الدولة من نص حساب التاجر (حر) → EG / RU / DEFAULT
+function countryCode(str) {
+  const s = String(str || '').toLowerCase();
+  if (/(مصر|egypt|eg\b)/.test(s)) return 'EG';
+  if (/(روسيا|russia|ru\b|россия)/.test(s)) return 'RU';
+  return 'DEFAULT';
+}
+function dealerCountryCode() { return countryCode(currentUser()?.country); }
+function lane(code) { return (wsConf().freight?.lanes || {})[code] || (wsConf().freight?.lanes || {}).DEFAULT || {}; }
+function countryPolicy(code) { return (wsConf().countryPolicy || {})[code] || (wsConf().countryPolicy || {}).DEFAULT || { incoterms: ['FOB', 'CIF'], customs: false }; }
+function incotermDef(c) { return (wsConf().incoterms || {})[c] || {}; }
+function freightMarkup() { return Number(wsConf().freight?.markupPct) || 0; }
+// تكلفة الشحن الخام (دولار) قبل الهامش
+function rawFreightUsd(code, plan) {
+  const ln = lane(code);
+  if (plan.mode === 'LCL') return Math.max((Number(ln.lclPerCbm) || 0) * plan.chargeableCbm, Number(ln.minCharge) || 0);
+  if (plan.mode === 'FCL' || plan.mode === 'FCL_MULTI') {
+    const per = (ln.fcl || {})[plan.container.code] || 0;
+    return per * (plan.count || 1);
+  }
+  return 0;
+}
+function freightUsd(code, plan) { return rawFreightUsd(code, plan) * (1 + freightMarkup() / 100); }
+function customsEstimateUsd(code, cifUsd) {
+  const c = (wsConf().customs || {})[code];
+  if (!c) return 0;
+  return cifUsd * ((Number(c.dutyPct) || 0) / 100) + cifUsd * ((Number(c.vatPct) || 0) / 100) + (Number(c.clearanceUsd) || 0);
+}
+// عرض سعر شحن كامل بالدولار — items=[{p,qty}]
+function freightQuote(items, incotermCode, code) {
+  const inc = incotermDef(incotermCode);
+  const cbm = sumCbm(items), kg = sumWeight(items);
+  const plan = planLoad(cbm, kg);
+  // قيمة البضاعة بالدولار (أسعار الجملة بالدرهم ÷ سعر الصرف، مع خصم الكمية)
+  const goods = items.reduce((s, i) => {
+    const aed = wsUnitAED(i.p, i.qty);
+    return s + (aed === null ? 0 : (aed / usdRate()) * i.qty);
+  }, 0);
+  let freight = 0, insurance = 0, customs = 0;
+  if (inc.freight) freight = freightUsd(code, plan);
+  if (inc.insurance) insurance = (goods + freight) * ((Number(wsConf().freight?.insurancePct) || 0) / 100);
+  if (inc.customs && countryPolicy(code).customs) customs = customsEstimateUsd(code, goods + freight + insurance);
+  return { cbm, kg, plan, goods, freight, insurance, customs, total: goods + freight + insurance + customs, port: lane(code).port || '' };
+}
+function usdMoney(n) { return '$ ' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n); }
+// وصف الحمولة الموصى بها بلغة العرض
+function loadLabel(plan) {
+  if (plan.mode === 'EMPTY') return '';
+  if (plan.mode === 'LCL') return t('load_lcl');
+  const ctName = LANG === 'en' ? plan.container.nameEn : plan.container.nameAr;
+  if (plan.mode === 'FCL') return `${ctName} · ${plan.fillPct}%`;
+  return `${plan.count}× ${ctName} · ${plan.fillPct}%`;
+}
+
 // أسعار الجملة تظهر بس للتجار المسجّلين
 function wsLocked() { return isWholesale() && !currentUser(); }
 // كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
