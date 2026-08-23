@@ -82,6 +82,10 @@ const notifyCol = makeCollection('notify');
 export const getNotify = notifyCol.get;
 export const saveNotify = notifyCol.save;
 
+const maintenanceCol = makeCollection('maintenance');
+export const getMaintenance = maintenanceCol.get;
+export const saveMaintenance = maintenanceCol.save;
+
 const activityCol = makeCollection('activity');
 export const getActivity = activityCol.get;
 

@@ -16,10 +16,11 @@ import sitemap from './_lib/routes/sitemap.js';
 import questions from './_lib/routes/questions.js';
 import notify from './_lib/routes/notify.js';
 import pay from './_lib/routes/pay.js';
+import maintenance from './_lib/routes/maintenance.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance,
 };
 
 export default async function handler(req, res) {

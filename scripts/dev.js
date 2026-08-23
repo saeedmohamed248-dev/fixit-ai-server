@@ -25,7 +25,7 @@ const MIME = {
 
 // كل الـ handlers بقت في api/_lib/routes/ (نقطة دخول واحدة على Vercel)
 const ROUTE_NAMES = ['products', 'orders', 'sync', 'diagnose', 'auth', 'reviews',
-  'coupons', 'settings', 'activity', 'requests', 'questions', 'notify', 'pay', 'sitemap'];
+  'coupons', 'settings', 'activity', 'requests', 'questions', 'notify', 'pay', 'sitemap', 'maintenance'];
 const apiHandlers = {};
 for (const name of ROUTE_NAMES) {
   apiHandlers['/api/' + name] = () => import(`../api/_lib/routes/${name}.js`);

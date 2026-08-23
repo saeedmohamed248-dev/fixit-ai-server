@@ -83,7 +83,7 @@
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
-    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔' };
+    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔', credit: '💳', maintenance: '🔧' };
     let products = [];
     let ordersCache = [];
     let customersCache = [];
@@ -145,6 +145,7 @@
         <button data-tab="products">🔧 المنتجات والمخزون</button>
         <button data-tab="coupons">🎟️ خصومات وهدايا</button>
         <button data-tab="customers">👥 العملاء</button>
+        <button data-tab="maintenance">🔧 الصيانة</button>
         <button data-tab="activity">📝 سجل العمليات</button>
         <button data-tab="settings">⚙️ إعدادات المتجر</button>
         <button data-tab="sync">🔄 المزامنة</button>
@@ -169,7 +170,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -469,7 +470,18 @@
         </div>
       </div>
 
-      ${o.returnRequest ? `<div class="note">↩️ <b>طلب إرجاع من العميل</b> (${new Date(o.returnRequest.at).toLocaleDateString('ar-EG')}):<br>${esc(o.returnRequest.reason) || 'بدون سبب مكتوب'}</div>` : ''}
+      ${o.returnRequest ? `<div class="note">↩️ <b>طلب إرجاع من العميل</b> (${new Date(o.returnRequest.at).toLocaleDateString('ar-EG')}):<br>${esc(o.returnRequest.reason) || 'بدون سبب مكتوب'}
+        ${o.returnRequest.status === 'approved'
+          ? `<br>✅ <b>تمت الموافقة</b> — رصيد استبدال ${money(o.returnRequest.credit || 0)}`
+          : o.returnRequest.status === 'rejected'
+          ? '<br>❌ تم الرفض'
+          : `<div style="display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
+              <input id="rt-credit" type="number" min="0" value="${o.total}" style="width: 130px;" placeholder="قيمة الرصيد">
+              <button class="btn btn-sm btn-green" id="rt-approve">وافق وأصدر رصيد ✓</button>
+              <button class="btn btn-sm btn-danger" id="rt-reject">ارفض</button>
+            </div>
+            <small style="color: var(--muted);">الرصيد بيتضاف لحساب العميل ويستخدمه كخصم في طلب أكبر منه</small>`}
+      </div>` : ''}
       <div class="order-card" style="margin-bottom: 14px;">
         <b>👤 ${esc(o.customer.name)}</b>
         <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">
@@ -518,6 +530,27 @@
       });
 
       document.getElementById('om-print').addEventListener('click', () => printInvoice(o));
+
+      // ↩️ الموافقة/الرفض على الإرجاع
+      document.getElementById('rt-approve')?.addEventListener('click', async () => {
+        try {
+          const r = await api('/orders', {
+            method: 'PUT', headers: authHeaders(),
+            body: JSON.stringify({ id: o.id, returnAction: 'approve', creditAmount: Number(document.getElementById('rt-credit').value) || o.total }),
+          });
+          toast(r.hasAccount ? `تم — رصيد ${money(r.credited)} اتضاف للعميل ✓` : 'تم — لكن العميل مالوش حساب مسجّل');
+          modal.classList.remove('open');
+          loadOrders();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
+      document.getElementById('rt-reject')?.addEventListener('click', async () => {
+        try {
+          await api('/orders', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ id: o.id, returnAction: 'reject' }) });
+          toast('تم رفض الإرجاع');
+          modal.classList.remove('open');
+          loadOrders();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
 
       // إبلاغ العميل بحالة طلبه على واتساب برسالة جاهزة
       const NOTIFY_MSG = {
@@ -838,15 +871,16 @@
           return { count: theirs.length, total: theirs.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0) };
         };
         box.innerHTML = customers.length ? `<div class="table-wrap"><table class="table">
-          <tr><th>الاسم</th><th>الموبايل</th><th>الإيميل</th><th>طلبات</th><th>إجمالي مشترياته</th><th></th></tr>
+          <tr><th>الاسم</th><th>الموبايل</th><th>طلبات</th><th>إجمالي مشترياته</th><th>⭐ نقاط</th><th>💳 رصيد</th><th></th></tr>
           ${customers.map((u) => {
             const s = statsFor(u);
             return `<tr>
-            <td>${esc(u.name)}</td>
+            <td>${esc(u.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(u.email) || ''}</small></td>
             <td dir="ltr">${esc(u.phone)}</td>
-            <td dir="ltr">${esc(u.email) || '—'}</td>
             <td>${s.count}</td>
             <td><b>${money(s.total)}</b></td>
+            <td>${u.points || 0}</td>
+            <td>${u.credit ? money(u.credit) : '—'}</td>
             <td style="white-space: nowrap;">
               <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(u.phone)}?text=${encodeURIComponent('أهلاً ' + u.name + ' من ' + SITE.name + ' 🧡')}">💬</a>
             </td>
@@ -854,6 +888,72 @@
         </table></div>
         <p style="color: var(--muted); font-size: 13px; margin-top: 10px;">🎁 عشان تبعت هدية لعميل: روح لتاب "خصومات وهدايا"</p>`
         : '<div class="empty-state"><span class="icon">👥</span>مفيش عملاء مسجّلين لسه</div>';
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
+    /* ==================== 🔧 مواعيد الصيانة ==================== */
+    async function loadMaintenance() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const list = await api('/maintenance', { headers: authHeaders() });
+        const today = new Date().toISOString().slice(0, 10);
+        box.innerHTML = `
+        <div class="summary" style="max-width: 640px; margin-bottom: 20px;">
+          <h3>➕ إضافة موعد صيانة يدوي</h3>
+          <div class="form-grid">
+            <div><label>اسم العميل</label><input id="mt-name"></div>
+            <div><label>رقم الموبايل *</label><input id="mt-phone" dir="ltr"></div>
+            <div class="full"><label>الصيانة المطلوبة *</label><input id="mt-title" placeholder="مثال: تغيير زيت وفلتر"></div>
+            <div><label>تاريخ الموعد *</label><input id="mt-date" type="date"></div>
+            <div><label>ملاحظة</label><input id="mt-note"></div>
+          </div>
+          <button class="btn btn-sm" id="mt-add">إضافة الموعد</button>
+        </div>
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 10px;">💡 المواعيد التلقائية بتتولّد لوحدها لما العميل يشتري قطع ليها عمر افتراضي (فلاتر، فرامل...)</p>
+        ${list.length ? `<div class="table-wrap"><table class="table">
+          <tr><th>العميل</th><th>الصيانة</th><th>الموعد</th><th>النوع</th><th></th></tr>
+          ${list.map((m) => `<tr style="${!m.done && m.dueDate < today ? 'background:#fef3f2;' : ''}">
+            <td>${esc(m.customerName) || '—'}<br><small dir="ltr" style="color: var(--muted);">${esc(m.phone)}</small></td>
+            <td>${esc(m.title)}${m.done ? ' <span class="verified-badge">تم ✓</span>' : ''}</td>
+            <td>${new Date(m.dueDate).toLocaleDateString('ar-EG')}</td>
+            <td>${m.source === 'auto' ? '🔄 تلقائي' : '✍️ يدوي'}</td>
+            <td style="white-space: nowrap;">
+              <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(m.phone)}?text=${encodeURIComponent('تذكير صيانة من ' + SITE.name + ': ' + m.title + ' — الموعد ' + m.dueDate)}">💬 ذكّره</a>
+              ${m.done ? '' : `<button class="btn btn-sm btn-outline" data-mt-done="${esc(m.id)}">تم</button>`}
+              <button class="btn btn-sm btn-danger" data-mt-del="${esc(m.id)}">✕</button>
+            </td>
+          </tr>`).join('')}
+        </table></div>` : '<div class="empty-state"><span class="icon">🔧</span>مفيش مواعيد صيانة لسه</div>'}`;
+
+        document.getElementById('mt-add').addEventListener('click', async () => {
+          try {
+            await api('/maintenance', {
+              method: 'POST', headers: authHeaders(),
+              body: JSON.stringify({
+                customerName: document.getElementById('mt-name').value.trim(),
+                phone: document.getElementById('mt-phone').value.trim(),
+                title: document.getElementById('mt-title').value.trim(),
+                dueDate: document.getElementById('mt-date').value,
+                note: document.getElementById('mt-note').value.trim(),
+              }),
+            });
+            toast('تم إضافة الموعد ✓');
+            loadMaintenance();
+          } catch (e) { toast('⚠️ ' + e.message); }
+        });
+        box.querySelectorAll('[data-mt-done]').forEach((b) =>
+          b.addEventListener('click', async () => {
+            await api('/maintenance', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ id: b.dataset.mtDone, done: true }) });
+            loadMaintenance();
+          }));
+        box.querySelectorAll('[data-mt-del]').forEach((b) =>
+          b.addEventListener('click', async () => {
+            await api('/maintenance?id=' + b.dataset.mtDel, { method: 'DELETE', headers: authHeaders() });
+            loadMaintenance();
+          }));
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }

@@ -315,6 +315,22 @@ const I18N = {
   points_earned: { ar: 'كسبت {n} نقطة من الطلب ده ⭐', en: 'You earned {n} points on this order ⭐' },
   points_hint: { ar: 'بتكسب 5% من قيمة كل طلب نقاط، والنقطة = 1 ج.م', en: 'Earn 5% of every order in points — 1 point = EGP 1' },
 
+  /* ---------- رصيد الاستبدال ---------- */
+  credit_balance: { ar: '💳 رصيد استبدال: {v}', en: '💳 Store credit: {v}' },
+  credit_hint: { ar: 'الرصيد ده من مرتجعاتك — تستخدمه كخصم في أي طلب قيمته أكبر منه', en: 'This credit is from your returns — use it on any order worth more than the balance' },
+  credit_use: { ar: 'استخدم رصيد الاستبدال ({v})', en: 'Use my store credit ({v})' },
+  credit_row: { ar: 'رصيد الاستبدال', en: 'Store credit' },
+  credit_min: { ar: 'الرصيد يُستخدم فقط في طلب أكبر من {v}', en: 'Credit applies only on orders above {v}' },
+
+  /* ---------- الصيانة ---------- */
+  maint_title: { ar: 'مواعيد الصيانة 🔧', en: 'Maintenance Schedule 🔧' },
+  maint_none: { ar: 'مفيش مواعيد صيانة — هتظهر تلقائياً بعد شرائك للقطع', en: 'No maintenance due — reminders appear automatically after you buy parts' },
+  maint_due: { ar: 'موعد الاستحقاق:', en: 'Due:' },
+  maint_soon: { ar: '⏰ قرّب', en: '⏰ Soon' },
+  maint_over: { ar: '⚠️ فات', en: '⚠️ Overdue' },
+  maint_book: { ar: 'احجز صيانة واتساب', en: 'Book service on WhatsApp' },
+  my_invoices: { ar: 'فواتيري', en: 'My Invoices' },
+
   /* ---------- الإرجاع ---------- */
   return_btn: { ar: 'طلب إرجاع ↩️', en: 'Request return ↩️' },
   return_reason: { ar: 'اكتب سبب الإرجاع:', en: 'Reason for the return:' },

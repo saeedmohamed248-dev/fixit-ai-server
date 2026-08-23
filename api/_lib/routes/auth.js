@@ -7,7 +7,7 @@ import { getUsers, saveUsers } from '../db.js';
 import { signToken, getUser, hashPassword, checkPassword } from '../auth.js';
 import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
-const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0 });
+const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0 });
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
