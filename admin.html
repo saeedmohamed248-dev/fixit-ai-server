@@ -46,6 +46,7 @@
         <div><label>📦 العرض (سم)</label><input id="m-widthCm" type="number" min="0" step="0.1"></div>
         <div><label>📦 الارتفاع (سم)</label><input id="m-heightCm" type="number" min="0" step="0.1"></div>
         <div><label>⚖️ الوزن (كجم)</label><input id="m-weightKg" type="number" min="0" step="0.1" placeholder="للشحن الدولي"></div>
+        <div><label>🛃 نسبة الجمرك (%) — لكل قطعة</label><input id="m-customsPct" type="number" min="0" max="100" step="0.5" placeholder="مثلاً 40"></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
         <div class="full"><label>📷 صورة المنتج الرئيسية</label>
           <div class="upload-row">
@@ -657,7 +658,7 @@
         }));
     }
 
-    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'stock', 'image', 'images', 'description', 'descriptionEn'];
+    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'customsPct', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'stock', 'image', 'images', 'description', 'descriptionEn'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';

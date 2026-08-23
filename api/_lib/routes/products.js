@@ -68,6 +68,7 @@ export default async function handler(req, res) {
         price: Number(body.price) || 0,
         oldPrice: Number(body.oldPrice) || 0,
         wholesalePrice: Number(body.wholesalePrice) || 0,
+        customsPct: Number(body.customsPct) || 0,
         lengthCm: Number(body.lengthCm) || 0,
         widthCm: Number(body.widthCm) || 0,
         heightCm: Number(body.heightCm) || 0,
@@ -98,6 +99,7 @@ export default async function handler(req, res) {
       updated.price = Number(updated.price) || 0;
       updated.oldPrice = Number(updated.oldPrice) || 0;
       updated.wholesalePrice = Number(updated.wholesalePrice) || 0;
+      updated.customsPct = Number(updated.customsPct) || 0;
       updated.lengthCm = Number(updated.lengthCm) || 0;
       updated.widthCm = Number(updated.widthCm) || 0;
       updated.heightCm = Number(updated.heightCm) || 0;

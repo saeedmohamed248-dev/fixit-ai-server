@@ -166,7 +166,7 @@
               </select>
             </div>
             <div class="row"><span>${t('ship_goods')}</span><span>${usdMoney(q.goods)}</span></div>
-            ${q.freight ? `<div class="row"><span>${t('ship_freight')} (+${wsConf().freight.markupPct}%)</span><span>${usdMoney(q.freight)}</span></div>` : ''}
+            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : ''}
             ${q.insurance ? `<div class="row"><span>${t('ship_insurance')}</span><span>${usdMoney(q.insurance)}</span></div>` : ''}
             ${q.customs ? `<div class="row" style="color:var(--amber);"><span>${t('ship_customs')}</span><span>${usdMoney(q.customs)}</span></div>` : ''}
             <div class="row total" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;"><span>${t('ship_grand')}</span><span>${usdMoney(q.total)}</span></div>

@@ -140,10 +140,17 @@ function rawFreightUsd(code, plan) {
   return 0;
 }
 function freightUsd(code, plan) { return rawFreightUsd(code, plan) * (1 + freightMarkup() / 100); }
-function customsEstimateUsd(code, cifUsd) {
+// تقدير الجمارك: نسبة جمرك كل منتج (من لوحة التحكم) على قيمته + ضريبة ورسوم الدولة
+function customsEstimateUsd(code, items, cifExclDutyUsd) {
   const c = (wsConf().customs || {})[code];
   if (!c) return 0;
-  return cifUsd * ((Number(c.dutyPct) || 0) / 100) + cifUsd * ((Number(c.vatPct) || 0) / 100) + (Number(c.clearanceUsd) || 0);
+  const duty = items.reduce((s, i) => {
+    const aed = wsUnitAED(i.p, i.qty);
+    const goodsUsd = aed === null ? 0 : (aed / usdRate()) * i.qty;
+    return s + goodsUsd * ((Number(i.p.customsPct) || 0) / 100);
+  }, 0);
+  const vat = cifExclDutyUsd * ((Number(c.vatPct) || 0) / 100);
+  return duty + vat + (Number(c.clearanceUsd) || 0);
 }
 // عرض سعر شحن كامل بالدولار — items=[{p,qty}]
 function freightQuote(items, incotermCode, code) {
@@ -158,7 +165,7 @@ function freightQuote(items, incotermCode, code) {
   let freight = 0, insurance = 0, customs = 0;
   if (inc.freight) freight = freightUsd(code, plan);
   if (inc.insurance) insurance = (goods + freight) * ((Number(wsConf().freight?.insurancePct) || 0) / 100);
-  if (inc.customs && countryPolicy(code).customs) customs = customsEstimateUsd(code, goods + freight + insurance);
+  if (inc.customs && countryPolicy(code).customs) customs = customsEstimateUsd(code, items, goods + freight + insurance);
   return { cbm, kg, plan, goods, freight, insurance, customs, total: goods + freight + insurance + customs, port: lane(code).port || '' };
 }
 function usdMoney(n) { return '$ ' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n); }

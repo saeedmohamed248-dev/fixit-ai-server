@@ -71,9 +71,11 @@ window.SITE = {
       RU: { incoterms: ['FOB', 'CIF'], customs: false },
       DEFAULT: { incoterms: ['FOB', 'CIF'], customs: false },
     },
-    // 🛃 تقدير الجمارك (للدول اللي customs=true) — نسب تقريبية
+    // 🛃 تقدير الجمارك (للدول اللي customs=true).
+    // نسبة الجمرك (duty) بتتحدد لكل منتج من لوحة التحكم (customsPct).
+    // هنا الضريبة ورسوم التخليص على مستوى الدولة فقط.
     customs: {
-      EG: { dutyPct: 40, vatPct: 14, clearanceUsd: 150 },
+      EG: { vatPct: 14, clearanceUsd: 150 },
     },
     // 🌍 لوحة الثقة الدولية — بيانات ثابتة تظهر للتجار
     trust: {
