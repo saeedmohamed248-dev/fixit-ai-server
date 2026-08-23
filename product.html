@@ -220,7 +220,7 @@
         loadQA();
 
         // منتجات مشابهة من نفس الفئة
-        const related = (await api('/products?category=' + encodeURIComponent(p.category)))
+        const related = wsCatalogFilter(await api('/products?category=' + encodeURIComponent(p.category)))
           .filter((r) => r.id !== p.id).slice(0, 4);
         if (related.length) {
           document.getElementById('related-section').style.display = '';

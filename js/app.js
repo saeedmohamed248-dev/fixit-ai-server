@@ -7,6 +7,10 @@ window.MODE = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'reta
 window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
 function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
+// 🇦🇪 فرع الجملة يبيع قطع مستعملة (وارد) فقط — مفيش جديد
+function wsCatalogFilter(list) {
+  return isWholesale() ? (list || []).filter((p) => p.condition === 'used') : (list || []);
+}
 function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
 function setMode(m) {
   const ws = m === 'wholesale';
@@ -528,7 +532,7 @@ function initHeaderSearch() {
     if (q.length < 2) { box.classList.remove('open'); return; }
     timer = setTimeout(async () => {
       try {
-        const results = (await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
+        const results = wsCatalogFilter(await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
         box.innerHTML = results.length
           ? results.map((p) => `
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
