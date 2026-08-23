@@ -7,6 +7,7 @@ import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, 
 import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { generateFromOrder } from './maintenance.js';
+import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
 import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
@@ -132,6 +133,7 @@ export default async function handler(req, res) {
           address: customer.address,
         },
         userId: session?.uid || null,
+        email: (user && user.email) || (customer.email || '').trim(),
         notes: body.notes || '',
         payment: PAYMENTS.includes(body.payment) ? body.payment : 'cod',
         items: orderItems,
@@ -159,6 +161,9 @@ export default async function handler(req, res) {
 
       // توليد مواعيد الصيانة تلقائياً من القطع المشتراة
       try { await generateFromOrder(order); } catch {}
+
+      // 📧 إيميل تأكيد الطلب (لو الإيميل متاح)
+      try { await sendOrderConfirm(order, order.email); } catch {}
 
       await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)`);
 
@@ -251,6 +256,8 @@ export default async function handler(req, res) {
       if (typeof req.body.adminNote === 'string') order.adminNote = req.body.adminNote;
       await saveOrders(orders);
       await logActivity('status', `📦 الطلب ${order.number} اتغيرت حالته إلى "${STATUS_AR[status]}"`);
+      // 📧 إيميل تحديث الحالة
+      try { await sendStatusUpdate(order, order.email); } catch {}
       return res.status(200).json(order);
     }
 
