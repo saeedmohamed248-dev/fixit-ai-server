@@ -34,15 +34,17 @@
     let appliedCoupon = null; // { code, discount }
     let usePoints = false;
     let myPoints = 0;
+    let useCredit = false;
+    let myCredit = 0;
     let cardEnabled = false;
 
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
 
-    // رصيد نقاط العميل المسجّل
+    // رصيد نقاط ورصيد استبدال العميل المسجّل
     if (userToken()) {
       api('/auth', { headers: userHeaders() })
-        .then((u) => { myPoints = u.points || 0; if (myPoints) render(); })
+        .then((u) => { myPoints = u.points || 0; myCredit = u.credit || 0; if (myPoints || myCredit) render(); })
         .catch(() => {});
     }
 
@@ -92,7 +94,11 @@
       const subtotal = items.reduce((s, p) => s + p.price * cart[p.id], 0);
       const discount = appliedCoupon ? appliedCoupon.discount : 0;
       const pointsDiscount = usePoints ? Math.min(myPoints, subtotal - discount) : 0;
-      const total = subtotal - discount - pointsDiscount;
+      const netBeforeCredit = subtotal - discount - pointsDiscount;
+      // رصيد الاستبدال يُستخدم فقط لو الطلب أكبر من الرصيد (شرط الحد الأدنى)
+      const creditEligible = myCredit > 0 && netBeforeCredit > myCredit;
+      const creditDiscount = (useCredit && creditEligible) ? myCredit : 0;
+      const total = netBeforeCredit - creditDiscount;
       const user = currentUser();
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
 
@@ -125,6 +131,7 @@
           <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}</b></div>
           ${discount ? `<div class="row" style="color: var(--green);"><span>${t('discount_row')} (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
           ${pointsDiscount ? `<div class="row" style="color: var(--green);"><span>${t('points_row')} ⭐</span><b>- ${money(pointsDiscount)}</b></div>` : ''}
+          ${creditDiscount ? `<div class="row" style="color: var(--green);"><span>${t('credit_row')} 💳</span><b>- ${money(creditDiscount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
             <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
           </div>
@@ -144,6 +151,11 @@
             <input type="checkbox" id="use-points" ${usePoints ? 'checked' : ''}>
             ${t('points_use', { n: myPoints, v: money(Math.min(myPoints, subtotal - discount)) })}
           </label>` : ''}
+          ${myCredit > 0 ? (creditEligible ? `
+          <label class="pay-option" style="margin: 0;">
+            <input type="checkbox" id="use-credit" ${useCredit ? 'checked' : ''}>
+            ${t('credit_use', { v: money(myCredit) })}
+          </label>` : `<div style="font-size: 12px; color: var(--muted);">${t('credit_min', { v: money(myCredit) })}</div>`) : ''}
 
           <hr style="border-color: var(--line);">
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
@@ -195,6 +207,10 @@
         usePoints = e.target.checked;
         render();
       });
+      document.getElementById('use-credit')?.addEventListener('change', (e) => {
+        useCredit = e.target.checked;
+        render();
+      });
       container.querySelectorAll('[data-add]').forEach((btn) =>
         btn.addEventListener('click', () => {
           addToCart(btn.dataset.add, 1);
@@ -244,6 +260,7 @@
               payment: document.querySelector('input[name="pay"]:checked').value,
               coupon: appliedCoupon ? appliedCoupon.code : '',
               usePoints: usePoints ? myPoints : 0,
+              useCredit: useCredit,
               items: Object.entries(c).map(([id, qty]) => ({ id, qty })),
             }),
           });

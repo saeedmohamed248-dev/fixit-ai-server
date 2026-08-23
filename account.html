@@ -82,7 +82,12 @@
         📱 <span dir="ltr">${esc(user.phone)}</span> ${user.email ? ' &nbsp;|&nbsp; ✉️ ' + esc(user.email) : ''}
       </div>
       <div class="note" id="points-box" style="display: none;"></div>
-      <h2 style="margin-bottom: 14px;">${t('my_orders')}</h2>
+      <div class="note" id="credit-box" style="display: none; background: #ecfdf3; border-color: #a6f4c5; color: #067647;"></div>
+
+      <h2 style="margin: 6px 0 14px;">${t('maint_title')}</h2>
+      <div id="my-maint"><div class="spinner">${t('loading')}</div></div>
+
+      <h2 style="margin: 22px 0 14px;">${t('my_orders')} / ${t('my_invoices')}</h2>
       <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`;
 
       document.getElementById('logout').addEventListener('click', () => {
@@ -91,14 +96,38 @@
         showAuth();
       });
 
-      // ⭐ رصيد النقاط
+      // ⭐ رصيد النقاط و💳 رصيد الاستبدال
       api('/auth', { headers: userHeaders() }).then((me) => {
         const pb = document.getElementById('points-box');
         if (pb && me.points > 0) {
           pb.style.display = '';
           pb.innerHTML = `${t('points_balance', { n: me.points, v: money(me.points) })}<br><small>${t('points_hint')}</small>`;
         }
+        const cb = document.getElementById('credit-box');
+        if (cb && me.credit > 0) {
+          cb.style.display = '';
+          cb.innerHTML = `${t('credit_balance', { v: money(me.credit) })}<br><small>${t('credit_hint')}</small>`;
+        }
       }).catch(() => {});
+
+      // 🔧 مواعيد الصيانة
+      const maintBox = document.getElementById('my-maint');
+      api('/maintenance?mine=1', { headers: userHeaders() }).then((list) => {
+        const upcoming = list.filter((m) => !m.done);
+        if (!upcoming.length) { maintBox.innerHTML = `<p style="color: var(--muted);">${t('maint_none')}</p>`; return; }
+        const today = new Date().toISOString().slice(0, 10);
+        maintBox.innerHTML = upcoming.map((m) => {
+          const over = m.dueDate < today;
+          const soon = !over && m.dueDate < new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+          const badge = over ? `<span class="status-pill st-cancelled">${t('maint_over')}</span>` : soon ? `<span class="status-pill st-shipped">${t('maint_soon')}</span>` : '';
+          return `<div class="order-card">
+            <div class="head"><b>${esc(m.title)}</b>${badge}</div>
+            <div style="color: var(--muted); font-size: 13px;">${t('maint_due')} ${new Date(m.dueDate).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</div>
+            ${m.note ? `<div style="font-size: 13px; margin-top: 4px;">${esc(m.note)}</div>` : ''}
+            <a href="${waLink((LANG === 'en' ? 'Book service: ' : 'حجز صيانة: ') + m.title)}" target="_blank" rel="noopener" style="color: var(--accent-dark); font-size: 14px;">${t('maint_book')} 💬</a>
+          </div>`;
+        }).join('');
+      }).catch(() => { maintBox.innerHTML = ''; });
 
       const box = document.getElementById('my-orders');
       try {

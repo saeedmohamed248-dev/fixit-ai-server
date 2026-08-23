@@ -6,6 +6,7 @@
 import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity } from '../db.js';
 import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
+import { generateFromOrder } from './maintenance.js';
 import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
         }
         orderItems.push({
           id: product.id, sku: product.sku, name: product.name,
-          condition: product.condition, price: product.price, qty,
+          condition: product.condition, category: product.category, price: product.price, qty,
         });
       }
 
@@ -102,6 +103,16 @@ export default async function handler(req, res) {
         );
       }
 
+      // 💳 رصيد الاستبدال (Store Credit): يُستخدم فقط لو قيمة الطلب أكبر من الرصيد
+      // (شرط الحد الأدنى) — يضمن إن العميل يشتري ويدفع فرق مع رصيده
+      let creditUsed = 0;
+      const netBeforeCredit = subtotal - discount - pointsUsed;
+      if (user && body.useCredit && (user.credit || 0) > 0) {
+        if (netBeforeCredit > user.credit) {
+          creditUsed = user.credit; // يستخدم كل الرصيد ويدفع الفرق
+        }
+      }
+
       // خصم المخزون + عدّاد المبيعات
       for (const item of orderItems) {
         const product = products.find((p) => p.id === item.id);
@@ -128,14 +139,16 @@ export default async function handler(req, res) {
         discount,
         coupon: couponCode,
         pointsUsed,
-        total: subtotal - discount - pointsUsed,
+        creditUsed,
+        total: netBeforeCredit - creditUsed,
         source: 'website',
       };
 
-      // تحديث رصيد النقاط: خصم المستخدَم + إضافة المكتسب
+      // تحديث رصيد النقاط والاستبدال: خصم المستخدَم + إضافة نقاط مكتسبة
       if (user) {
         pointsEarned = Math.floor(order.total * 0.05);
         user.points = (user.points || 0) - pointsUsed + pointsEarned;
+        user.credit = (user.credit || 0) - creditUsed;
         order.pointsEarned = pointsEarned;
         await saveUsers(users);
       }
@@ -143,6 +156,9 @@ export default async function handler(req, res) {
       const orders = await getOrders();
       orders.unshift(order);
       await saveOrders(orders);
+
+      // توليد مواعيد الصيانة تلقائياً من القطع المشتراة
+      try { await generateFromOrder(order); } catch {}
 
       await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)`);
 
@@ -195,13 +211,41 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       if (!requireAdmin(req, res)) return;
-      const { id, status } = req.body || {};
+      const orders = await getOrders();
+      const order = orders.find((o) => o.id === (req.body || {}).id);
+      if (!order) return res.status(404).json({ error: 'الطلب غير موجود' });
+
+      // ↩️ الموافقة على الإرجاع وإصدار رصيد استبدال للعميل
+      if (req.body.returnAction) {
+        if (!order.returnRequest) return res.status(400).json({ error: 'مفيش طلب إرجاع على الطلب ده' });
+        if (req.body.returnAction === 'approve') {
+          const amount = Math.max(0, Number(req.body.creditAmount) || order.total);
+          order.returnRequest.status = 'approved';
+          order.returnRequest.credit = amount;
+          // نضيف الرصيد لحساب العميل (بالـ userId أو برقم الموبايل)
+          const users = await getUsers();
+          const u = users.find((x) => x.id === order.userId || x.phone === order.customer.phone);
+          if (u) {
+            u.credit = (u.credit || 0) + amount;
+            await saveUsers(users);
+          }
+          await saveOrders(orders);
+          await logActivity('credit', `💳 موافقة إرجاع ${order.number} — رصيد استبدال ${amount} ج.م لـ ${order.customer.name}`);
+          return res.status(200).json({ ok: true, credited: amount, hasAccount: Boolean(u) });
+        }
+        if (req.body.returnAction === 'reject') {
+          order.returnRequest.status = 'rejected';
+          await saveOrders(orders);
+          await logActivity('credit', `↩️ رفض طلب إرجاع ${order.number}`);
+          return res.status(200).json({ ok: true });
+        }
+      }
+
+      // تغيير حالة الطلب
+      const { status } = req.body;
       if (!STATUSES.includes(status)) {
         return res.status(400).json({ error: 'حالة غير صحيحة' });
       }
-      const orders = await getOrders();
-      const order = orders.find((o) => o.id === id);
-      if (!order) return res.status(404).json({ error: 'الطلب غير موجود' });
       const STATUS_AR = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
       order.status = status;
       if (typeof req.body.adminNote === 'string') order.adminNote = req.body.adminNote;
