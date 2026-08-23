@@ -5,10 +5,10 @@
 // GET  /api/auth?action=customers  → قائمة العملاء (إدارة)
 import { getUsers, saveUsers } from '../db.js';
 import { signToken, getUser, hashPassword, checkPassword } from '../auth.js';
-import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
+import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
 import { sendWelcome } from '../email.js';
 
-const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0 });
+const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0, account: u.account || 'retail', company: u.company || '', country: u.country || '' });
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -16,15 +16,21 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'POST') {
       if (!rateLimit(req, res, 'auth', 10)) return;
-      const { action, name, phone, password, email } = req.body || {};
+      const { action, name, phone, password, email, account, company, country } = req.body || {};
       const users = await getUsers();
 
       if (action === 'register') {
+        // حساب الجملة (تاجر) بيقبل أرقام دولية، حساب القطاعي بيقبل الأرقام المصرية
+        const isWholesale = account === 'wholesale';
         if (!name || !phone || !password) {
           return res.status(400).json({ error: 'الاسم ورقم الموبايل وكلمة السر مطلوبين' });
         }
-        if (!validPhone(phone)) {
-          return res.status(400).json({ error: 'رقم الموبايل لازم يكون 11 رقم ويبدأ بـ 01' });
+        if (isWholesale ? !validIntlPhone(phone) : !validPhone(phone)) {
+          return res.status(400).json({
+            error: isWholesale
+              ? 'رقم موبايل غير صحيح (اكتبه بكود الدولة، مثال: 9715xxxxxxxx)'
+              : 'رقم الموبايل لازم يكون 11 رقم ويبدأ بـ 01',
+          });
         }
         if (password.length < 6) {
           return res.status(400).json({ error: 'كلمة السر لازم تكون 6 حروف على الأقل' });
@@ -35,6 +41,9 @@ export default async function handler(req, res) {
         const user = {
           id: 'u' + Date.now(),
           name, phone, email: email || '',
+          account: isWholesale ? 'wholesale' : 'retail',
+          company: company || '',
+          country: country || '',
           pass: hashPassword(password),
           createdAt: new Date().toISOString(),
         };

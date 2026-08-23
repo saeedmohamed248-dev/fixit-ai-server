@@ -87,7 +87,106 @@
         </div>`).join('')}`;
     }
 
+    // 🇦🇪 وضع الجملة: عرض بأسعار الجملة + إتمام الطلب عبر واتساب فرع الإمارات
+    function renderWholesale() {
+      const cart = getCart();
+      const items = products.filter((p) => cart[p.id]);
+      if (items.length === 0) return load();
+      if (!currentUser()) {
+        container.innerHTML = `<div class="empty-state"><span class="icon">🔒</span>
+          ${t('ws_login_required')}<br><br><a class="btn" href="/account.html">${t('ws_login_cta')}</a></div>`;
+        return;
+      }
+      let subtotal = 0;
+      let anyOnRequest = false;
+      items.forEach((p) => {
+        const d = dispPrice(p);
+        if (d === null) anyOnRequest = true;
+        else subtotal += d * cart[p.id];
+      });
+      container.innerHTML = `
+      <h1 style="margin-bottom: 8px;">${t('cart')} (${items.length}) — 🇦🇪 ${t('branch_wholesale')}</h1>
+      <div class="note" style="margin-bottom: 18px;">${t('ws_cart_note')}</div>
+      <div class="cart-layout">
+        <div>
+          ${items.map((p) => {
+            const d = dispPrice(p);
+            const line = d === null ? t('price_request') : money(d * cart[p.id]);
+            return `
+          <div class="cart-item">
+            <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+            <div>
+              <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+              <div class="sub">${conditionBadge(p)} ${esc(p.sku)}</div>
+              <div class="price" style="font-size: 15px;">${d === null ? t('price_request') : money(d)} ${d !== null ? `<small style="color:var(--muted);">× ${cart[p.id]} = <b>${line}</b></small>` : ''}</div>
+            </div>
+            <div class="actions">
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="-1">−</button>
+                <input type="number" min="1" max="${p.stock}" value="${cart[p.id]}" data-qty="${esc(p.id)}">
+                <button class="stock-btn" data-step="${esc(p.id)}" data-d="1">+</button>
+              </div>
+              <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
+            </div>
+          </div>`;
+          }).join('')}
+        </div>
+        <div class="summary">
+          <h3>${t('order_summary')}</h3>
+          <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}${anyOnRequest ? ' +' : ''}</b></div>
+          ${anyOnRequest ? `<div class="row" style="color: var(--muted); font-size: 13px;"><span>${t('price_request')}</span></div>` : ''}
+          <div class="row" style="color: var(--muted); font-size: 13px;"><span>${t('shipping')}</span><span>${t('ship_later')}</span></div>
+          <hr style="border-color: var(--line);">
+          <div><label>${t('full_name')}</label><input id="w-name"></div>
+          <div><label>${t('phone')}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;"></div>
+          <div><label>${t('city')}</label><input id="w-city"></div>
+          <div><label>${t('notes')}</label><textarea id="w-notes" rows="2"></textarea></div>
+          <button class="btn btn-green" id="w-submit">💬 ${t('ws_checkout')}</button>
+        </div>
+      </div>`;
+
+      container.querySelectorAll('[data-qty]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const c = getCart();
+          c[input.dataset.qty] = Math.max(1, Number(input.value) || 1);
+          setCart(c);
+          renderWholesale();
+        });
+      });
+      container.querySelectorAll('[data-remove]').forEach((btn) => {
+        btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); renderWholesale(); });
+      });
+      container.querySelectorAll('[data-step]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const c = getCart();
+          const p = products.find((x) => x.id === btn.dataset.step);
+          c[btn.dataset.step] = Math.max(1, Math.min(p.stock, (c[btn.dataset.step] || 1) + Number(btn.dataset.d)));
+          setCart(c);
+          renderWholesale();
+        });
+      });
+
+      document.getElementById('w-submit').addEventListener('click', () => {
+        const name = document.getElementById('w-name').value.trim();
+        const phone = document.getElementById('w-phone').value.trim();
+        const city = document.getElementById('w-city').value.trim();
+        const notes = document.getElementById('w-notes').value.trim();
+        const cur = WCUR === 'usd' ? 'USD' : 'AED';
+        const lines = items.map((p) => {
+          const d = dispPrice(p);
+          const priceTxt = d === null ? t('price_request') : money(d) + ' × ' + cart[p.id];
+          return `• ${pname(p)} (${p.sku || '-'}) — ${priceTxt}`;
+        }).join('\n');
+        const head = `${t('ws_order_title')} 🇦🇪 (${cur})`;
+        const who = [name && `${t('full_name')}: ${name}`, phone && `${t('phone')}: ${phone}`, city && `${t('city')}: ${city}`].filter(Boolean).join('\n');
+        const totalTxt = `${t('subtotal')}: ${money(subtotal)}${anyOnRequest ? ' +' : ''}`;
+        const msg = [head, who, '', lines, '', totalTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
+        window.open(waLink(msg), '_blank');
+      });
+    }
+
     function render() {
+      if (isWholesale()) return renderWholesale();
       const cart = getCart();
       const items = products.filter((p) => cart[p.id]);
       if (items.length === 0) return load();

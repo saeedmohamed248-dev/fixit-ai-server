@@ -21,4 +21,13 @@ window.SITE = {
     cloudName: 'gbooxyif',        // Cloud Name من داشبورد Cloudinary
     uploadPreset: 'fixit_unsigned', // اسم الـ Unsigned Upload Preset
   },
+  // 🇦🇪 فرع الجملة (الإمارات) — بيع جملة للإمارات ومصر وروسيا وكل البلاد
+  wholesale: {
+    whatsapp: '971558803171',      // ← رقم واتساب فرع الجملة (كود الدولة من غير + أو مسافات)
+    phoneDisplay: '+971 55 880 3171', // ← الرقم زي ما بيتعرض للعميل
+    usdRate: 3.6725,               // كام درهم في الدولار الواحد (الدولار بيتحسب من الدرهم)
+    addressAr: 'دبي، الإمارات',
+    addressEn: 'Dubai, UAE',
+    minOrderNote: true,            // إظهار ملاحظة "أسعار جملة — الطلب بيتأكد على واتساب"
+  },
 };

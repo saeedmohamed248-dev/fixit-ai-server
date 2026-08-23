@@ -32,6 +32,11 @@ export function validPhone(phone) {
   return /^01\d{9}$/.test(String(phone || '').replace(/[\s-]/g, ''));
 }
 
+// رقم موبايل دولي صحيح (لتجار الجملة: الإمارات/روسيا/أي بلد) — 7 لـ 15 رقم مع + اختيارية
+export function validIntlPhone(phone) {
+  return /^\+?\d{7,15}$/.test(String(phone || '').replace(/[\s-]/g, ''));
+}
+
 // حماية عمليات الإدارة: لازم ضبط ADMIN_TOKEN في إعدادات Vercel
 export function requireAdmin(req, res) {
   if (!process.env.ADMIN_TOKEN) {

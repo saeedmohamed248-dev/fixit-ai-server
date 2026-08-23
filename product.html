@@ -104,9 +104,12 @@
             <h1>${esc(pname(p))}</h1>
             ${p.ratingCount ? `<div>${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
             <div>
-              ${p.oldPrice > p.price ? `<span class="old-price">${money(p.oldPrice)}</span>` : ''}
-              <span class="price">${money(p.price)}</span>
+              ${priceBlock(p)}
+              ${isWholesale() && !wsLocked() ? `<span class="badge badge-brand" style="margin-inline-start:8px;">${t('ws_badge')}</span>` : ''}
             </div>
+            ${wsLocked()
+              ? `<div class="note" style="margin:8px 0;">${t('ws_login_required')}<br><a class="btn btn-sm" style="margin-top:8px;" href="/account.html">${t('ws_login_cta')}</a></div>`
+              : (isWholesale() && wsConf().minOrderNote ? `<div class="note" style="margin:8px 0;">${t('ws_min_note')}</div>` : '')}
             ${compatBadge(p)}
             ${!getGarage() ? `<button class="btn btn-outline btn-sm" onclick="openGarageModal()" style="margin: 4px 0;">${t('garage_btn')} — ${t('garage_sub').split('—')[0].slice(0, 40)}...</button>` : ''}
             <table class="meta-table">
