@@ -932,3 +932,141 @@ tr.order-row:hover td { background: var(--card2); }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
 }
+
+/* ================= 🌐 FixIt Trade — Trade Terminal (سكين الجملة الداكن) ================= */
+:root[data-mode="wholesale"] {
+  --bg: #0c0e12;
+  --card: #161a21;
+  --card2: #1d222b;
+  --line: #2a3140;
+  --text: #e9ecf3;
+  --muted: #98a2b6;
+  --accent: #f2b53c;        /* ذهبي/عنبري */
+  --accent-dark: #d99e1e;
+  --accent-deep: #b98413;
+  --dark: #08090c;
+  --dark2: #0f1218;
+  --shadow: 0 1px 3px rgba(0,0,0,.5);
+  --shadow-lg: 0 18px 44px rgba(0,0,0,.6);
+}
+[data-mode="wholesale"] body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(242,181,60,.06), transparent 60%),
+    repeating-linear-gradient(135deg, rgba(255,255,255,.012) 0 2px, transparent 2px 9px),
+    var(--bg);
+  color: var(--text);
+}
+[data-mode="wholesale"] .header { background: linear-gradient(180deg, #0a0c10, #0d1016); border-bottom: 1px solid var(--line); }
+[data-mode="wholesale"] .topbar { background: #000; color: var(--accent); letter-spacing: .2px; border-bottom: 1px solid rgba(242,181,60,.18); }
+[data-mode="wholesale"] .topbar a { color: #fff; }
+[data-mode="wholesale"] .nav-bar { background: #0d1016; border-top: 1px solid var(--line); }
+[data-mode="wholesale"] .nav a { color: var(--muted); }
+[data-mode="wholesale"] .nav a:hover, [data-mode="wholesale"] .nav a.active { color: var(--accent); }
+[data-mode="wholesale"] input, [data-mode="wholesale"] select, [data-mode="wholesale"] textarea {
+  background: #0f131a; border-color: var(--line); color: var(--text);
+}
+[data-mode="wholesale"] input::placeholder, [data-mode="wholesale"] textarea::placeholder { color: #5f6a7d; }
+[data-mode="wholesale"] .card { background: var(--card); border: 1px solid var(--line); }
+[data-mode="wholesale"] .card:hover { border-color: rgba(242,181,60,.5); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+[data-mode="wholesale"] .card-title, [data-mode="wholesale"] h1, [data-mode="wholesale"] h2, [data-mode="wholesale"] h3, [data-mode="wholesale"] h4 { color: var(--text); }
+[data-mode="wholesale"] .price, [data-mode="wholesale"] .tier-table, [data-mode="wholesale"] .sku, [data-mode="wholesale"] .mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+[data-mode="wholesale"] .price { color: var(--accent); }
+[data-mode="wholesale"] .badge-brand { background: rgba(242,181,60,.12); color: var(--accent); }
+[data-mode="wholesale"] .badge-new { background: rgba(18,183,106,.14); color: #4ade80; }
+[data-mode="wholesale"] .badge-used { background: rgba(245,158,11,.14); color: #fbbf24; }
+[data-mode="wholesale"] .img-placeholder { background: #0f131a; }
+[data-mode="wholesale"] .summary { background: var(--card); border: 1px solid var(--line); }
+[data-mode="wholesale"] .note { background: rgba(242,181,60,.07); border: 1px solid rgba(242,181,60,.22); color: #e7d6a8; }
+[data-mode="wholesale"] .footer { background: #08090c; border-top: 1px solid var(--line); }
+[data-mode="wholesale"] .branch-switch.active, [data-mode="wholesale"] .branch-switch button.active,
+[data-mode="wholesale"] .cur-switch button.active { background: var(--accent); color: #14110a; }
+[data-mode="wholesale"] .price-lock { color: var(--accent) !important; }
+/* شعار TRADE */
+.trade-tag {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px; font-weight: 800; letter-spacing: 3px;
+  color: #14110a; background: var(--accent);
+  padding: 1px 7px; border-radius: 5px; vertical-align: middle; margin-inline-start: 4px;
+}
+
+/* ---------- Hero منصة التجارة ---------- */
+.trade-hero {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 20px;
+  background:
+    radial-gradient(900px 400px at 85% -20%, rgba(242,181,60,.16), transparent 55%),
+    linear-gradient(160deg, #0f1319, #0a0c10);
+  padding: 54px 40px; margin-bottom: 34px;
+}
+.trade-hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 2px, transparent 2px 10px);
+}
+.trade-hero .kicker {
+  display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent); border: 1px solid rgba(242,181,60,.4);
+  padding: 5px 12px; border-radius: 999px; margin-bottom: 16px;
+}
+.trade-hero h1 { font-size: clamp(26px, 4vw, 44px); line-height: 1.2; margin: 0 0 12px; max-width: 18ch; }
+.trade-hero p.sub { color: var(--muted); font-size: 17px; max-width: 56ch; margin: 0 0 24px; }
+.trade-hero .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.trade-hero .signed { margin-top: 16px; font-size: 13px; color: #4ade80; }
+
+/* ---------- لوحة الثقة الدولية ---------- */
+.trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 8px 0 34px; }
+.trust-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; position: relative;
+}
+.trust-card .ic { font-size: 24px; margin-bottom: 8px; display: block; }
+.trust-card .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.trust-card .val { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 3px; }
+
+/* ---------- جدول الأسعار المتدرّج ---------- */
+.tier-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+.tier-table th, .tier-table td { padding: 11px 12px; text-align: start; border-bottom: 1px solid var(--line); }
+.tier-table th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.tier-table td .u { color: var(--accent); font-weight: 800; }
+.tier-table tr.best td { background: rgba(242,181,60,.06); }
+.tier-table .save { color: #4ade80; font-weight: 700; }
+.tier-hint { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ---------- Quick Order Pad & RFQ ---------- */
+.trade-panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 26px; margin-bottom: 26px; scroll-margin-top: 120px;
+}
+.trade-panel h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
+.trade-panel .panel-sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.op-textarea { width: 100%; min-height: 130px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; line-height: 1.7; resize: vertical; }
+.op-result { margin-top: 16px; }
+.op-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.op-line.bad { color: #f87171; }
+.op-line .op-sku { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); }
+.trade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+@media (max-width: 820px) { .trade-grid { grid-template-columns: 1fr; } }
+
+[data-mode="wholesale"] .btn-ghost {
+  background: transparent; border: 1px solid var(--accent); color: var(--accent);
+}
+[data-mode="wholesale"] .btn-ghost:hover { background: var(--accent); color: #14110a; }
+
+/* تباين إضافي في سكين الجملة */
+[data-mode="wholesale"] .btn { color: #14110a; box-shadow: 0 2px 10px rgba(242,181,60,.25); }
+[data-mode="wholesale"] .btn:hover { color: #14110a; }
+[data-mode="wholesale"] .btn-green { color: #fff; }
+[data-mode="wholesale"] .btn-outline { background: transparent; color: var(--text); border-color: var(--line); }
+[data-mode="wholesale"] .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(242,181,60,.06); }
+[data-mode="wholesale"] .hdr-suggest { background: var(--card); color: var(--text); border-color: var(--line); }
+[data-mode="wholesale"] .suggest-item { border-color: var(--line); }
+[data-mode="wholesale"] .suggest-item:hover { background: var(--card2); }
+[data-mode="wholesale"] .suggest-item b { color: var(--accent); }
+[data-mode="wholesale"] .hdr-search-wrap input { background: #0f131a; color: var(--text); }
+[data-mode="wholesale"] .cart-item, [data-mode="wholesale"] .empty-state, [data-mode="wholesale"] .success-box,
+[data-mode="wholesale"] .login-box, [data-mode="wholesale"] .meta-table td, [data-mode="wholesale"] .filters {
+  background: var(--card); border-color: var(--line); color: var(--text);
+}
+[data-mode="wholesale"] .model-chip { background: rgba(242,181,60,.1); color: var(--accent); }

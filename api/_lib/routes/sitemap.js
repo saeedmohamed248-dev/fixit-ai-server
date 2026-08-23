@@ -5,7 +5,7 @@ import { getProducts } from '../db.js';
 export default async function handler(req, res) {
   try {
     const host = 'https://' + (req.headers.host || 'fixitauto.parts');
-    const staticPages = ['/', '/shop.html', '/request.html', '/track.html', '/policies.html', '/assistant.html'];
+    const staticPages = ['/', '/shop.html', '/trade.html', '/request.html', '/track.html', '/policies.html', '/assistant.html'];
     const products = await getProducts();
 
     const urls = [

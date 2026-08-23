@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt Trade — BMW & MINI Wholesale Export</title>
+  <meta name="description" content="FixIt Trade — wholesale export of BMW & MINI parts from the UAE. Tiered trade pricing, worldwide shipping, genuine supply. تصدير جملة قطع غيار BMW وميني من الإمارات لكل العالم.">
+  <meta property="og:title" content="FixIt Trade — BMW & MINI Wholesale">
+  <meta property="og:description" content="Tiered wholesale pricing, worldwide shipping, genuine supply — for traders, workshops and distributors.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fixitauto.parts/trade.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090c">
+  <!-- هذه المنصة هي فرع الجملة — نضبط الوضع مبكراً عشان السكين الداكن يتطبّق من غير وميض -->
+  <script>try { localStorage.setItem('mode', 'wholesale'); } catch (e) {}</script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="trade-root">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('trade');
+    document.title = (wsConf().brandEn || 'FixIt Trade') + ' — ' + (LANG === 'en' ? 'Wholesale Export' : 'تصدير جملة');
+    const root = document.getElementById('trade-root');
+    const user = () => currentUser();
+    let CATALOG = [];
+
+    /* ---------- لوحة الثقة الدولية ---------- */
+    function trustGrid() {
+      const tr = wsConf().trust || {};
+      const L = (a, e) => (LANG === 'en' ? e : a);
+      const cells = [
+        { ic: '🌍', lbl: t('trust_countries'), val: L(tr.countriesAr, tr.countriesEn) },
+        { ic: '🚢', lbl: t('trust_ship'), val: L(tr.shippingAr, tr.shippingEn) },
+        { ic: '⏱️', lbl: t('trust_lead'), val: L(tr.leadTimeAr, tr.leadTimeEn) },
+        { ic: '🏦', lbl: t('trust_pay'), val: L(tr.paymentAr, tr.paymentEn) },
+        { ic: '📦', lbl: t('trust_carton'), val: L(tr.cartonAr, tr.cartonEn) },
+        { ic: '🔢', lbl: t('trust_moq'), val: t('trust_moq_val', { n: wsMOQ() }) },
+        { ic: '🛡️', lbl: t('trust_warranty'), val: L(tr.warrantyAr, tr.warrantyEn) },
+      ];
+      return `
+      <h2 style="margin: 8px 0 14px;">${t('trust_title')}</h2>
+      <div class="trust-grid">
+        ${cells.map((c) => `
+          <div class="trust-card">
+            <span class="ic">${c.ic}</span>
+            <div class="lbl">${esc(c.lbl)}</div>
+            <div class="val">${esc(c.val)}</div>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    /* ---------- الهيرو ---------- */
+    function heroHtml() {
+      const u = user();
+      return `
+      <section class="trade-hero">
+        <span class="kicker">${t('trade_hero_kicker')}</span>
+        <h1>${t('trade_hero_title')}</h1>
+        <p class="sub">${t('trade_hero_sub')}</p>
+        <div class="hero-cta">
+          <a class="btn" href="/shop.html">${t('trade_cta_browse')} →</a>
+          <a class="btn btn-outline" href="#rfq">${t('trade_cta_quote')}</a>
+          ${u ? '' : `<a class="btn btn-ghost" href="/account.html">${t('trade_cta_join')}</a>`}
+        </div>
+        ${u ? `<div class="signed">✓ ${t('trade_signedin')}: ${esc(u.name)}${u.company ? ' — ' + esc(u.company) : ''}</div>` : ''}
+      </section>`;
+    }
+
+    /* ---------- Quick Order Pad ---------- */
+    function orderPadHtml() {
+      if (wsLocked()) {
+        return `
+        <section class="trade-panel" id="order-pad">
+          <h2>⚡ ${t('op_title')}</h2>
+          <div class="panel-sub">${t('op_login_first')}</div>
+          <a class="btn" href="/account.html">${t('ws_login_cta')}</a>
+        </section>`;
+      }
+      return `
+      <section class="trade-panel" id="order-pad">
+        <h2>⚡ ${t('op_title')}</h2>
+        <div class="panel-sub">${t('op_sub')}</div>
+        <textarea id="op-input" class="op-textarea" placeholder="${esc(t('op_ph'))}"></textarea>
+        <div style="margin-top: 12px;"><button class="btn" id="op-go">${t('op_resolve')}</button></div>
+        <div id="op-result" class="op-result"></div>
+      </section>`;
+    }
+
+    /* ---------- RFQ ---------- */
+    function rfqHtml() {
+      const u = user();
+      return `
+      <section class="trade-panel" id="rfq">
+        <h2>📝 ${t('rfq_title')}</h2>
+        <div class="panel-sub">${t('rfq_sub')}</div>
+        <div class="trade-grid">
+          <div class="form-stack">
+            <div><label>${t('rfq_company')}</label><input id="rfq-company" value="${u && u.company ? esc(u.company) : ''}"></div>
+            <div><label>${t('rfq_name')}</label><input id="rfq-name" value="${u ? esc(u.name) : ''}"></div>
+            <div><label>${t('rfq_country')}</label><input id="rfq-country" value="${u && u.country ? esc(u.country) : ''}" placeholder="${LANG === 'en' ? 'UAE, Egypt, Russia...' : 'الإمارات، مصر، روسيا...'}"></div>
+          </div>
+          <div class="form-stack">
+            <div><label>${t('phone').replace(' *', '')}</label><input id="rfq-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="9715xxxxxxxx" value="${u ? esc(u.phone) : ''}"></div>
+            <div><label>${t('email_label')}</label><input id="rfq-email" type="email" dir="ltr" value="${u && u.email ? esc(u.email) : ''}"></div>
+          </div>
+        </div>
+        <div style="margin-top: 12px;"><label>${t('rfq_items')}</label>
+          <textarea id="rfq-items" rows="4" placeholder="${esc(t('rfq_items_ph'))}"></textarea></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center;">
+          <button class="btn" id="rfq-send">${t('rfq_send')}</button>
+          <button class="btn btn-outline" id="rfq-wa">💬 ${t('rfq_also_wa')}</button>
+        </div>
+        <div id="rfq-msg" style="margin-top:12px; font-size:14px;"></div>
+      </section>`;
+    }
+
+    function catalogTeaserHtml() {
+      if (!CATALOG.length) return '';
+      const best = [...CATALOG].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
+      return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin: 8px 0 14px;">
+        <h2 style="margin:0;">📦 ${t('nav_catalog')}</h2>
+        <a href="/shop.html" style="color:var(--accent); font-weight:700;">${t('ws_view_catalog')} →</a>
+      </div>
+      <div class="products-grid">${best.map(productCard).join('')}</div>`;
+    }
+
+    function render() {
+      root.innerHTML = heroHtml() + trustGrid() + orderPadHtml() + rfqHtml() +
+        `<div id="catalog-teaser"></div>`;
+      wireOrderPad();
+      wireRfq();
+      document.getElementById('catalog-teaser').innerHTML = catalogTeaserHtml();
+      if (location.hash) {
+        const el = document.querySelector(location.hash);
+        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);
+      }
+    }
+
+    /* ---------- منطق الطلب السريع ---------- */
+    function parseOrderLines(text) {
+      return text.split('\n').map((raw) => raw.trim()).filter(Boolean).map((line) => {
+        const m = line.split(/[,;\t ]+/).filter(Boolean);
+        const qty = Number(m[m.length - 1]);
+        if (m.length >= 2 && Number.isFinite(qty) && qty > 0) {
+          return { sku: m.slice(0, -1).join(' '), qty: Math.round(qty) };
+        }
+        return { sku: line, qty: 1 };
+      });
+    }
+    function findBySku(sku) {
+      const s = sku.toLowerCase();
+      return CATALOG.find((p) => (p.sku || '').toLowerCase() === s) ||
+             CATALOG.find((p) => (p.oem || '').toLowerCase() === s) ||
+             CATALOG.find((p) => (p.sku || '').toLowerCase().includes(s) && s.length >= 4);
+    }
+    function wireOrderPad() {
+      const go = document.getElementById('op-go');
+      if (!go) return;
+      go.addEventListener('click', () => {
+        const box = document.getElementById('op-result');
+        const lines = parseOrderLines(document.getElementById('op-input').value);
+        if (!lines.length) { box.innerHTML = `<div class="op-line bad">${t('op_empty')}</div>`; return; }
+        const matched = [], missing = [];
+        lines.forEach((l) => {
+          const p = findBySku(l.sku);
+          if (p) matched.push({ p, qty: Math.max(wsMOQ(), l.qty) }); else missing.push(l);
+        });
+        box.innerHTML = `
+          ${matched.length ? `<h4 style="margin:6px 0;">${t('op_matched')} (${matched.length})</h4>` : ''}
+          ${matched.map((m) => {
+            const unit = tierUnit(m.p, m.qty);
+            return `<div class="op-line">
+              <span><span class="op-sku">${esc(m.p.sku)}</span> — ${esc(pname(m.p))}</span>
+              <span>${unit === null ? t('price_request') : money(unit)} × ${m.qty}</span>
+            </div>`;
+          }).join('')}
+          ${missing.map((l) => `<div class="op-line bad"><span class="op-sku">${esc(l.sku)}</span><span>${t('op_notfound')}</span></div>`).join('')}
+          ${matched.length ? `<div style="margin-top:14px;"><button class="btn" id="op-add">${t('op_addall')}</button></div>` : ''}`;
+        const add = document.getElementById('op-add');
+        if (add) add.addEventListener('click', () => {
+          matched.forEach((m) => addToCart(m.p.id, m.qty));
+          toast(t('op_added'));
+        });
+      });
+    }
+
+    /* ---------- منطق الـ RFQ ---------- */
+    function rfqPayload() {
+      return {
+        wholesale: true,
+        company: document.getElementById('rfq-company').value.trim(),
+        name: document.getElementById('rfq-name').value.trim(),
+        country: document.getElementById('rfq-country').value.trim(),
+        phone: document.getElementById('rfq-phone').value.trim(),
+        email: document.getElementById('rfq-email').value.trim(),
+        partName: document.getElementById('rfq-items').value.trim(),
+        notes: '',
+      };
+    }
+    function wireRfq() {
+      const send = document.getElementById('rfq-send');
+      const msg = document.getElementById('rfq-msg');
+      send.addEventListener('click', async () => {
+        const body = rfqPayload();
+        if (!body.name || !body.phone || !body.partName) {
+          msg.style.color = 'var(--red)';
+          msg.textContent = t('fill_required');
+          return;
+        }
+        send.disabled = true; send.textContent = t('sending');
+        try {
+          const r = await api('/requests', { method: 'POST', body: JSON.stringify(body) });
+          msg.style.color = '#4ade80';
+          msg.textContent = t('rfq_sent', { n: r.number });
+          ['rfq-items'].forEach((id) => document.getElementById(id).value = '');
+        } catch (e) {
+          msg.style.color = 'var(--red)';
+          msg.textContent = e.message;
+        } finally {
+          send.disabled = false; send.textContent = t('rfq_send');
+        }
+      });
+      document.getElementById('rfq-wa').addEventListener('click', () => {
+        const b = rfqPayload();
+        const txt = [`${t('rfq_title')} 🌐`,
+          b.company && `${t('rfq_company')}: ${b.company}`,
+          b.name && `${t('rfq_name')}: ${b.name}`,
+          b.country && `${t('rfq_country')}: ${b.country}`,
+          b.phone && `${t('phone')}: ${b.phone}`,
+          '', b.partName].filter(Boolean).join('\n');
+        window.open(waLink(txt), '_blank');
+      });
+    }
+
+    // نجيب الكتالوج مرة واحدة (للطلب السريع والتيزر)
+    api('/products').then((list) => { CATALOG = list; render(); }).catch(() => render());
+  </script>
+</body>
+</html>
