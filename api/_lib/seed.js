@@ -151,3 +151,27 @@ export const SEED_PRODUCTS = [
     descriptionEn: 'Complete rear suspension (arms, shocks, axles) for X5 E70. US import, excellent condition.',
   },
 ];
+
+// 🧩 حاوية تجريبية للمشاركة — تظهر في أول تشغيل، وتقدر تحذفها/تعدّلها من لوحة التحكم
+export const SEED_CONTAINERS = [
+  {
+    id: 'sh-demo-1',
+    ref: 'CNT-SHJ001',
+    laneCode: 'EG',
+    port: 'الإسكندرية',
+    containerCode: '40HC',
+    containerName: 'حاوية 40 قدم عالية',
+    capacityCbm: 68,
+    bookedCbm: 42,
+    baseFreightUsd: 2500,
+    status: 'filling',
+    cutoffDate: '2026-09-10',
+    etd: '2026-09-15',
+    createdAt: new Date().toISOString(),
+    bookings: [
+      { id: 'bk-d1', name: 'محمد فتحي', company: 'قطع غيار النصر', country: 'مصر', phone: '201001234567', cbm: 20, shareUsd: 735.29, status: 'reserved', at: new Date().toISOString() },
+      { id: 'bk-d2', name: 'Ivan Petrov', company: 'Ivan Auto', country: 'روسيا', phone: '79161234567', cbm: 14, shareUsd: 514.71, status: 'reserved', at: new Date().toISOString() },
+      { id: 'bk-d3', name: 'أحمد سالم', company: 'ورشة الخليج', country: 'مصر', phone: '201112223334', cbm: 8, shareUsd: 294.12, status: 'reserved', at: new Date().toISOString() },
+    ],
+  },
+];

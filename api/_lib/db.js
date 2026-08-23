@@ -1,6 +1,6 @@
 // طبقة البيانات: لو متغيرات Upstash Redis موجودة يتم الحفظ الدائم فيها،
 // غير كده يشتغل الموقع ببيانات تجريبية في الذاكرة (تترجع لأصلها مع كل نشر جديد).
-import { SEED_PRODUCTS } from './seed.js';
+import { SEED_PRODUCTS, SEED_CONTAINERS } from './seed.js';
 
 const KV_URL = process.env.UPSTASH_REDIS_REST_URL;
 const KV_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -87,7 +87,17 @@ export const getMaintenance = maintenanceCol.get;
 export const saveMaintenance = maintenanceCol.save;
 
 const containersCol = makeCollection('containers');
-export const getContainers = containersCol.get;
+// أول تشغيل: نزرع حاوية تجريبية (زي المنتجات) عشان قسم المشاركة مايبقاش فاضي
+export async function getContainers() {
+  if (hasPersistence) {
+    const stored = await kvGet('containers');
+    if (stored) return stored;
+    await kvSet('containers', SEED_CONTAINERS);
+    return structuredClone(SEED_CONTAINERS);
+  }
+  if (!memory.containers) memory.containers = structuredClone(SEED_CONTAINERS);
+  return memory.containers;
+}
 export const saveContainers = containersCol.save;
 
 const activityCol = makeCollection('activity');

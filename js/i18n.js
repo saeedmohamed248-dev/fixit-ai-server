@@ -116,6 +116,10 @@ const I18N = {
   ship_usd_note: { ar: 'الأسعار بالدولار — عرض تقديري يتأكد على واتساب', en: 'Prices in USD — indicative, confirmed on WhatsApp' },
   ship_customs_note: { ar: 'الجمارك تقديرية والقيمة النهائية تحددها الجهات الرسمية', en: 'Customs is indicative; final duty is set by authorities' },
   ship_port: { ar: 'ميناء', en: 'Port' },
+  pay_terms_title: { ar: 'شروط الدفع', en: 'Payment terms' },
+  pay_deposit: { ar: 'دفعة مقدّمة ({p}%) — عند تأكيد الطلب', en: 'Deposit ({p}%) — on order confirmation' },
+  pay_balance: { ar: 'الباقي ({p}%) — عند وصول البضاعة للجمارك', en: 'Balance ({p}%) — on customs arrival' },
+  pay_terms_note: { ar: 'الدفع كاش/تحويل من الموقع: {d}% مقدّم و{b}% عند وصول الجمارك', en: 'Cash/transfer: {d}% upfront, {b}% on customs arrival' },
   /* Share a Container */
   share_title: { ar: 'شارك في حاوية', en: 'Share a Container' },
   share_sub: { ar: 'احجز مساحة في حاوية مجدولة وادفع حصتك فقط حسب حجمك', en: 'Book space in a scheduled container and pay only your CBM share' },
