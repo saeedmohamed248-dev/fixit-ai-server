@@ -353,18 +353,20 @@
         box.innerHTML = notifyHtml + `
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">طلبات العملاء لقطع مش موجودة في المتجر — وفّرها وكسبت عميل 💪</p>
         <div class="table-wrap"><table class="table">
-          <tr><th>الرقم</th><th>التاريخ</th><th>القطعة المطلوبة</th><th>العربية / الشاسيه</th><th>العميل</th><th>الحالة</th><th></th></tr>
+          <tr><th>الرقم</th><th>التاريخ</th><th>المطلوب</th><th>العربية / الشركة</th><th>العميل</th><th>الحالة</th><th></th></tr>
           ${requests.map((r) => `<tr>
             <td><b>${esc(r.number)}</b></td>
             <td>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-            <td>${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
-            <td>${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}</td>
+            <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
+            <td>${r.type === 'rfq'
+              ? (r.company || r.country ? `${esc(r.company) || '—'}${r.country ? `<br><small style="color: var(--muted);">🌍 ${esc(r.country)}</small>` : ''}` : '—')
+              : `${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}`}</td>
             <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small></td>
             <td><select data-req="${esc(r.id)}">
               ${Object.entries(REQ_STATUS).map(([k, v]) => `<option value="${k}" ${r.status === k ? 'selected' : ''}>${v}</option>`).join('')}
             </select></td>
             <td><a class="btn btn-sm btn-green" target="_blank" rel="noopener"
-              href="https://wa.me/2${esc(r.phone)}?text=${encodeURIComponent('أهلاً ' + r.name + '، بخصوص طلبك ' + r.number + ' لقطعة "' + r.partName + '" من ' + SITE.name)}">💬 رد</a></td>
+              href="https://wa.me/${r.type === 'rfq' ? esc(String(r.phone).replace(/[^\d]/g, '')) : '2' + esc(r.phone)}?text=${encodeURIComponent('أهلاً ' + r.name + '، بخصوص طلبك ' + r.number + ' لـ "' + r.partName + '" من ' + SITE.name)}">💬 رد</a></td>
           </tr>`).join('')}
         </table></div>`;
         box.querySelectorAll('[data-req]').forEach((sel) =>

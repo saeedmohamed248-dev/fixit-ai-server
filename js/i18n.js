@@ -5,6 +5,10 @@ if (_urlLang === 'ar' || _urlLang === 'en') localStorage.setItem('lang', _urlLan
 window.LANG = localStorage.getItem('lang') || 'ar';
 document.documentElement.lang = LANG;
 document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+// 🇦🇪 وضع الفرع مبكراً عشان سكين الجملة (Trade Terminal) يتطبّق من غير وميض
+const _urlMode = new URLSearchParams(location.search).get('mode');
+if (_urlMode === 'wholesale' || _urlMode === 'retail') localStorage.setItem('mode', _urlMode);
+document.documentElement.dataset.mode = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
 
 const I18N = {
   /* ---------- عام / Layout ---------- */
@@ -33,6 +37,60 @@ const I18N = {
   ws_account_sub: { ar: 'سجّل بياناتك كتاجر جملة عشان تشوف الأسعار وتطلب من أي بلد.', en: 'Register as a wholesale trader to view prices and order from anywhere.' },
   trader_company: { ar: 'اسم الشركة / المحل (اختياري)', en: 'Company / Shop name (optional)' },
   trader_country: { ar: 'الدولة', en: 'Country' },
+  /* ---------- 🌐 FixIt Trade — منصة الجملة ---------- */
+  nav_trade_desk: { ar: 'مكتب التجارة', en: 'Trade Desk' },
+  nav_catalog: { ar: 'الكتالوج', en: 'Catalog' },
+  nav_quick_order: { ar: 'طلب سريع', en: 'Quick Order' },
+  nav_rfq: { ar: 'عرض سعر', en: 'Get a Quote' },
+  trade_hero_kicker: { ar: 'تصدير جملة من الإمارات', en: 'Wholesale Export from the UAE' },
+  trade_hero_title: { ar: 'قطع غيار BMW & MINI بأسعار الجملة — لكل العالم', en: 'BMW & MINI Parts at Wholesale — Worldwide' },
+  trade_hero_sub: { ar: 'أسعار تاجر متدرّجة بالكمية، شحن جوي وبحري لكل البلاد، وتوريد أصلي مضمون. للتجار وورش الصيانة والموزّعين.', en: 'Tiered trade pricing, air & sea freight worldwide, genuine guaranteed supply. For traders, workshops and distributors.' },
+  trade_cta_browse: { ar: 'تصفّح الكتالوج', en: 'Browse Catalog' },
+  trade_cta_quote: { ar: 'اطلب عرض سعر', en: 'Request a Quote' },
+  trade_cta_join: { ar: 'افتح حساب تاجر', en: 'Open Trader Account' },
+  trade_signedin: { ar: 'مسجّل دخول كتاجر', en: 'Signed in as trader' },
+  /* لوحة الثقة */
+  trust_title: { ar: 'ليه تشتري جملة من FixIt Trade', en: 'Why buy wholesale from FixIt Trade' },
+  trust_countries: { ar: 'نصدّر لـ', en: 'We export to' },
+  trust_lead: { ar: 'مدة التوريد', en: 'Lead time' },
+  trust_ship: { ar: 'الشحن', en: 'Shipping' },
+  trust_pay: { ar: 'شروط الدفع', en: 'Payment terms' },
+  trust_carton: { ar: 'التغليف', en: 'Packing' },
+  trust_moq: { ar: 'أقل كمية للطلب', en: 'Min. order qty' },
+  trust_warranty: { ar: 'الضمان', en: 'Warranty' },
+  trust_moq_val: { ar: '{n} قطعة / صنف', en: '{n} pc / item' },
+  /* التسعير المتدرّج */
+  tier_title: { ar: 'أسعار الجملة المتدرّجة', en: 'Tiered wholesale pricing' },
+  tier_sub: { ar: 'كل ما تطلب أكتر، السعر يقل', en: 'The more you order, the lower the unit price' },
+  tier_qty: { ar: 'الكمية', en: 'Quantity' },
+  tier_unit: { ar: 'سعر الوحدة', en: 'Unit price' },
+  tier_save: { ar: 'التوفير', en: 'You save' },
+  tier_from: { ar: 'يبدأ من', en: 'From' },
+  tier_pcs_plus: { ar: '{n}+ قطعة', en: '{n}+ pcs' },
+  tier_hint: { ar: 'سعر يقل بالكمية', en: 'Price drops by qty' },
+  /* Quick Order Pad */
+  op_title: { ar: 'الطلب السريع بالـ SKU', en: 'Quick Order Pad' },
+  op_sub: { ar: 'الصق قائمة الأصناف: كود القطعة (SKU) والكمية، صنف في كل سطر.', en: 'Paste your list: SKU and quantity, one item per line.' },
+  op_ph: { ar: 'مثال:\nBP-34116850568, 20\nFL-HU6004X 50', en: 'e.g.\nBP-34116850568, 20\nFL-HU6004X 50' },
+  op_resolve: { ar: 'راجع وأضف للسلة', en: 'Review & add to cart' },
+  op_added: { ar: 'اتضافوا للسلة ✓', en: 'Added to cart ✓' },
+  op_notfound: { ar: 'مش لاقيين', en: 'Not found' },
+  op_matched: { ar: 'الأصناف اللي لقيناها', en: 'Matched items' },
+  op_addall: { ar: 'أضف الكل للسلة', en: 'Add all to cart' },
+  op_empty: { ar: 'اكتب صنف واحد على الأقل', en: 'Enter at least one item' },
+  op_login_first: { ar: 'سجّل دخول كتاجر الأول عشان تشوف الأسعار وتطلب.', en: 'Log in as a trader first to see prices and order.' },
+  /* RFQ */
+  rfq_title: { ar: 'اطلب عرض سعر (RFQ)', en: 'Request for Quote (RFQ)' },
+  rfq_sub: { ar: 'للكميات الكبيرة أو الأصناف الخاصة — سيب طلبك وهنرجعلك بعرض سعر رسمي.', en: 'For bulk quantities or special items — send your request and we\'ll reply with a formal quote.' },
+  rfq_company: { ar: 'اسم الشركة', en: 'Company name' },
+  rfq_name: { ar: 'اسم المسؤول', en: 'Contact name' },
+  rfq_country: { ar: 'الدولة', en: 'Country' },
+  rfq_items: { ar: 'الأصناف والكميات المطلوبة', en: 'Items & quantities needed' },
+  rfq_items_ph: { ar: 'اكتب الأصناف/الأكواد والكميات...', en: 'List parts / SKUs and quantities...' },
+  rfq_send: { ar: 'إرسال الطلب', en: 'Send request' },
+  rfq_sent: { ar: 'وصلنا طلبك ✓ رقمك: {n} — هنتواصل معاك قريب.', en: 'Request received ✓ Ref: {n} — we\'ll contact you shortly.' },
+  rfq_also_wa: { ar: 'أو ابعتها على واتساب', en: 'Or send it on WhatsApp' },
+  ws_view_catalog: { ar: 'شوف الكتالوج بالكامل', en: 'View full catalog' },
   nav_home: { ar: 'الرئيسية', en: 'Home' },
   nav_shop: { ar: 'كل القطع', en: 'All Parts' },
   nav_used: { ar: 'مستعمل وارد', en: 'Used Import' },

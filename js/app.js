@@ -9,8 +9,9 @@ function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
 function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
 function setMode(m) {
-  localStorage.setItem('mode', m === 'wholesale' ? 'wholesale' : 'retail');
-  location.href = '/index.html';
+  const ws = m === 'wholesale';
+  localStorage.setItem('mode', ws ? 'wholesale' : 'retail');
+  location.href = ws ? '/trade.html' : '/index.html';
 }
 function setWCur(c) {
   localStorage.setItem('wcur', c === 'usd' ? 'usd' : 'aed');
@@ -36,6 +37,62 @@ function dispPrice(p) {
 function dispOld(p) {
   if (isWholesale()) return 0;
   return Number(p.oldPrice) || 0;
+}
+
+/* ---------- 📊 التسعير المتدرّج حسب الكمية (جملة) ---------- */
+// شرائح الأسعار مرتبة تنازلياً حسب أقل كمية
+function wsTiers() {
+  const t = (wsConf().tiers || []).filter((x) => x && x.min >= 1);
+  const list = t.length ? t : [{ min: 1, off: 0 }];
+  return [...list].sort((a, b) => a.min - b.min);
+}
+function wsMOQ() { return Math.max(1, Number(wsConf().moq) || 1); }
+// الشريحة المطبّقة على كمية معيّنة
+function tierFor(qty) {
+  const tiers = wsTiers();
+  let chosen = tiers[0];
+  for (const tr of tiers) if (qty >= tr.min) chosen = tr;
+  return chosen;
+}
+// سعر الوحدة بالدرهم بعد خصم الشريحة
+function wsUnitAED(p, qty = 1) {
+  const base = Number(p.wholesalePrice) || 0;
+  if (base <= 0) return null;
+  const off = Number(tierFor(qty).off) || 0;
+  return base * (1 - off / 100);
+}
+// سعر الوحدة بعملة العرض (درهم/دولار) عند كمية معيّنة — أو null
+function tierUnit(p, qty = 1) {
+  const aed = wsUnitAED(p, qty);
+  if (aed === null) return null;
+  return WCUR === 'usd' ? aed / usdRate() : aed;
+}
+// جدول الأسعار المتدرّجة الجاهز لصفحة المنتج / منصة التجارة
+function tierTableHtml(p) {
+  if (!isWholesale() || wsLocked() || dispPrice(p) === null) return '';
+  const tiers = wsTiers();
+  if (tiers.length < 2) return '';
+  const rows = tiers.map((tr, i) => {
+    const next = tiers[i + 1];
+    const range = next
+      ? `${tr.min} – ${next.min - 1}`
+      : t('tier_pcs_plus', { n: tr.min });
+    const unit = tierUnit(p, tr.min);
+    return `<tr class="${tr.off > 0 && !next ? 'best' : ''}">
+      <td>${range}</td>
+      <td><span class="u">${money(unit)}</span></td>
+      <td class="save">${tr.off > 0 ? '−' + tr.off + '%' : '—'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="tier-block">
+    <h3 style="margin:4px 0 2px;">📊 ${t('tier_title')}</h3>
+    <div class="panel-sub" style="color:var(--muted);font-size:13px;">${t('tier_sub')}</div>
+    <table class="tier-table">
+      <thead><tr><th>${t('tier_qty')}</th><th>${t('tier_unit')}</th><th>${t('tier_save')}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 // أسعار الجملة تظهر بس للتجار المسجّلين
 function wsLocked() { return isWholesale() && !currentUser(); }
@@ -305,6 +362,8 @@ function productCard(p) {
       <h3 class="card-title">${esc(pname(p))}</h3>
       <div class="card-models">${p.models.map((m) => esc(m)).join(' • ')}</div>
       ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
+      ${isWholesale() && !wsLocked() && dispPrice(p) !== null && wsTiers().length > 1
+        ? `<div class="tier-hint">📊 ${t('tier_hint')}</div>` : ''}
       <div class="card-footer">
         <div class="card-price">
           ${priceBlock(p)}
@@ -442,9 +501,11 @@ function renderLayout(active = '') {
     <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(phoneDisplay())}</a></div>
     <header class="header">
       <div class="container header-inner">
-        <a class="logo" href="/index.html">
-          <span class="logo-mark">🔧</span>
-          <span class="logo-text">${logoHtml()}<small>${t('brand_tag')}</small></span>
+        <a class="logo" href="${isWholesale() ? '/trade.html' : '/index.html'}">
+          <span class="logo-mark">${isWholesale() ? '🌐' : '🔧'}</span>
+          <span class="logo-text">${isWholesale()
+            ? `Fix<em>It</em> <span class="trade-tag">TRADE</span><small>${LANG === 'en' ? esc(wsConf().taglineEn || '') : esc(wsConf().taglineAr || '')}</small>`
+            : `${logoHtml()}<small>${t('brand_tag')}</small>`}</span>
         </a>
         <div class="hdr-search-wrap">
           <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
@@ -454,7 +515,7 @@ function renderLayout(active = '') {
           ${branchSwitch}
           ${curSwitch}
           <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
-          <button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>
+          ${isWholesale() ? '' : `<button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>`}
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
             👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>
@@ -468,6 +529,15 @@ function renderLayout(active = '') {
       </div>
       <nav class="nav-bar">
         <div class="container nav" id="main-nav">
+          ${isWholesale() ? `
+          <a href="/trade.html" class="${active === 'trade' ? 'active' : ''}">${t('nav_trade_desk')}</a>
+          <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_catalog')}</a>
+          <a href="/shop.html?brand=BMW">BMW</a>
+          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
+          <a href="/trade.html#rfq">${t('nav_rfq')}</a>
+          <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
+          ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
           <a href="/shop.html?brand=BMW">BMW</a>
@@ -476,6 +546,7 @@ function renderLayout(active = '') {
           <a href="/shop.html?condition=new">${t('nav_new')}</a>
           <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
           <a href="/assistant.html" class="${active === 'assistant' ? 'active' : ''}">${t('nav_expert')}</a>
+          `}
         </div>
       </nav>
     </header>`;
