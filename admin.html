@@ -42,8 +42,24 @@
         <div><label>السعر (ج.م) *</label><input id="m-price" type="number" min="0"></div>
         <div><label>السعر قبل الخصم (اختياري)</label><input id="m-oldPrice" type="number" min="0"></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
-        <div><label>رابط الصورة الرئيسية</label><input id="m-image" dir="ltr" placeholder="https://..."></div>
-        <div class="full"><label>صور إضافية (رابط في كل سطر)</label><textarea id="m-images" dir="ltr" rows="2"></textarea></div>
+        <div class="full"><label>📷 صورة المنتج الرئيسية</label>
+          <div class="upload-row">
+            <button type="button" class="btn btn-outline btn-sm" id="m-image-btn">اختر صورة من جهازك</button>
+            <input type="file" id="m-image-file" accept="image/*" hidden>
+            <span id="m-image-status" class="upload-status"></span>
+          </div>
+          <input id="m-image" dir="ltr" placeholder="أو الصق رابط صورة https://..." style="margin-top:8px;">
+          <div id="m-image-preview" class="upload-preview"></div>
+        </div>
+        <div class="full"><label>📷 صور إضافية للمنتج</label>
+          <div class="upload-row">
+            <button type="button" class="btn btn-outline btn-sm" id="m-images-btn">اختر صور (أكتر من واحدة)</button>
+            <input type="file" id="m-images-file" accept="image/*" multiple hidden>
+            <span id="m-images-status" class="upload-status"></span>
+          </div>
+          <textarea id="m-images" dir="ltr" rows="2" placeholder="روابط الصور الإضافية — رابط في كل سطر" style="margin-top:8px;"></textarea>
+          <div id="m-images-preview" class="upload-preview"></div>
+        </div>
         <div class="full"><label>الوصف (عربي)</label><textarea id="m-description" rows="3"></textarea></div>
         <div class="full"><label>الوصف بالإنجليزي</label><textarea id="m-descriptionEn" dir="ltr" rows="3"></textarea></div>
       </div>
@@ -611,8 +627,69 @@
         else el.value = p ? (p[f] ?? '') : (f === 'stock' ? 1 : '');
       });
       if (!p) { document.getElementById('m-brand').value = 'BMW'; document.getElementById('m-condition').value = 'new'; }
+      renderImgPreview('m-image', 'm-image-preview');
+      renderImgPreview('m-images', 'm-images-preview');
       document.getElementById('product-modal').classList.add('open');
     }
+
+    /* ---------- 📷 رفع الصور المباشر (Cloudinary) ---------- */
+    async function uploadToCloudinary(file) {
+      const cfg = (window.SITE && SITE.cloudinary) || {};
+      if (!cfg.cloudName || !cfg.uploadPreset) {
+        throw new Error('رفع الصور مش مفعّل — اضبط بيانات Cloudinary في js/config.js');
+      }
+      const form = new FormData();
+      form.append('file', file);
+      form.append('upload_preset', cfg.uploadPreset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/image/upload`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (!data.secure_url) throw new Error(data.error?.message || 'فشل رفع الصورة');
+      return data.secure_url;
+    }
+
+    function renderImgPreview(inputId, previewId) {
+      const box = document.getElementById(previewId);
+      const val = document.getElementById(inputId).value.trim();
+      const urls = val.split('\n').map((s) => s.trim()).filter(Boolean);
+      box.innerHTML = urls.map((u) => `<img src="${esc(u)}" alt="">`).join('');
+    }
+
+    // الصورة الرئيسية (واحدة)
+    document.getElementById('m-image-btn').addEventListener('click', () => document.getElementById('m-image-file').click());
+    document.getElementById('m-image-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('m-image-status');
+      status.textContent = '⏳ جاري الرفع...';
+      try {
+        const url = await uploadToCloudinary(file);
+        document.getElementById('m-image').value = url;
+        renderImgPreview('m-image', 'm-image-preview');
+        status.textContent = '✓ اترفعت';
+      } catch (err) { status.textContent = '⚠️ ' + err.message; }
+      e.target.value = '';
+    });
+
+    // صور إضافية (متعددة)
+    document.getElementById('m-images-btn').addEventListener('click', () => document.getElementById('m-images-file').click());
+    document.getElementById('m-images-file').addEventListener('change', async (e) => {
+      const files = [...e.target.files];
+      if (!files.length) return;
+      const status = document.getElementById('m-images-status');
+      const ta = document.getElementById('m-images');
+      let done = 0;
+      for (const file of files) {
+        status.textContent = `⏳ جاري رفع ${done + 1} من ${files.length}...`;
+        try {
+          const url = await uploadToCloudinary(file);
+          ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + url;
+          renderImgPreview('m-images', 'm-images-preview');
+          done++;
+        } catch (err) { status.textContent = '⚠️ ' + err.message; return; }
+      }
+      status.textContent = `✓ اترفعت ${done} صورة`;
+      e.target.value = '';
+    });
 
     document.getElementById('modal-save').addEventListener('click', async () => {
       const body = {};

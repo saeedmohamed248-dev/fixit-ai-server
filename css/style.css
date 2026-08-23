@@ -864,6 +864,17 @@ tr.order-row:hover td { background: var(--card2); }
 .qa-item .q { font-weight: 700; }
 .qa-item .a { color: var(--muted); margin-top: 6px; padding-inline-start: 14px; border-inline-start: 3px solid var(--accent); }
 
+/* ====== رفع الصور في لوحة التحكم ====== */
+.upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.upload-status { font-size: 13px; color: var(--muted); }
+.upload-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.upload-preview img {
+  width: 60px; height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
 /* ====== شريط الشحن المجاني ====== */
 .ship-progress small { color: var(--accent-dark); font-weight: 600; font-size: 13px; }
 .progress-track { height: 8px; background: var(--card2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 5px; }

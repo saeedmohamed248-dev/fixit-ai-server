@@ -16,4 +16,9 @@ window.SITE = {
   wallet: '01125157767', // فودافون كاش / محافظ إلكترونية
   // الشحن
   freeShippingOver: 5000, // شحن مجاني فوق المبلغ ده (0 = إلغاء الخاصية)
+  // رفع الصور المباشر (Cloudinary) — قيم عامة آمنة مش أسرار
+  cloudinary: {
+    cloudName: 'gbooxyif',        // Cloud Name من داشبورد Cloudinary
+    uploadPreset: 'fixit_unsigned', // اسم الـ Unsigned Upload Preset
+  },
 };
