@@ -37,6 +37,7 @@
     let useCredit = false;
     let myCredit = 0;
     let cardEnabled = false;
+    let wsIncoterm = null; // 🚢 شرط التسليم المختار في الجملة
 
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
@@ -104,6 +105,14 @@
         if (d === null) anyOnRequest = true;
         else subtotal += d * cart[p.id];
       });
+      // 🚢 حساب الحاوية وعرض سعر الشحن الدولي
+      const qitems = items.map((p) => ({ p, qty: cart[p.id] }));
+      const cc = dealerCountryCode();
+      const pol = countryPolicy(cc);
+      const allowed = (pol.incoterms || ['FOB', 'CIF']).filter((c) => incotermDef(c).nameAr);
+      if (!wsIncoterm || !allowed.includes(wsIncoterm)) wsIncoterm = allowed[0];
+      const q = freightQuote(qitems, wsIncoterm, cc);
+      const incName = (c) => LANG === 'en' ? incotermDef(c).nameEn : incotermDef(c).nameAr;
       container.innerHTML = `
       <h1 style="margin-bottom: 8px;">${t('cart')} (${items.length}) — 🇦🇪 ${t('branch_wholesale')}</h1>
       <div class="note" style="margin-bottom: 18px;">${t('ws_cart_note')}</div>
@@ -133,13 +142,40 @@
           }).join('')}
         </div>
         <div class="summary">
+          <div class="load-card">
+            <div class="load-head">🚢 ${t('load_title')}</div>
+            <div class="load-row"><span>${t('load_cbm')}</span><b>${q.cbm.toFixed(2)} ${t('cbm_unit')}</b></div>
+            <div class="load-row"><span>${t('load_weight')}</span><b>${new Intl.NumberFormat('en-US').format(Math.round(q.kg))} kg</b></div>
+            <div class="load-row"><span>${t('load_recommend')}</span><b style="color:var(--accent);">${loadLabel(q.plan)}</b></div>
+            ${q.plan.mode === 'FCL' || q.plan.mode === 'FCL_MULTI' ? `
+            <div class="fill-track"><div class="fill-bar" style="width:${Math.min(100, q.plan.fillPct)}%;"></div></div>
+            <div class="fill-cap">${q.cbm.toFixed(1)} ${t('load_fill_of')} ${q.plan.container.usableCbm * (q.plan.count || 1)} ${t('cbm_unit')} · ${q.plan.fillPct}%</div>` : ''}
+          </div>
+
           <h3>${t('order_summary')}</h3>
           <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}${anyOnRequest ? ' +' : ''}</b></div>
           ${anyOnRequest ? `<div class="row" style="color: var(--muted); font-size: 13px;"><span>${t('price_request')}</span></div>` : ''}
-          <div class="row" style="color: var(--muted); font-size: 13px;"><span>${t('shipping')}</span><span>${t('ship_later')}</span></div>
+
+          <div class="ship-quote">
+            <div class="ship-head">📦 ${t('ship_title')}</div>
+            <div class="row"><span>${t('ship_dest')}</span><b>${esc(currentUser().country || '—')}${q.port ? ` · ${esc(q.port)}` : ''}</b></div>
+            <div style="margin:8px 0;">
+              <label>${t('ship_incoterm')}</label>
+              <select id="w-incoterm">
+                ${allowed.map((c) => `<option value="${c}" ${c === wsIncoterm ? 'selected' : ''}>${esc(incName(c))}</option>`).join('')}
+              </select>
+            </div>
+            <div class="row"><span>${t('ship_goods')}</span><span>${usdMoney(q.goods)}</span></div>
+            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : ''}
+            ${q.insurance ? `<div class="row"><span>${t('ship_insurance')}</span><span>${usdMoney(q.insurance)}</span></div>` : ''}
+            ${q.customs ? `<div class="row" style="color:var(--amber);"><span>${t('ship_customs')}</span><span>${usdMoney(q.customs)}</span></div>` : ''}
+            <div class="row total" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;"><span>${t('ship_grand')}</span><span>${usdMoney(q.total)}</span></div>
+            <div class="note" style="margin:8px 0 0;font-size:12px;">${t('ship_usd_note')}${q.customs ? '<br>⚠️ ' + t('ship_customs_note') : ''}</div>
+          </div>
+
           <hr style="border-color: var(--line);">
-          <div><label>${t('full_name')}</label><input id="w-name"></div>
-          <div><label>${t('phone')}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;"></div>
+          <div><label>${t('full_name')}</label><input id="w-name" value="${esc(currentUser().name || '')}"></div>
+          <div><label>${t('phone')}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" value="${esc(currentUser().phone || '')}"></div>
           <div><label>${t('city')}</label><input id="w-city"></div>
           <div><label>${t('notes')}</label><textarea id="w-notes" rows="2"></textarea></div>
           <button class="btn btn-green" id="w-submit">💬 ${t('ws_checkout')}</button>
@@ -156,6 +192,10 @@
       });
       container.querySelectorAll('[data-remove]').forEach((btn) => {
         btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); renderWholesale(); });
+      });
+      document.getElementById('w-incoterm')?.addEventListener('change', (e) => {
+        wsIncoterm = e.target.value;
+        renderWholesale();
       });
       container.querySelectorAll('[data-step]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -179,9 +219,23 @@
           return `• ${pname(p)} (${p.sku || '-'}) — ${priceTxt}`;
         }).join('\n');
         const head = `${t('ws_order_title')} 🇦🇪 (${cur})`;
-        const who = [name && `${t('full_name')}: ${name}`, phone && `${t('phone')}: ${phone}`, city && `${t('city')}: ${city}`].filter(Boolean).join('\n');
+        const who = [name && `${t('full_name')}: ${name}`, phone && `${t('phone')}: ${phone}`,
+          currentUser().company && `${t('rfq_company')}: ${currentUser().company}`,
+          city && `${t('city')}: ${city}`].filter(Boolean).join('\n');
         const totalTxt = `${t('subtotal')}: ${money(subtotal)}${anyOnRequest ? ' +' : ''}`;
-        const msg = [head, who, '', lines, '', totalTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
+        // 🚢 تفاصيل الشحن
+        const ship = [
+          `— ${t('ship_title')} —`,
+          `${t('ship_dest')}: ${currentUser().country || '-'}${q.port ? ' / ' + q.port : ''}`,
+          `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})`,
+          `${t('ship_incoterm')}: ${incName(wsIncoterm)}`,
+          `${t('ship_goods')}: ${usdMoney(q.goods)}`,
+          q.freight ? `${t('ship_freight')}: ${usdMoney(q.freight)}` : '',
+          q.insurance ? `${t('ship_insurance')}: ${usdMoney(q.insurance)}` : '',
+          q.customs ? `${t('ship_customs')}: ${usdMoney(q.customs)}` : '',
+          `${t('ship_grand')}: ${usdMoney(q.total)}`,
+        ].filter(Boolean).join('\n');
+        const msg = [head, who, '', lines, '', totalTxt, '', ship, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
         window.open(waLink(msg), '_blank');
       });
     }

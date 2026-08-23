@@ -119,6 +119,9 @@
               <tr><td>${t('condition')}</td><td>${p.condition === 'used' ? t('used_checked') : t('cond_new')}</td></tr>
               <tr><td>${t('fits')}</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
               <tr><td>${t('available')}</td><td>${out ? `<span style="color: var(--red);">${t('out_stock')}</span>` : p.stock <= 2 ? `<span style="color: var(--amber);">${t('low_stock', { n: p.stock })}</span>` : p.stock + ' ' + t('pieces')}</td></tr>
+              ${isWholesale() && p.cbm ? `<tr><td>${t('spec_cbm')}</td><td dir="ltr" style="text-align:start;">${Number(p.cbm).toFixed(3)} ${t('cbm_unit')}</td></tr>` : ''}
+              ${isWholesale() && p.weightKg ? `<tr><td>${t('spec_weight')}</td><td dir="ltr" style="text-align:start;">${p.weightKg} kg</td></tr>` : ''}
+              ${isWholesale() && p.lengthCm ? `<tr><td>${t('spec_dims')}</td><td dir="ltr" style="text-align:start;">${p.lengthCm}×${p.widthCm}×${p.heightCm} cm</td></tr>` : ''}
             </table>
             <p style="color: var(--muted);">${esc(pdesc(p))}</p>
             ${out ? `

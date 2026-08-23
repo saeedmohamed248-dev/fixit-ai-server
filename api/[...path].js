@@ -17,10 +17,11 @@ import questions from './_lib/routes/questions.js';
 import notify from './_lib/routes/notify.js';
 import pay from './_lib/routes/pay.js';
 import maintenance from './_lib/routes/maintenance.js';
+import containers from './_lib/routes/containers.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers,
 };
 
 export default async function handler(req, res) {

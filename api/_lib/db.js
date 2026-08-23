@@ -86,6 +86,10 @@ const maintenanceCol = makeCollection('maintenance');
 export const getMaintenance = maintenanceCol.get;
 export const saveMaintenance = maintenanceCol.save;
 
+const containersCol = makeCollection('containers');
+export const getContainers = containersCol.get;
+export const saveContainers = containersCol.save;
+
 const activityCol = makeCollection('activity');
 export const getActivity = activityCol.get;
 
