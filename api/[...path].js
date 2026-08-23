@@ -23,12 +23,23 @@ const ROUTES = {
 };
 
 export default async function handler(req, res) {
-  // Vercel بيمرّر مقاطع المسار كمصفوفة في req.query.path
-  const segs = req.query.path;
-  const name = Array.isArray(segs) ? segs[0] : segs;
+  // نحدد اسم المسار: نجرّب req.query.path (مصفوفة أو نص)، ولو مش متاح
+  // نستخرجه من رابط الطلب مباشرة (أضمن طريقة على كل البيئات)
+  let name;
+  const segs = req.query && req.query.path;
+  if (Array.isArray(segs)) name = segs[0];
+  else if (typeof segs === 'string' && segs) name = segs;
+  if (!name) {
+    const pathname = (req.url || '').split('?')[0];
+    name = pathname
+      .replace(/^\/+/, '')       // شيل السلاش من الأول
+      .replace(/^api\//, '')     // شيل بادئة api/
+      .split('/')[0]             // أول مقطع
+      .replace(/\.xml$/, '');    // sitemap.xml → sitemap
+  }
   const route = ROUTES[name];
   if (!route) {
-    res.status(404).json({ error: 'المسار غير موجود' });
+    res.status(404).json({ error: 'المسار غير موجود: ' + name });
     return;
   }
   return route(req, res);
