@@ -46,6 +46,7 @@
       const tr = wsConf().trust || {};
       const L = (a, e) => (LANG === 'en' ? e : a);
       const cells = [
+        { ic: '♻️', lbl: t('trust_condition'), val: L(tr.conditionAr, tr.conditionEn) },
         { ic: '🌍', lbl: t('trust_countries'), val: L(tr.countriesAr, tr.countriesEn) },
         { ic: '🚢', lbl: t('trust_ship'), val: L(tr.shippingAr, tr.shippingEn) },
         { ic: '⏱️', lbl: t('trust_lead'), val: L(tr.leadTimeAr, tr.leadTimeEn) },
@@ -333,7 +334,7 @@
 
     // نجيب الكتالوج والحاويات المفتوحة
     Promise.all([
-      api('/products').then((l) => { CATALOG = l; }).catch(() => {}),
+      api('/products').then((l) => { CATALOG = wsCatalogFilter(l); }).catch(() => {}),
       api('/containers').then((l) => { SHIPMENTS = l; }).catch(() => {}),
     ]).then(render);
   </script>

@@ -47,6 +47,8 @@
         <div><label>📦 الارتفاع (سم)</label><input id="m-heightCm" type="number" min="0" step="0.1"></div>
         <div><label>⚖️ الوزن (كجم)</label><input id="m-weightKg" type="number" min="0" step="0.1" placeholder="للشحن الدولي"></div>
         <div><label>🛃 نسبة الجمرك (%) — لكل قطعة</label><input id="m-customsPct" type="number" min="0" max="100" step="0.5" placeholder="مثلاً 40"></div>
+        <div class="full"><button type="button" class="btn btn-outline btn-sm" id="m-estimate">🤖 قدّر الأبعاد والوزن بالذكاء الاصطناعي</button>
+          <span id="m-estimate-status" class="upload-status"></span></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
         <div class="full"><label>📷 صورة المنتج الرئيسية</label>
           <div class="upload-row">
@@ -731,6 +733,31 @@
       }
       status.textContent = `✓ اترفعت ${done} صورة`;
       e.target.value = '';
+    });
+
+    // 🤖 بوت تقدير الأبعاد والوزن من اسم القطعة
+    document.getElementById('m-estimate').addEventListener('click', async () => {
+      const status = document.getElementById('m-estimate-status');
+      const name = document.getElementById('m-name').value.trim();
+      if (!name) { status.textContent = '⚠️ اكتب اسم القطعة الأول'; return; }
+      status.textContent = '🤖 جاري التقدير...';
+      try {
+        const est = await api('/estimate', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({
+            name,
+            brand: document.getElementById('m-brand').value,
+            category: document.getElementById('m-category').value,
+            models: document.getElementById('m-models').value.split(',').map((s) => s.trim()).filter(Boolean),
+          }),
+        });
+        document.getElementById('m-lengthCm').value = est.lengthCm;
+        document.getElementById('m-widthCm').value = est.widthCm;
+        document.getElementById('m-heightCm').value = est.heightCm;
+        document.getElementById('m-weightKg').value = est.weightKg;
+        const cbm = ((est.lengthCm * est.widthCm * est.heightCm) / 1e6).toFixed(3);
+        status.textContent = `✓ ${est.lengthCm}×${est.widthCm}×${est.heightCm} سم · ${est.weightKg} كجم · ${cbm} م³ (عدّلها لو حابب)`;
+      } catch (e) { status.textContent = '⚠️ ' + e.message; }
     });
 
     document.getElementById('modal-save').addEventListener('click', async () => {

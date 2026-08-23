@@ -25,8 +25,8 @@ window.SITE = {
   wholesale: {
     brandAr: 'فيكس إت تريد',
     brandEn: 'FixIt Trade',
-    taglineAr: 'بوابة تصدير قطع غيار BMW & MINI بالجملة',
-    taglineEn: 'BMW & MINI Parts — Global Wholesale Export',
+    taglineAr: 'جملة قطع غيار BMW & MINI مستعملة (وارد) — تصدير للعالم',
+    taglineEn: 'Wholesale Used BMW & MINI Parts — Global Export',
     whatsapp: '971558803171',      // ← رقم واتساب فرع الجملة (كود الدولة من غير + أو مسافات)
     phoneDisplay: '+971 55 880 3171', // ← الرقم زي ما بيتعرض للعميل
     email: 'trade@fixitauto.parts',
@@ -84,7 +84,8 @@ window.SITE = {
       paymentAr: 'تحويل بنكي / T-T • دفعة مقدّمة', paymentEn: 'Bank transfer / T-T • deposit',
       cartonAr: 'تغليف تصدير بالكرتونة', cartonEn: 'Export carton packing',
       countriesAr: '20+ دولة', countriesEn: '20+ countries',
-      warrantyAr: 'ضمان أصلي على القطع الجديدة', warrantyEn: 'Genuine warranty on new parts',
+      warrantyAr: 'قطع مفحوصة ومضمونة', warrantyEn: 'Tested & guaranteed parts',
+      conditionAr: 'مستعمل وارد — درجة أولى', conditionEn: 'Grade-A used import',
     },
   },
 };
