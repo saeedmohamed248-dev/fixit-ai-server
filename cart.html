@@ -162,6 +162,7 @@
           <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
           <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
           <div><label>${t('city')}</label><input id="c-city" placeholder="${t('city_ph')}"></div>
+          <div><label>${t('email_label')}</label><input id="c-email" type="email" dir="ltr" style="text-align: start;" value="${user && user.email ? esc(user.email) : ''}" placeholder="عشان يوصلك تأكيد الطلب"></div>
           <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
           <div><label>${t('notes')}</label><textarea id="c-notes" rows="2"></textarea></div>
 
@@ -241,6 +242,7 @@
           name: document.getElementById('c-name').value.trim(),
           phone: document.getElementById('c-phone').value.trim(),
           city: document.getElementById('c-city').value.trim(),
+          email: document.getElementById('c-email').value.trim(),
           address: document.getElementById('c-address').value.trim(),
         };
         if (!customer.name || !customer.phone || !customer.address) {

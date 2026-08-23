@@ -4,8 +4,9 @@
 // POST   /api/maintenance          → إضافة موعد يدوي (إدارة)
 // PUT    /api/maintenance          → تعديل/تعليم كمنفّذ (إدارة)
 // DELETE /api/maintenance?id=       → حذف (إدارة)
-import { getMaintenance, saveMaintenance, logActivity } from '../db.js';
+import { getMaintenance, saveMaintenance, getUsers, logActivity } from '../db.js';
 import { getUser } from '../auth.js';
+import { sendMaintenanceReminder } from '../email.js';
 import { cors, requireAdmin } from '../util.js';
 
 // العمر الافتراضي للقطع (بالشهور) حسب الفئة — تُستخدم لتوليد التذكير تلقائياً
@@ -50,6 +51,32 @@ export default async function handler(req, res) {
   if (cors(req, res)) return;
 
   try {
+    // ⏰ مهمة مجدولة (Vercel Cron): إرسال تذكيرات الصيانة القريبة بالإيميل
+    if (req.query.cron !== undefined) {
+      const secret = process.env.CRON_SECRET;
+      const auth = (req.headers.authorization || '').replace('Bearer ', '');
+      if (!secret || (auth !== secret && req.query.cron !== secret)) {
+        return res.status(401).json({ error: 'unauthorized' });
+      }
+      const list = await getMaintenance();
+      const users = await getUsers();
+      const soon = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10);
+      let sent = 0;
+      for (const m of list) {
+        if (m.done || m.emailed) continue;
+        if (m.dueDate < today || m.dueDate > soon) continue; // خلال 3 أيام قادمة
+        const u = users.find((x) => x.id === m.userId || x.phone === m.phone);
+        if (u && u.email) {
+          await sendMaintenanceReminder(m, u.email);
+          m.emailed = true;
+          sent++;
+        }
+      }
+      if (sent) await saveMaintenance(list);
+      return res.status(200).json({ ok: true, sent });
+    }
+
     if (req.method === 'GET' && req.query.mine) {
       const session = getUser(req);
       if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });

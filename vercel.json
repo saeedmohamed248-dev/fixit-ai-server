@@ -1,5 +1,8 @@
 {
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+  ],
+  "crons": [
+    { "path": "/api/maintenance?cron=1", "schedule": "0 9 * * *" }
   ]
 }

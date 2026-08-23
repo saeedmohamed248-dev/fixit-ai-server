@@ -6,6 +6,7 @@
 import { getUsers, saveUsers } from '../db.js';
 import { signToken, getUser, hashPassword, checkPassword } from '../auth.js';
 import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
+import { sendWelcome } from '../email.js';
 
 const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0 });
 
@@ -39,6 +40,7 @@ export default async function handler(req, res) {
         };
         users.push(user);
         await saveUsers(users);
+        try { await sendWelcome(user); } catch {} // 📧 إيميل ترحيب
         return res.status(201).json({ token: signToken({ uid: user.id, name: user.name }), user: publicUser(user) });
       }
 
