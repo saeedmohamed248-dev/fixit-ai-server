@@ -92,6 +92,23 @@ const I18N = {
   rfq_sent: { ar: 'وصلنا طلبك ✓ رقمك: {n} — هنتواصل معاك قريب.', en: 'Request received ✓ Ref: {n} — we\'ll contact you shortly.' },
   rfq_also_wa: { ar: 'أو ابعتها على واتساب', en: 'Or send it on WhatsApp' },
   ws_view_catalog: { ar: 'شوف الكتالوج بالكامل', en: 'View full catalog' },
+  /* شريط المصداقية + كيف نعمل + FAQ */
+  proc_title: { ar: 'إزاي نشتغل — 4 خطوات', en: 'How it works — 4 steps' },
+  proc_sub: { ar: 'من الطلب لباب مخزنك، كل خطوة واضحة وموثّقة', en: 'From order to your warehouse — every step clear and documented' },
+  proc_1_t: { ar: 'اطلب أو اطلب عرض سعر', en: 'Order or request a quote' },
+  proc_1_d: { ar: 'تصفّح الكتالوج، الطلب السريع بالـ SKU، أو ابعت قائمتك RFQ ونرجعلك بعرض وصور.', en: 'Browse the catalog, quick-order by SKU, or send your RFQ list — we reply with a quote and photos.' },
+  proc_2_t: { ar: 'ثبّت الطلب وادفع', en: 'Confirm & pay' },
+  proc_2_d: { ar: 'تحويل بنكي رسمي باسم الشركة. مصر: 65% مقدّم. باقي الدول: 100% مقدّم.', en: 'Official company bank transfer. Egypt: 65% deposit. Other countries: 100% upfront.' },
+  proc_3_t: { ar: 'نشحن ونبعت البوليصة', en: 'We ship & send the B/L' },
+  proc_3_d: { ar: 'تغليف تصدير، شحن بحري/جوي، وبوليصة شحن رسمية باسمك مع رقم التتبع.', en: 'Export packing, sea/air freight, and an official bill of lading in your name with a tracking number.' },
+  proc_4_t: { ar: 'استلم وتابع', en: 'Receive & track' },
+  proc_4_d: { ar: 'تتابع الشحنة لحد وصولها. مصر (DDP): توصيل للباب بعد الجمارك. غيرها: تستلم من الميناء.', en: 'Track until arrival. Egypt (DDP): door delivery after customs. Others: collect at your port.' },
+  faq_title: { ar: 'أسئلة التجار الشائعة', en: 'Frequently asked — for traders' },
+  stats_title: { ar: 'أرقام تتكلم عننا', en: 'Numbers that speak for us' },
+  /* فوتر التجارة */
+  ft_trade_about: { ar: 'شركة تصدير جملة قطع غيار BMW & MINI المستعملة الوارد، من المنطقة الحرة بالشارقة لكل العالم — بأسعار تاجر وشحن موثّق.', en: 'Wholesale exporter of used BMW & MINI parts from Sharjah Free Zone to the world — trade pricing and documented shipping.' },
+  ft_trade_links: { ar: 'روابط سريعة', en: 'Quick links' },
+  ft_trade_trust: { ar: 'شحن دولي موثّق · تغليف تصدير · فحص قبل الشحن · فاتورة وبوليصة رسمية', en: 'Documented global shipping · Export packing · Pre-shipment inspection · Official invoice & B/L' },
   /* ---------- 🚢 الشحن والحاويات و CBM ---------- */
   load_title: { ar: 'حاسبة الحاوية', en: 'Container calculator' },
   load_sub: { ar: 'حجم شحنتك بيحدّد نوع الحاوية تلقائياً', en: 'Your volume picks the container automatically' },
