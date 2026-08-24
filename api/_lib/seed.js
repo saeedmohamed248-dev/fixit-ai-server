@@ -150,6 +150,13 @@ export const SEED_PRODUCTS = [
     description: 'عفشة خلفية كاملة (مقصات + مساعدين + أكصات) للـ X5 E70، وارد أمريكا بحالة ممتازة.',
     descriptionEn: 'Complete rear suspension (arms, shocks, axles) for X5 E70. US import, excellent condition.',
   },
+  {
+    id: 'p21', sku: 'FC-F30-2014-BLK', name: 'نص كت أمامي كامل F30 أسود 2014', nameEn: 'Complete Front Cut (Front End) F30 Black 2014',
+    brand: 'BMW', models: ['F30'], category: 'هيكل وإكسسوارات', condition: 'used',
+    price: 34500, oldPrice: 0, wholesalePrice: 2500, customsPct: 40, lengthCm: 150, widthCm: 90, heightCm: 80, weightKg: 110, cbm: 1.08, stock: 1, oem: '', image: '',
+    description: 'نص كت أمامي كامل لـ BMW F30 موديل 2014، لون أسود — مستعمل وارد بحالة ممتازة. المكوّنات: طقم فوانيس زينون (Xenon) + اكصدام أمامي كامل + صدر كامل (وش) + طقم تبريد كامل (رديتر + مراوح).',
+    descriptionEn: 'Complete front cut (front end) for BMW F30, 2014, black — used import, excellent condition. Includes: Xenon headlights set + complete front bumper + complete front panel + full cooling pack (radiator + fans).',
+  },
 ];
 
 // 🧩 حاوية تجريبية للمشاركة — تظهر في أول تشغيل، وتقدر تحذفها/تعدّلها من لوحة التحكم
