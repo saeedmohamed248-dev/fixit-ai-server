@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt Trade — شروط التجارة والشحن | Trade Terms</title>
+  <meta name="description" content="شروط التجارة والشحن في FixIt Trade — شروط التسليم (FOB/CIF/DDP)، الدفع، الفحص، والمطالبات. Trade & shipping terms.">
+  <meta property="og:title" content="FixIt Trade — Trade & Shipping Terms">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090c">
+  <script>try { localStorage.setItem('mode', 'wholesale'); } catch (e) {}</script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="terms-root" style="max-width: 900px;">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('terms');
+    document.title = (wsConf().brandEn || 'FixIt Trade') + ' — ' + (LANG === 'en' ? 'Trade Terms' : 'شروط التجارة');
+    const root = document.getElementById('terms-root');
+    const L = (a, e) => (LANG === 'en' ? e : a);
+    const inc = wsConf().incoterms || {};
+    const incName = (c) => L(inc[c] && inc[c].nameAr, inc[c] && inc[c].nameEn) || c;
+
+    const sections = [
+      { ic: '📜', t: t('terms_inco_t'), body: `
+        <p style="color:var(--muted);">${t('terms_inco_d')}</p>
+        <div class="term-rows">
+          <div class="term-row"><b>${esc(incName('FOB'))}</b><span>${t('terms_fob_d')}</span></div>
+          <div class="term-row"><b>${esc(incName('CIF'))}</b><span>${t('terms_cif_d')}</span></div>
+          <div class="term-row"><b>${esc(incName('DDP'))}</b><span>${t('terms_ddp_d')}</span></div>
+        </div>` },
+      { ic: '💵', t: t('terms_pay_t'), body: `
+        <ul class="term-list">
+          <li>🇪🇬 ${t('terms_pay_eg')}</li>
+          <li>🌍 ${t('terms_pay_other')}</li>
+          <li>🏦 ${t('terms_pay_how')}</li>
+        </ul>` },
+      { ic: '🔍', t: t('terms_insp_t'), body: `<p style="color:var(--muted);line-height:1.9;">${t('terms_insp_d')}</p>` },
+      { ic: '⚖️', t: t('terms_claims_t'), body: `<p style="color:var(--muted);line-height:1.9;">${t('terms_claims_d')}</p>` },
+      { ic: '🚢', t: t('terms_ship_t'), body: `<p style="color:var(--muted);line-height:1.9;">${t('terms_ship_d')}</p>` },
+      { ic: '🔢', t: t('terms_moq_t'), body: `<p style="color:var(--muted);line-height:1.9;">${t('terms_moq_d')}</p>` },
+    ];
+
+    root.innerHTML = `
+    <section class="trade-hero" style="padding:44px 34px;">
+      <span class="kicker">${t('terms_kicker')}</span>
+      <h1 style="font-size:clamp(28px,4.5vw,44px);">${t('terms_title')}</h1>
+      <p class="sub">${t('terms_intro')}</p>
+    </section>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;">
+      ${sections.map((s, i) => `
+        <section class="trade-panel" style="margin-bottom:0;">
+          <h2 style="font-size:20px;"><span style="color:var(--accent);font-family:'JetBrains Mono',monospace;">0${i + 1}</span> ${s.ic} ${esc(s.t)}</h2>
+          <div style="margin-top:10px;">${s.body}</div>
+        </section>`).join('')}
+    </div>
+    <div style="text-align:center;margin:30px 0 8px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a class="btn" href="/shop.html">${t('about_cta_browse')} →</a>
+      <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(t('wa_greeting'))}">💬 ${t('about_cta_contact')}</a>
+    </div>`;
+  </script>
+</body>
+</html>
