@@ -201,6 +201,17 @@ function loadLabel(plan) {
   return `${plan.count}× ${ctName} · ${plan.fillPct}%`;
 }
 
+// 🚚 ملاحظة التوصيل/الوصول اليدوية للقطعة (باللغة الحالية)
+function deliveryNote(p) {
+  const note = (LANG === 'en' && p.deliveryNoteEn) ? p.deliveryNoteEn : (p.deliveryNote || '');
+  return note.trim();
+}
+function deliveryBadge(p, cls = '') {
+  const n = deliveryNote(p);
+  if (!isWholesale() || !n) return '';
+  return `<div class="delivery-badge ${cls}">🚚 ${esc(n)}</div>`;
+}
+
 // أسعار الجملة تظهر بس للتجار المسجّلين
 function wsLocked() { return isWholesale() && !currentUser(); }
 // كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
@@ -497,6 +508,7 @@ function productCard(p) {
       ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
       ${isWholesale() && !wsLocked() && dispPrice(p) !== null && wsTiers().length > 1
         ? `<div class="tier-hint">📊 ${t('tier_hint')}</div>` : ''}
+      ${deliveryBadge(p, 'card-delivery')}
       <div class="card-footer">
         <div class="card-price">
           ${priceBlock(p)}

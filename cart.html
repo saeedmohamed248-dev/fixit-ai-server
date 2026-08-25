@@ -147,6 +147,7 @@
             <div>
               <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
               <div class="sub">${conditionBadge(p)} <span class="sku">${esc(p.sku)}</span> ${off > 0 ? `<span class="badge badge-new">−${off}%</span>` : ''}</div>
+              ${deliveryBadge(p, 'cart-delivery')}
               <div class="price" style="font-size: 15px;">${d === null ? t('price_request') : money(d)} ${d !== null ? `<small style="color:var(--muted);">× ${cart[p.id]} = <b>${line}</b></small>` : ''}</div>
             </div>
             <div class="actions">
