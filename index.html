@@ -47,14 +47,49 @@
       </div>
     </section>
 
-    <!-- الفئات -->
+    <!-- شريط الثقة -->
+    <div class="trust-strip">
+      <div class="container trust-strip-inner">
+        <span class="ts-item">🚚 <b data-i18n="trust_ship"></b></span>
+        <span class="ts-item">✅ <b data-i18n="trust_genuine"></b></span>
+        <span class="ts-item">💵 <b data-i18n="trust_cod"></b></span>
+        <span class="ts-item">🔍 <b data-i18n="trust_inspect"></b></span>
+        <span class="ts-item">💬 <b data-i18n="trust_support"></b></span>
+      </div>
+    </div>
+
+    <!-- دوّر بعربيتك -->
     <section class="section">
+      <div class="container">
+        <div class="sbc-card">
+          <div class="sbc-head">
+            <span class="sbc-ic">🚗</span>
+            <div><h2 data-i18n="sbc_title"></h2><p data-i18n="sbc_sub"></p></div>
+          </div>
+          <div class="sbc-form">
+            <select id="sbc-brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
+            <select id="sbc-model"></select>
+            <button class="btn" id="sbc-go" data-i18n="sbc_go"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- الفئات -->
+    <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="section-head">
           <h2 data-i18n="sec_cats"></h2>
           <a href="/shop.html" data-i18n="view_all"></a>
         </div>
         <div class="cats-grid" id="cats-grid"></div>
+      </div>
+    </section>
+
+    <!-- عرض اليوم (عدّاد تنازلي) -->
+    <section class="section" style="padding-top: 0; display: none;" id="flash-section">
+      <div class="container">
+        <div class="flash-band" id="flash-band"></div>
       </div>
     </section>
 
@@ -88,6 +123,14 @@
           <a href="/shop.html" data-i18n="view_all"></a>
         </div>
         <div class="products-grid" id="featured-grid"></div>
+      </div>
+    </section>
+
+    <!-- آراء العملاء -->
+    <section class="section" style="padding-top: 0; display: none;" id="reviews-section">
+      <div class="container">
+        <div class="section-head"><h2>⭐ <span data-i18n="sec_reviews"></span></h2></div>
+        <div class="reviews-grid" id="reviews-grid"></div>
       </div>
     </section>
 
@@ -139,6 +182,43 @@
     document.getElementById('cta-wa').href = waLink(t('wa_part'));
     document.getElementById('featured-grid').innerHTML = skeletonCards(8);
 
+    // 🚗 دوّر بعربيتك — موديلات حسب الماركة
+    const MODELS_BY_BRAND = {
+      BMW: ['E46', 'E60', 'E90', 'E92', 'F10', 'F30', 'F32', 'G20', 'G30', 'X1', 'X3', 'X5', 'X6'],
+      MINI: ['R56', 'R55', 'R60', 'F54', 'F55', 'F56'],
+    };
+    function fillModels() {
+      const brand = document.getElementById('sbc-brand').value;
+      document.getElementById('sbc-model').innerHTML =
+        `<option value="">${LANG === 'en' ? 'All models' : 'كل الموديلات'}</option>` +
+        (MODELS_BY_BRAND[brand] || []).map((m) => `<option>${m}</option>`).join('');
+    }
+    document.getElementById('sbc-brand').addEventListener('change', fillModels);
+    fillModels();
+    // استرجاع آخر اختيار (لمسة شخصية)
+    try {
+      const g = getGarage();
+      if (g && g.model) { for (const [br, ms] of Object.entries(MODELS_BY_BRAND)) if (ms.includes(g.model)) { document.getElementById('sbc-brand').value = br; fillModels(); document.getElementById('sbc-model').value = g.model; } }
+    } catch {}
+    document.getElementById('sbc-go').addEventListener('click', () => {
+      const brand = document.getElementById('sbc-brand').value;
+      const model = document.getElementById('sbc-model').value;
+      location.href = '/shop.html?brand=' + encodeURIComponent(brand) + (model ? '&model=' + encodeURIComponent(model) : '');
+    });
+
+    // ⭐ آراء العملاء
+    (function renderReviews() {
+      const list = (window.SITE && SITE.reviews) || [];
+      if (!list.length) return;
+      document.getElementById('reviews-section').style.display = '';
+      document.getElementById('reviews-grid').innerHTML = list.map((r) => `
+        <div class="review-card">
+          <div class="review-stars">${'★'.repeat(Math.max(1, Math.min(5, r.stars || 5)))}</div>
+          <p class="review-text">"${esc(r.text)}"</p>
+          <div class="review-by"><b>${esc(r.name)}</b>${r.car ? ` · <span>${esc(r.car)}</span>` : ''}</div>
+        </div>`).join('');
+    })();
+
     const CATS = ['فرامل', 'فلاتر وصيانة', 'عفشة وتعليق', 'كهرباء وإشعال', 'تبريد', 'وقود', 'هيكل وإكسسوارات'];
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
       <a class="cat-card" href="/shop.html?category=${encodeURIComponent(c)}">
@@ -164,6 +244,30 @@
       if (deals.length) {
         document.getElementById('deals-section').style.display = '';
         document.getElementById('deals-grid').innerHTML = deals.map(productCard).join('');
+
+        // 🔥 عرض اليوم: أكبر خصم + عدّاد تنازلي لنهاية اليوم (إلحاح يرجّع العميل)
+        const top = [...deals].sort((a, b) => (1 - a.price / a.oldPrice) - (1 - b.price / b.oldPrice)).pop();
+        const off = Math.round((1 - top.price / top.oldPrice) * 100);
+        document.getElementById('flash-section').style.display = '';
+        document.getElementById('flash-band').innerHTML = `
+          <div class="flash-left">
+            <span class="flash-tag">🔥 ${t('deal_today')} · -${off}%</span>
+            <h3>${esc(pname(top))}</h3>
+            <div class="flash-price"><span class="old-price">${money(top.oldPrice)}</span> <span class="price">${money(top.price)}</span></div>
+            <div class="flash-timer">${t('deal_ends')} <span id="flash-clock">--:--:--</span></div>
+            <a class="btn" href="/product.html?id=${esc(top.id)}">${t('deal_grab')} →</a>
+          </div>
+          <div class="flash-img">${productImage(top, 'flash-thumb')}</div>`;
+        const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
+        const clock = document.getElementById('flash-clock');
+        const tick = () => {
+          let s = Math.max(0, Math.floor((endOfDay - Date.now()) / 1000));
+          const h = String(Math.floor(s / 3600)).padStart(2, '0');
+          const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+          const ss = String(s % 60).padStart(2, '0');
+          if (clock) clock.textContent = `${h}:${m}:${ss}`;
+        };
+        tick(); setInterval(tick, 1000);
       }
 
       // شاهدتها مؤخراً
@@ -173,6 +277,9 @@
         document.getElementById('recent-section').style.display = '';
         document.getElementById('recent-grid').innerHTML = recent.map(productCard).join('');
       }
+
+      // نظهر كل الكروت فوراً عشان الصفحة تبان مليانة (بدل انتظار السكرول)
+      document.querySelectorAll('.card, .cat-card').forEach((c) => c.classList.add('shown'));
     }).catch((e) => {
       document.getElementById('featured-grid').innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
     });
