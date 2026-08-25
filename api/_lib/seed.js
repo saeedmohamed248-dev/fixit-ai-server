@@ -160,6 +160,14 @@ export const SEED_PRODUCTS = [
   },
 ];
 
+// تاريخ إضافة تقريبي — الأحدث في آخر القائمة (عشان قسم "وصل حديثاً" يبان في أول تشغيل)
+SEED_PRODUCTS.forEach((p, i) => {
+  if (!p.createdAt) {
+    const daysAgo = (SEED_PRODUCTS.length - 1 - i) * 2;
+    p.createdAt = new Date(Date.now() - daysAgo * 86400000).toISOString();
+  }
+});
+
 // 🧩 حاوية تجريبية للمشاركة — تظهر في أول تشغيل، وتقدر تحذفها/تعدّلها من لوحة التحكم
 export const SEED_CONTAINERS = [
   {

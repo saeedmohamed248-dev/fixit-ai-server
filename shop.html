@@ -57,6 +57,7 @@
             <span class="count" id="results-count"></span>
             <select id="f-sort">
               <option value="" data-i18n="sort_new"></option>
+              <option value="newest" data-i18n="sort_newest"></option>
               <option value="best" data-i18n="sort_best"></option>
               <option value="rating" data-i18n="sort_rating"></option>
               <option value="price_asc" data-i18n="sort_asc"></option>
@@ -130,6 +131,7 @@
       history.replaceState(null, '', qs.toString() ? '?' + qs : location.pathname);
       try {
         lastResults = wsCatalogFilter(await api('/products?' + qs));
+        if (document.getElementById('f-sort').value === 'newest') lastResults = [...lastResults].sort(byNewest);
         currentPage = 1;
         document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
         renderPage();

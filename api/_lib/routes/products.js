@@ -81,6 +81,7 @@ export default async function handler(req, res) {
         image: body.image || '',
         images: Array.isArray(body.images) ? body.images : [],
         description: body.description || '',
+        createdAt: new Date().toISOString(),
         sold: 0,
         ratingAvg: 0,
         ratingCount: 0,

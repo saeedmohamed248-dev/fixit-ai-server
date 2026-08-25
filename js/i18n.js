@@ -92,6 +92,12 @@ const I18N = {
   rfq_sent: { ar: 'وصلنا طلبك ✓ رقمك: {n} — هنتواصل معاك قريب.', en: 'Request received ✓ Ref: {n} — we\'ll contact you shortly.' },
   rfq_also_wa: { ar: 'أو ابعتها على واتساب', en: 'Or send it on WhatsApp' },
   ws_view_catalog: { ar: 'شوف الكتالوج بالكامل', en: 'View full catalog' },
+  new_arrival: { ar: 'وصل حديثاً', en: 'New' },
+  na_title: { ar: 'وصل حديثاً', en: 'Just arrived' },
+  na_sub: { ar: 'أحدث القطع اللي نزلت المخزن — تابعنا باستمرار', en: 'Freshest parts just landed — check back often' },
+  na_none: { ar: 'مفيش وصولات جديدة دلوقتي — تابعنا قريباً', en: 'No new arrivals right now — check back soon' },
+  nav_new_arrivals: { ar: 'وصل حديثاً', en: 'New Arrivals' },
+  sort_newest: { ar: 'الأحدث وصولاً', en: 'Newest arrivals' },
   dl_pricelist: { ar: '⬇️ حمّل قائمة الأسعار (Excel)', en: '⬇️ Download price list (Excel)' },
   /* شريط المصداقية + كيف نعمل + FAQ */
   proc_title: { ar: 'إزاي نشتغل — 4 خطوات', en: 'How it works — 4 steps' },
