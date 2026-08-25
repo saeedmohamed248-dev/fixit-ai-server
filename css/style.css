@@ -1191,3 +1191,6 @@ tr.order-row:hover td { background: var(--card2); }
 /* 🆕 شارة وصل حديثاً */
 .new-ribbon{position:absolute;top:10px;inset-inline-start:10px;background:linear-gradient(135deg,#12b76a,#059669);color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;box-shadow:0 2px 8px rgba(5,150,105,.4);z-index:2;letter-spacing:.3px}
 [data-mode="wholesale"] .new-ribbon{background:linear-gradient(135deg,#3fb950,#2ea043)}
+
+/* 🔔 صندوق اشتراك التنبيهات */
+.alert-box{border:1px solid rgba(242,181,60,.35);background:linear-gradient(180deg,rgba(242,181,60,.05),var(--card))}

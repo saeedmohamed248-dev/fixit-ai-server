@@ -86,6 +86,10 @@ const maintenanceCol = makeCollection('maintenance');
 export const getMaintenance = maintenanceCol.get;
 export const saveMaintenance = maintenanceCol.save;
 
+const alertsCol = makeCollection('alerts');
+export const getAlerts = alertsCol.get;
+export const saveAlerts = alertsCol.save;
+
 const containersCol = makeCollection('containers');
 // أول تشغيل: نزرع حاوية تجريبية (زي المنتجات) عشان قسم المشاركة مايبقاش فاضي
 export async function getContainers() {
