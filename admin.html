@@ -87,6 +87,8 @@
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
+    // لوحة التحكم دايماً بالثيم الفاتح النظيف (مش سكين الجملة الداكن)
+    document.documentElement.dataset.mode = 'retail';
     renderLayout('');
     const container = document.getElementById('admin-container');
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
@@ -147,6 +149,7 @@
       </div>
       <div class="admin-tabs">
         <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
+        <button data-tab="analytics">📈 التحليلات والزيارات</button>
         <button data-tab="orders">📦 الطلبات</button>
         <button data-tab="requests">🔎 طلبات القطع</button>
         <button data-tab="questions">❓ الأسئلة</button>
@@ -179,7 +182,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -993,6 +996,79 @@
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
+    }
+
+    /* ==================== 📈 التحليلات والزيارات ==================== */
+    const EV_LABELS = { add_cart: '🛒 إضافة للسلة', whatsapp: '💬 نقرة واتساب', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة' };
+    const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير' };
+    async function loadAnalytics() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      let a;
+      try { a = await api('/track', { headers: authHeaders() }); }
+      catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const todayViews = (a.days && a.days[today] && a.days[today].views) || 0;
+      // آخر 14 يوم للرسم البياني
+      const days = [];
+      for (let i = 13; i >= 0; i--) {
+        const dt = new Date(); dt.setDate(dt.getDate() - i);
+        const key = dt.toISOString().slice(0, 10);
+        days.push({ key, label: key.slice(5), views: (a.days && a.days[key] && a.days[key].views) || 0 });
+      }
+      const maxV = Math.max(1, ...days.map((d) => d.views));
+      const topPages = Object.entries(a.pages || {}).sort((x, y) => y[1] - x[1]).slice(0, 10);
+      const topProducts = Object.entries(a.products || {}).sort((x, y) => (y[1].views || 0) - (x[1].views || 0)).slice(0, 10);
+      const events = Object.entries(a.events || {}).sort((x, y) => y[1] - x[1]);
+      const empty = !a.totalViews;
+
+      box.innerHTML = `
+      ${empty ? '<div class="note" style="margin-bottom:16px;">📊 لسه مفيش زيارات مسجّلة — الأرقام هتظهر أول ما الناس تدخل الموقع.</div>' : ''}
+      <div class="stats-grid" style="margin-bottom:22px;">
+        <div class="stat-card"><div class="label">👁️ إجمالي الزيارات</div><div class="value">${(a.totalViews || 0).toLocaleString('ar-EG')}</div></div>
+        <div class="stat-card"><div class="label">👥 زوّار (تقريبي)</div><div class="value">${(a.totalVisitors || 0).toLocaleString('ar-EG')}</div></div>
+        <div class="stat-card"><div class="label">📅 زيارات النهارده</div><div class="value" style="color: var(--amber);">${todayViews.toLocaleString('ar-EG')}</div></div>
+        <div class="stat-card"><div class="label">💬 نقرات واتساب</div><div class="value" style="color:#16a34a;">${((a.events && a.events.whatsapp) || 0).toLocaleString('ar-EG')}</div></div>
+      </div>
+
+      <div class="admin-card">
+        <h3 style="margin-bottom:14px;">📈 الزيارات — آخر 14 يوم</h3>
+        <div class="an-chart">
+          ${days.map((d) => `<div class="an-bar-wrap" title="${d.key}: ${d.views}">
+            <div class="an-bar" style="height:${Math.round(d.views / maxV * 100)}%;"></div>
+            <div class="an-bar-val">${d.views || ''}</div>
+            <div class="an-bar-lbl">${d.label}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="an-grid">
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">🔥 أكثر الصفحات زيارة</h3>
+          ${topPages.length ? `<table class="table"><tr><th>الصفحة</th><th>الزيارات</th></tr>
+            ${topPages.map(([p, c]) => `<tr><td>${PAGE_LABELS[p] || esc(p)}</td><td><b>${c.toLocaleString('ar-EG')}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
+        </div>
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">⭐ أكثر المنتجات مشاهدة</h3>
+          ${topProducts.length ? `<table class="table"><tr><th>المنتج</th><th>مشاهدات</th></tr>
+            ${topProducts.map(([id, p]) => `<tr><td>${esc(p.name || id)}</td><td><b>${(p.views || 0).toLocaleString('ar-EG')}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3 style="margin-bottom:12px;">🎯 التفاعلات (النقرات المهمة)</h3>
+        ${events.length ? `<div class="an-events">${events.map(([ev, c]) => `
+          <div class="an-event"><span>${EV_LABELS[ev] || esc(ev)}</span><b>${c.toLocaleString('ar-EG')}</b></div>`).join('')}</div>` : '<p class="muted">لا يوجد تفاعلات مسجّلة بعد</p>'}
+      </div>
+
+      <button class="btn btn-sm btn-danger" id="an-reset" style="margin-top:16px;">🗑️ تصفير كل الإحصائيات</button>`;
+
+      document.getElementById('an-reset').addEventListener('click', async () => {
+        if (!confirm('متأكد تصفّر كل بيانات الزيارات؟ مش هترجع.')) return;
+        try { await api('/track', { method: 'DELETE', headers: authHeaders() }); toast('تم التصفير ✓'); loadAnalytics(); }
+        catch (e) { toast('⚠️ ' + e.message); }
+      });
     }
 
     /* ==================== 🧩 حاويات الشحن (Share a Container) ==================== */

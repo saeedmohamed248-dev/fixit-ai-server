@@ -265,6 +265,31 @@ async function api(path, options = {}) {
   return data;
 }
 
+/* ---------- 📈 تتبّع (تحليلات مجمّعة — بدون أي بيانات شخصية) ---------- */
+function track(type, data = {}) {
+  try {
+    fetch(API + '/track', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ t: type, ...data }), keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}
+function trackPageview(extra = {}) {
+  let nv = false;
+  try { if (!localStorage.getItem('visited')) { localStorage.setItem('visited', '1'); nv = true; } } catch {}
+  track('view', { path: location.pathname, nv, ...extra });
+}
+function trackEvent(ev) { track('event', { ev }); }
+// زيارة الصفحة تلقائياً (ما عدا لوحة التحكم، أو الصفحات اللي بتسجّل بنفسها زي المنتج)
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.SKIP_AUTOVIEW || /admin/.test(location.pathname)) return;
+  trackPageview();
+});
+// تتبّع نقرات واتساب
+document.addEventListener('click', (e) => {
+  if (e.target.closest('a[href^="https://wa.me"]')) trackEvent('whatsapp');
+}, true);
+
 /* ---------- حساب العميل ---------- */
 function currentUser() {
   try { return JSON.parse(localStorage.getItem('user')) || null; }
@@ -297,6 +322,7 @@ function addToCart(id, qty = 1) {
   cart[id] = (cart[id] || 0) + qty;
   setCart(cart);
   toast(t('toast_added'));
+  trackEvent('add_cart');
 }
 function removeFromCart(id) {
   const cart = getCart();
