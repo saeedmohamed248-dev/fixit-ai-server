@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixIt Trade — من نحن | About</title>
+  <meta name="description" content="FixIt Trade — مصدّر جملة قطع غيار BMW & MINI المستعملة الوارد من المنطقة الحرة بالشارقة لكل العالم. Wholesale exporter of used BMW & MINI parts from Sharjah Free Zone.">
+  <meta property="og:title" content="FixIt Trade — About">
+  <meta property="og:description" content="Trusted wholesale exporter of used BMW & MINI parts — Sharjah Free Zone to the world.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090c">
+  <script>try { localStorage.setItem('mode', 'wholesale'); } catch (e) {}</script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container" id="about-root">
+      <div class="spinner" data-i18n="loading"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('about');
+    document.title = (wsConf().brandEn || 'FixIt Trade') + ' — ' + (LANG === 'en' ? 'About' : 'من نحن');
+    const root = document.getElementById('about-root');
+    const L = (a, e) => (LANG === 'en' ? e : a);
+    const tr = wsConf().trust || {};
+
+    const doItems = [t('about_do_1'), t('about_do_2'), t('about_do_3'), t('about_do_4')];
+    const whys = [
+      { ic: '🔍', t: t('about_why_1_t'), d: t('about_why_1_d') },
+      { ic: '🏛️', t: t('about_why_2_t'), d: t('about_why_2_d') },
+      { ic: '📄', t: t('about_why_3_t'), d: t('about_why_3_d') },
+    ];
+    const stats = wsConf().stats || [];
+
+    root.innerHTML = `
+    <section class="trade-hero">
+      <span class="kicker">${t('about_kicker')}</span>
+      <h1>${t('about_title')}</h1>
+      <p class="sub">${t('about_intro')}</p>
+      <div class="hero-cta">
+        <a class="btn" href="/shop.html">${t('about_cta_browse')} →</a>
+        <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(t('wa_greeting'))}">💬 ${t('about_cta_contact')}</a>
+      </div>
+    </section>
+
+    ${stats.length ? `<div class="stats-bar">${stats.map((s) => `
+      <div class="stat-cell"><div class="stat-ic">${s.ic || ''}</div>
+        <div class="stat-val">${esc(s.value)}</div>
+        <div class="stat-lbl">${esc(LANG === 'en' ? s.labelEn : s.labelAr)}</div></div>`).join('')}</div>` : ''}
+
+    <div class="about-grid">
+      <section class="trade-panel">
+        <h2>👥 ${t('about_story_t')}</h2>
+        <p style="color:var(--muted);line-height:1.9;">${t('about_story_d')}</p>
+        <h3 style="margin-top:18px;">🛠️ ${t('about_do_t')}</h3>
+        <ul class="about-list">${doItems.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+      </section>
+      <section class="trade-panel">
+        <h2>📍 ${t('about_contact_t')}</h2>
+        <div class="about-contact">
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          ${wsConf().email ? `<a href="mailto:${esc(wsConf().email)}" dir="ltr" style="text-align:start;">✉️ ${esc(wsConf().email)}</a>` : ''}
+          <span>📍 ${L(esc(wsConf().addressAr), esc(wsConf().addressEn))}</span>
+          <span>♻️ ${L(esc(tr.conditionAr), esc(tr.conditionEn))}</span>
+          <span>🚢 ${L(esc(tr.shippingAr), esc(tr.shippingEn))}</span>
+        </div>
+        <a class="btn btn-outline" style="margin-top:14px;width:100%;" href="/trade.html#rfq">${t('trade_cta_quote')}</a>
+      </section>
+    </div>
+
+    <section style="margin-top:8px;">
+      <h2 style="margin:8px 0 14px;">🛡️ ${t('about_why_t')}</h2>
+      <div class="why-grid">
+        ${whys.map((w) => `
+          <div class="why-card">
+            <div class="why-ic">${w.ic}</div>
+            <h4>${esc(w.t)}</h4>
+            <p>${esc(w.d)}</p>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <div style="text-align:center;margin:34px 0 8px;">
+      <a class="btn" href="/trade.html">${t('nav_trade_desk')} →</a>
+    </div>`;
+  </script>
+</body>
+</html>

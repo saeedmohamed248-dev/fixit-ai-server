@@ -643,6 +643,7 @@ function renderLayout(active = '') {
           <a href="/shop.html?brand=MINI">MINI</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
+          <a href="/about.html" class="${active === 'about' ? 'active' : ''}">${t('nav_about')}</a>
           <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
           ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
@@ -675,6 +676,7 @@ function renderLayout(active = '') {
         <div>
           <h4>${t('ft_trade_links')}</h4>
           <a href="/trade.html">${t('nav_trade_desk')}</a>
+          <a href="/about.html">${t('nav_about')}</a>
           <a href="/shop.html">${t('nav_catalog')}</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
