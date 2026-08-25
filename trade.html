@@ -41,6 +41,55 @@
     let CATALOG = [];
     let SHIPMENTS = [];
 
+    /* ---------- شريط المصداقية ---------- */
+    function statsBar() {
+      const stats = wsConf().stats || [];
+      if (!stats.length) return '';
+      return `<div class="stats-bar">${stats.map((s) => `
+        <div class="stat-cell">
+          <div class="stat-ic">${s.ic || ''}</div>
+          <div class="stat-val">${esc(s.value)}</div>
+          <div class="stat-lbl">${esc(LANG === 'en' ? s.labelEn : s.labelAr)}</div>
+        </div>`).join('')}</div>`;
+    }
+
+    /* ---------- إزاي نشتغل (خطوات) ---------- */
+    function processSteps() {
+      const steps = [1, 2, 3, 4].map((n) => ({ t: t(`proc_${n}_t`), d: t(`proc_${n}_d`) }));
+      const icons = ['📝', '💳', '🚢', '📦'];
+      return `
+      <section style="margin-top:8px;">
+        <h2 style="margin:8px 0 2px;">🔄 ${t('proc_title')}</h2>
+        <div class="panel-sub" style="color:var(--muted);margin-bottom:16px;">${t('proc_sub')}</div>
+        <div class="proc-grid">
+          ${steps.map((s, i) => `
+            <div class="proc-step">
+              <div class="proc-num">${i + 1}</div>
+              <div class="proc-ic">${icons[i]}</div>
+              <h4>${esc(s.t)}</h4>
+              <p>${esc(s.d)}</p>
+            </div>`).join('')}
+        </div>
+      </section>`;
+    }
+
+    /* ---------- الأسئلة الشائعة ---------- */
+    function faqSection() {
+      const faq = wsConf().faq || [];
+      if (!faq.length) return '';
+      return `
+      <section class="trade-panel" id="faq">
+        <h2>❓ ${t('faq_title')}</h2>
+        <div class="faq-list">
+          ${faq.map((f, i) => `
+            <details class="faq-item" ${i === 0 ? 'open' : ''}>
+              <summary>${esc(LANG === 'en' ? f.qEn : f.qAr)}</summary>
+              <p>${esc(LANG === 'en' ? f.aEn : f.aAr)}</p>
+            </details>`).join('')}
+        </div>
+      </section>`;
+    }
+
     /* ---------- لوحة الثقة الدولية ---------- */
     function trustGrid() {
       const tr = wsConf().trust || {};
@@ -224,12 +273,16 @@
     }
 
     function render() {
-      root.innerHTML = heroHtml() + trustGrid() + orderPadHtml() + shareHtml() + rfqHtml() +
+      root.innerHTML = heroHtml() + statsBar() + trustGrid() + processSteps() +
+        orderPadHtml() + shareHtml() + rfqHtml() + faqSection() +
         `<div id="catalog-teaser"></div>`;
       wireOrderPad();
       wireShare();
       wireRfq();
-      document.getElementById('catalog-teaser').innerHTML = catalogTeaserHtml();
+      const teaser = document.getElementById('catalog-teaser');
+      teaser.innerHTML = catalogTeaserHtml();
+      // نظهر كروت التيزر فوراً (مش بالسكرول) عشان مايبقاش فيه فراغ
+      teaser.querySelectorAll('.card').forEach((c) => c.classList.add('shown'));
       if (location.hash) {
         const el = document.querySelector(location.hash);
         if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);

@@ -30,6 +30,24 @@ window.SITE = {
     whatsapp: '971558803171',      // ← رقم واتساب فرع الجملة (كود الدولة من غير + أو مسافات)
     phoneDisplay: '+971 55 880 3171', // ← الرقم زي ما بيتعرض للعميل
     email: 'trade@fixitauto.parts',
+    // 📊 شريط المصداقية — أرقام تبني الثقة (عدّلها بالأرقام الحقيقية)
+    stats: [
+      { value: '10,000+', ic: '🔩', labelAr: 'قطعة تم تصديرها', labelEn: 'Parts exported' },
+      { value: '20+', ic: '🌍', labelAr: 'دولة نشحن لها', labelEn: 'Countries served' },
+      { value: '15+', ic: '🚢', labelAr: 'حاوية شهرياً', labelEn: 'Containers / month' },
+      { value: '10+', ic: '⭐', labelAr: 'سنوات خبرة', labelEn: 'Years of experience' },
+    ],
+    // ❓ أسئلة التجار الشائعة — تبني الثقة (عدّلها زي ما تحب)
+    faq: [
+      { qAr: 'حالة القطع إيه بالظبط؟', qEn: 'What is the condition of the parts?',
+        aAr: 'كل القطع مستعملة وارد درجة أولى، مفحوصة بالكامل قبل الشحن. بنوصّف حالة كل قطعة بصدق ونبعت صور حقيقية قبل الدفع.', aEn: 'All parts are Grade-A used imports, fully inspected before shipping. We describe each part honestly and send real photos before payment.' },
+      { qAr: 'لو القطعة وصلت غلط أو تالفة؟', qEn: 'What if a part arrives wrong or damaged?',
+        aAr: 'بنراجع كل شحنة ونصوّرها قبل الإغلاق. أي خطأ من عندنا بنعوّضه في الشحنة اللي بعدها. التلف أثناء الشحن بيغطيه التأمين (في CIF/DDP).', aEn: 'We check and photograph every shipment before sealing. Any error on our side is compensated in the next shipment. Transit damage is covered by insurance (CIF/DDP).' },
+      { qAr: 'إزاي أطمن على الدفع؟', qEn: 'How is payment secured?',
+        aAr: 'بتشوف صور القطع وتفاصيلها الأول. الدفع تحويل بنكي رسمي باسم الشركة (المنطقة الحرة، الشارقة)، وبنبعتلك فاتورة وبوليصة شحن رسمية بعد الدفع.', aEn: 'You see photos and details first. Payment is an official company bank transfer (Free Zone, Sharjah), and we send you a formal invoice and bill of lading after payment.' },
+      { qAr: 'أقل كمية للطلب؟', qEn: 'Minimum order quantity?',
+        aAr: 'مفيش حد أدنى صارم — تقدر تطلب قطعة واحدة أو حاوية كاملة. وتقدر تشارك في حاوية عشان توفّر الشحن.', aEn: 'No strict minimum — order a single part or a full container. You can also share a container to cut freight costs.' },
+    ],
     usdRate: 3.6725,               // كام درهم في الدولار الواحد (الدولار بيتحسب من الدرهم)
     addressAr: 'المنطقة الحرة، الشارقة، الإمارات',
     addressEn: 'Free Zone, Sharjah, UAE',

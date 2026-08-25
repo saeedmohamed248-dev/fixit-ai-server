@@ -662,8 +662,33 @@ function renderLayout(active = '') {
 
   const footer = document.getElementById('site-footer');
   if (footer) {
+    const wsAddr = LANG === 'en' ? esc(wsConf().addressEn || 'UAE') : esc(wsConf().addressAr || 'الإمارات');
     footer.innerHTML = `
     <footer class="footer">
+      ${isWholesale() ? `
+      <div class="container footer-grid">
+        <div>
+          <div class="logo"><span class="logo-mark">🌐</span><span class="logo-text">Fix<em>It</em> <span class="trade-tag">TRADE</span></span></div>
+          <p>${t('ft_trade_about')}</p>
+          <div class="ft-trust">${t('ft_trade_trust')}</div>
+        </div>
+        <div>
+          <h4>${t('ft_trade_links')}</h4>
+          <a href="/trade.html">${t('nav_trade_desk')}</a>
+          <a href="/shop.html">${t('nav_catalog')}</a>
+          <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
+          <a href="/trade.html#rfq">${t('nav_rfq')}</a>
+          <a href="/trade.html#faq">${t('faq_title')}</a>
+          <a href="/track.html">${t('footer_track')}</a>
+        </div>
+        <div>
+          <h4>${t('footer_contact')}</h4>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
+          ${wsConf().email ? `<a href="mailto:${esc(wsConf().email)}" dir="ltr" style="text-align:start;">✉️ ${esc(wsConf().email)}</a>` : ''}
+          <span>📍 ${wsAddr}</span>
+          <a href="/account.html">${t('ws_account_title')}</a>
+        </div>
+      </div>` : `
       <div class="container footer-grid">
         <div>
           <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span></div>
@@ -688,12 +713,10 @@ function renderLayout(active = '') {
         <div>
           <h4>${t('footer_contact')}</h4>
           <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
-          <span>📍 ${isWholesale()
-            ? (LANG === 'en' ? esc(wsConf().addressEn || 'UAE') : esc(wsConf().addressAr || 'الإمارات'))
-            : (LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address))}</span>
+          <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
         </div>
-      </div>
-      <div class="footer-bottom">© ${new Date().getFullYear()} ${esc(SITE.name)} — ${t('footer_rights')}</div>
+      </div>`}
+      <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')}</div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
