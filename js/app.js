@@ -644,6 +644,7 @@ function renderLayout(active = '') {
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
           <a href="/about.html" class="${active === 'about' ? 'active' : ''}">${t('nav_about')}</a>
+          <a href="/trade-terms.html" class="${active === 'terms' ? 'active' : ''}">${t('nav_terms')}</a>
           <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
           ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
@@ -681,6 +682,7 @@ function renderLayout(active = '') {
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
           <a href="/trade.html#faq">${t('faq_title')}</a>
+          <a href="/trade-terms.html">${t('nav_terms')}</a>
           <a href="/track.html">${t('footer_track')}</a>
         </div>
         <div>
