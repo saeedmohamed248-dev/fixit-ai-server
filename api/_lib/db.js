@@ -126,3 +126,15 @@ export async function saveSettings(settings) {
   if (hasPersistence) await kvSet('settings', settings);
   else memory.settings = settings;
 }
+
+// 📈 التحليلات (زيارات/نقرات/أكثر الصفحات) — كائن واحد مجمّع
+const EMPTY_ANALYTICS = { totalViews: 0, totalVisitors: 0, days: {}, pages: {}, products: {}, events: {} };
+export async function getAnalytics() {
+  if (hasPersistence) return (await kvGet('analytics')) || structuredClone(EMPTY_ANALYTICS);
+  if (!memory.analytics) memory.analytics = structuredClone(EMPTY_ANALYTICS);
+  return memory.analytics;
+}
+export async function saveAnalytics(a) {
+  if (hasPersistence) await kvSet('analytics', a);
+  else memory.analytics = a;
+}

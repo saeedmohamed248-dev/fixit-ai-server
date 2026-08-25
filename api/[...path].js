@@ -20,10 +20,11 @@ import maintenance from './_lib/routes/maintenance.js';
 import containers from './_lib/routes/containers.js';
 import estimate from './_lib/routes/estimate.js';
 import leadtime from './_lib/routes/leadtime.js';
+import track from './_lib/routes/track.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track,
 };
 
 export default async function handler(req, res) {

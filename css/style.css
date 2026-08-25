@@ -1160,3 +1160,17 @@ tr.order-row:hover td { background: var(--card2); }
 .term-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin:4px 0 0}
 .term-list li{color:var(--text);line-height:1.8;padding-inline-start:4px}
 @media(max-width:640px){.term-row{grid-template-columns:1fr;gap:4px}}
+
+/* 📈 لوحة التحليلات (الأدمن) */
+.admin-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.admin-card h3{font-size:16px}
+.an-chart{display:flex;align-items:flex-end;gap:6px;height:170px;padding-top:10px}
+.an-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.an-bar{width:100%;max-width:34px;min-height:2px;background:linear-gradient(180deg,var(--accent),var(--accent-dark));border-radius:6px 6px 0 0;transition:height .4s}
+.an-bar-val{font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.an-bar-lbl{font-size:10px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:center;margin-top:6px}
+.an-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.an-events{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.an-event{display:flex;justify-content:space-between;align-items:center;background:var(--card2,#f8fafc);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.an-event b{color:var(--accent-dark);font-size:18px}
+@media(max-width:720px){.an-grid{grid-template-columns:1fr}.an-bar-lbl{display:none}}

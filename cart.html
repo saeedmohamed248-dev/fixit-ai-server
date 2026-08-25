@@ -295,6 +295,7 @@
           `${t('pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
         ].join('\n'));
         const msg = [head, who, '', lines, '', totalTxt, '', ship, payTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
+        trackEvent('ws_order');
         window.open(waLink(msg), '_blank');
       });
     }
