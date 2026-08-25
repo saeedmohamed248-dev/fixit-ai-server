@@ -11,6 +11,18 @@ function wsConf() { return SITE.wholesale || {}; }
 function wsCatalogFilter(list) {
   return isWholesale() ? (list || []).filter((p) => p.condition === 'used') : (list || []);
 }
+// 🆕 وصل حديثاً — القطع المضافة خلال آخر 21 يوم
+const NEW_ARRIVAL_DAYS = 21;
+function isNewArrival(p) {
+  if (!p || !p.createdAt) return false;
+  return (Date.now() - new Date(p.createdAt).getTime()) / 86400000 <= NEW_ARRIVAL_DAYS;
+}
+// ترتيب من الأحدث للأقدم
+function byNewest(a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); }
+// أحدث المنتجات (مع فلتر الفرع)
+function newArrivals(list, n = 8) {
+  return wsCatalogFilter([...(list || [])]).filter(isNewArrival).sort(byNewest).slice(0, n);
+}
 function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
 function setMode(m) {
   const ws = m === 'wholesale';
@@ -496,6 +508,7 @@ function productCard(p) {
     <div class="card-img-wrap">
       ${productImage(p)}
       ${discount ? `<span class="discount-tag">${LANG === 'en' ? discount + '% ' + t('discount') : t('discount') + ' ' + discount + '%'}</span>` : ''}
+      ${isNewArrival(p) ? `<span class="new-ribbon">🆕 ${t('new_arrival')}</span>` : ''}
     </div>
     <div class="card-body">
       <div class="card-badges">
@@ -677,6 +690,7 @@ function renderLayout(active = '') {
           ${isWholesale() ? `
           <a href="/trade.html" class="${active === 'trade' ? 'active' : ''}">${t('nav_trade_desk')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_catalog')}</a>
+          <a href="/shop.html?sort=newest">🆕 ${t('nav_new_arrivals')}</a>
           <a href="/shop.html?brand=BMW">BMW</a>
           <a href="/shop.html?brand=MINI">MINI</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>

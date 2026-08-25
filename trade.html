@@ -41,6 +41,22 @@
     let CATALOG = [];
     let SHIPMENTS = [];
 
+    /* ---------- 🆕 وصل حديثاً ---------- */
+    function newArrivalsHtml() {
+      if (wsLocked()) return '';
+      const fresh = newArrivals(CATALOG, 8);
+      if (!fresh.length) return '';
+      return `
+      <section id="new-arrivals" style="margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 4px;">
+          <h2 style="margin:0;">🆕 ${t('na_title')}</h2>
+          <a href="/shop.html?sort=newest" style="color:var(--accent);font-weight:700;">${t('ws_view_catalog')} →</a>
+        </div>
+        <div class="panel-sub" style="color:var(--muted);margin-bottom:14px;">${t('na_sub')}</div>
+        <div class="products-grid na-grid">${fresh.map(productCard).join('')}</div>
+      </section>`;
+    }
+
     /* ---------- شريط المصداقية ---------- */
     function statsBar() {
       const stats = wsConf().stats || [];
@@ -296,7 +312,7 @@
     }
 
     function render() {
-      root.innerHTML = heroHtml() + statsBar() + trustGrid() + processSteps() +
+      root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + trustGrid() + processSteps() +
         orderPadHtml() + shareHtml() + rfqHtml() + faqSection() +
         `<div id="catalog-teaser"></div>`;
       wireOrderPad();
@@ -304,8 +320,8 @@
       wireRfq();
       const teaser = document.getElementById('catalog-teaser');
       teaser.innerHTML = catalogTeaserHtml();
-      // نظهر كروت التيزر فوراً (مش بالسكرول) عشان مايبقاش فيه فراغ
-      teaser.querySelectorAll('.card').forEach((c) => c.classList.add('shown'));
+      // نظهر كل الكروت فوراً (مش بالسكرول) عشان مايبقاش فيه فراغ
+      root.querySelectorAll('.card').forEach((c) => c.classList.add('shown'));
       document.getElementById('dl-pl')?.addEventListener('click', (e) => { e.preventDefault(); downloadPriceList(); });
       if (location.hash) {
         const el = document.querySelector(location.hash);

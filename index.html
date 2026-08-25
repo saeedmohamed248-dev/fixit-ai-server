@@ -69,6 +69,17 @@
       </div>
     </section>
 
+    <!-- وصل حديثاً -->
+    <section class="section" style="padding-top: 0; display: none;" id="new-section">
+      <div class="container">
+        <div class="section-head">
+          <h2>🆕 <span data-i18n="na_title"></span></h2>
+          <a href="/shop.html?sort=newest" data-i18n="view_all"></a>
+        </div>
+        <div class="hscroll" id="new-grid"></div>
+      </div>
+    </section>
+
     <!-- الأكثر مبيعاً -->
     <section class="section" style="padding-top: 0;">
       <div class="container">
@@ -140,6 +151,13 @@
       const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       document.getElementById('featured-grid').innerHTML =
         best.map(productCard).join('') || `<div class="spinner">${t('no_products')}</div>`;
+
+      // 🆕 وصل حديثاً
+      const fresh = newArrivals(products, 10);
+      if (fresh.length) {
+        document.getElementById('new-section').style.display = '';
+        document.getElementById('new-grid').innerHTML = fresh.map(productCard).join('');
+      }
 
       // العروض: اللي عليها خصم
       const deals = products.filter((p) => p.oldPrice > p.price);
