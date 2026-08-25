@@ -1194,3 +1194,41 @@ tr.order-row:hover td { background: var(--card2); }
 
 /* 🔔 صندوق اشتراك التنبيهات */
 .alert-box{border:1px solid rgba(242,181,60,.35);background:linear-gradient(180deg,rgba(242,181,60,.05),var(--card))}
+
+/* ====== الصفحة الرئيسية القطاعية — مميزات تفاعلية ====== */
+/* شريط الثقة */
+.trust-strip{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.trust-strip-inner{display:flex;flex-wrap:wrap;gap:10px 26px;justify-content:center;padding:14px 16px}
+.ts-item{font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+.ts-item b{color:var(--text);font-weight:700}
+
+/* دوّر بعربيتك */
+.sbc-card{background:linear-gradient(135deg,#101828,#1d2939);border-radius:18px;padding:24px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;box-shadow:var(--shadow-lg)}
+.sbc-head{display:flex;align-items:center;gap:14px;color:#fff}
+.sbc-head .sbc-ic{font-size:38px;background:var(--accent);width:60px;height:60px;border-radius:14px;display:grid;place-items:center}
+.sbc-head h2{color:#fff;font-size:22px}
+.sbc-head p{color:#cdd5df;font-size:14px;margin-top:2px}
+.sbc-form{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sbc-form select{min-width:140px;background:#fff;color:var(--text)}
+.sbc-form .btn{white-space:nowrap}
+
+/* عرض اليوم (فلاش) */
+.flash-band{background:linear-gradient(120deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;border-radius:18px;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.flash-left{display:flex;flex-direction:column;gap:8px;align-items:flex-start;flex:1;min-width:240px}
+.flash-tag{background:var(--accent);color:#fff;font-weight:800;font-size:13px;padding:5px 12px;border-radius:999px}
+.flash-left h3{font-size:20px;color:var(--text)}
+.flash-price{display:flex;align-items:center;gap:10px}
+.flash-price .price{font-size:24px;color:var(--accent-dark);font-weight:900}
+.flash-timer{font-size:15px;color:var(--accent-deep);font-weight:700;font-variant-numeric:tabular-nums}
+.flash-timer #flash-clock{background:#101828;color:#fff;padding:3px 10px;border-radius:8px;font-family:'JetBrains Mono',ui-monospace,monospace;letter-spacing:1px}
+.flash-img .flash-thumb{width:140px;height:110px;object-fit:cover;border-radius:14px}
+.flash-img .img-placeholder{width:140px;height:110px;border-radius:14px;display:grid;place-items:center;background:#fff;font-size:40px}
+
+/* آراء العملاء */
+.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.review-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.review-stars{color:#f59e0b;font-size:18px;letter-spacing:2px;margin-bottom:8px}
+.review-text{color:var(--text);line-height:1.8;font-size:15px}
+.review-by{margin-top:12px;color:var(--muted);font-size:14px}
+.review-by b{color:var(--text)}
+@media(max-width:820px){.reviews-grid{grid-template-columns:1fr}.sbc-card{flex-direction:column;align-items:stretch}.sbc-form{justify-content:stretch}.sbc-form select,.sbc-form .btn{flex:1}}
