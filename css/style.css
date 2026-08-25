@@ -1182,3 +1182,8 @@ tr.order-row:hover td { background: var(--card2); }
 .td-top .badge{font-size:11px;padding:3px 9px;border-radius:999px}
 .td-body{color:var(--text);font-size:14px}
 .td-meta{color:var(--muted);font-size:12px;margin-top:5px;font-family:'JetBrains Mono',ui-monospace,monospace}
+
+/* 🚚 ملاحظة التوصيل للمنتج */
+.delivery-badge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#065f46;background:#ecfdf3;border:1px solid #a6f4c5;border-radius:8px;padding:6px 11px;margin:8px 0}
+.delivery-badge.card-delivery{font-size:11.5px;padding:4px 8px;margin:6px 0 0}
+[data-mode="wholesale"] .delivery-badge{color:#4ade80;background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.3)}

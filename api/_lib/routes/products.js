@@ -61,6 +61,8 @@ export default async function handler(req, res) {
         name: body.name,
         nameEn: body.nameEn || '',
         descriptionEn: body.descriptionEn || '',
+        deliveryNote: body.deliveryNote || '',
+        deliveryNoteEn: body.deliveryNoteEn || '',
         brand: body.brand || 'BMW',
         models: Array.isArray(body.models) ? body.models : [],
         category: body.category || 'أخرى',
