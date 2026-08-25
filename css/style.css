@@ -1174,3 +1174,11 @@ tr.order-row:hover td { background: var(--card2); }
 .an-event{display:flex;justify-content:space-between;align-items:center;background:var(--card2,#f8fafc);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
 .an-event b{color:var(--accent-dark);font-size:18px}
 @media(max-width:720px){.an-grid{grid-template-columns:1fr}.an-bar-lbl{display:none}}
+
+/* 🇦🇪 لوحة التاجر (account) */
+.trader-actions{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.td-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.td-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.td-top .badge{font-size:11px;padding:3px 9px;border-radius:999px}
+.td-body{color:var(--text);font-size:14px}
+.td-meta{color:var(--muted);font-size:12px;margin-top:5px;font-family:'JetBrains Mono',ui-monospace,monospace}

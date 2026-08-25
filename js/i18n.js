@@ -92,6 +92,7 @@ const I18N = {
   rfq_sent: { ar: 'وصلنا طلبك ✓ رقمك: {n} — هنتواصل معاك قريب.', en: 'Request received ✓ Ref: {n} — we\'ll contact you shortly.' },
   rfq_also_wa: { ar: 'أو ابعتها على واتساب', en: 'Or send it on WhatsApp' },
   ws_view_catalog: { ar: 'شوف الكتالوج بالكامل', en: 'View full catalog' },
+  dl_pricelist: { ar: '⬇️ حمّل قائمة الأسعار (Excel)', en: '⬇️ Download price list (Excel)' },
   /* شريط المصداقية + كيف نعمل + FAQ */
   proc_title: { ar: 'إزاي نشتغل — 4 خطوات', en: 'How it works — 4 steps' },
   proc_sub: { ar: 'من الطلب لباب مخزنك، كل خطوة واضحة وموثّقة', en: 'From order to your warehouse — every step clear and documented' },
@@ -131,6 +132,14 @@ const I18N = {
   about_cta_browse: { ar: 'تصفّح الكتالوج', en: 'Browse the catalog' },
   about_cta_contact: { ar: 'كلّمنا على واتساب', en: 'Talk to us on WhatsApp' },
   about_contact_t: { ar: 'تواصل مباشر', en: 'Direct contact' },
+  /* لوحة التاجر */
+  td_my_rfqs: { ar: 'عروض الأسعار بتاعتي', en: 'My quote requests' },
+  td_my_bookings: { ar: 'حجوزات الحاويات', en: 'My container bookings' },
+  td_no_rfqs: { ar: 'مفيش عروض أسعار لسه —', en: 'No quote requests yet —' },
+  td_no_bookings: { ar: 'مفيش حجوزات حاويات لسه —', en: 'No container bookings yet —' },
+  rfq_st_open: { ar: 'قيد المراجعة', en: 'Under review' },
+  rfq_st_sourced: { ar: 'جاري التجهيز', en: 'Sourcing' },
+  rfq_st_done: { ar: 'تم', en: 'Done' },
   /* صفحة شروط التجارة والشحن */
   nav_terms: { ar: 'شروط التجارة', en: 'Trade Terms' },
   terms_kicker: { ar: 'شروط واضحة', en: 'Clear terms' },

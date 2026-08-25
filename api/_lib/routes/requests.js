@@ -2,8 +2,9 @@
 // POST /api/requests → طلب جديد (عام)
 // GET  /api/requests → القائمة (إدارة)
 // PUT  /api/requests → تغيير الحالة (إدارة) { id, status: open|sourced|done }
-import { getRequests, saveRequests, logActivity } from '../db.js';
+import { getRequests, saveRequests, logActivity, getUsers } from '../db.js';
 import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
+import { getUser } from '../auth.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -46,6 +47,18 @@ export default async function handler(req, res) {
         ? `🌐 طلب عرض سعر جملة ${request.number} من ${request.company || request.name} (${request.country || '—'})`
         : `🔎 طلب توفير قطعة ${request.number}: "${request.partName}" من ${request.name}`);
       return res.status(201).json(request);
+    }
+
+    // التاجر المسجّل يشوف طلبات عرض السعر بتاعته (بمطابقة رقم موبايله)
+    if (req.method === 'GET' && req.query.mine) {
+      const session = getUser(req);
+      if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });
+      const users = await getUsers();
+      const me = users.find((u) => u.id === session.uid);
+      if (!me) return res.status(401).json({ error: 'الحساب غير موجود' });
+      const requests = await getRequests();
+      const mine = requests.filter((r) => r.type === 'rfq' && r.phone === me.phone);
+      return res.status(200).json(mine);
     }
 
     if (!requireAdmin(req, res)) return;
