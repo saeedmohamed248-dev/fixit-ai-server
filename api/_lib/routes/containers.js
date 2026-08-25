@@ -4,8 +4,9 @@
 // POST /api/containers {action:'book'} → حجز مساحة (عام، طلب حجز)
 // PUT  /api/containers            → تغيير الحالة (إدارة)
 // DELETE /api/containers?id=..    → حذف (إدارة)
-import { getContainers, saveContainers, logActivity } from '../db.js';
+import { getContainers, saveContainers, logActivity, getUsers } from '../db.js';
 import { cors, requireAdmin, rateLimit, validIntlPhone } from '../util.js';
+import { getUser } from '../auth.js';
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -27,6 +28,19 @@ export default async function handler(req, res) {
     const list = await getContainers();
 
     if (req.method === 'GET') {
+      // التاجر المسجّل يشوف حجوزاته (بمطابقة رقم موبايله) عبر كل الحاويات
+      if (req.query.mine) {
+        const session = getUser(req);
+        if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });
+        const users = await getUsers();
+        const me = users.find((u) => u.id === session.uid);
+        if (!me) return res.status(401).json({ error: 'الحساب غير موجود' });
+        const mine = [];
+        list.forEach((s) => (s.bookings || []).forEach((bk) => {
+          if (bk.phone === me.phone) mine.push({ ...bk, ref: s.ref, port: s.port, containerName: s.containerName, shipStatus: s.status, etd: s.etd });
+        }));
+        return res.status(200).json(mine);
+      }
       // إدارة: كل شيء بالحجوزات — عام: المفتوحة فقط بدون تفاصيل
       const token = (req.headers.authorization || '').replace('Bearer ', '');
       const isAdmin = process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN;

@@ -91,6 +91,18 @@
         ${user.account === 'wholesale' ? ` &nbsp;|&nbsp; <span class="badge badge-brand">🇦🇪 ${t('ws_account_title')}</span>` : ''}
         ${user.company ? '<br>🏢 ' + esc(user.company) : ''}${user.country ? ' &nbsp;|&nbsp; 🌍 ' + esc(user.country) : ''}
       </div>
+      ${isWholesale() ? `
+      <div class="trader-actions">
+        <a class="btn btn-sm" href="/shop.html">🛍️ ${t('nav_catalog')}</a>
+        <a class="btn btn-sm btn-outline" href="/trade.html#rfq">📝 ${t('nav_rfq')}</a>
+        <a class="btn btn-sm btn-outline" href="/trade.html#share">🧩 ${t('share_title')}</a>
+        <a class="btn btn-sm btn-outline" href="/trade-terms.html">📜 ${t('nav_terms')}</a>
+      </div>
+      <h2 style="margin: 22px 0 12px;">📝 ${t('td_my_rfqs')}</h2>
+      <div id="my-rfqs"><div class="spinner">${t('loading')}</div></div>
+      <h2 style="margin: 24px 0 12px;">🧩 ${t('td_my_bookings')}</h2>
+      <div id="my-bookings"><div class="spinner">${t('loading')}</div></div>
+      ` : `
       <div class="note" id="points-box" style="display: none;"></div>
       <div class="note" id="credit-box" style="display: none; background: #ecfdf3; border-color: #a6f4c5; color: #067647;"></div>
 
@@ -98,13 +110,16 @@
       <div id="my-maint"><div class="spinner">${t('loading')}</div></div>
 
       <h2 style="margin: 22px 0 14px;">${t('my_orders')} / ${t('my_invoices')}</h2>
-      <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`;
+      <div id="my-orders"><div class="spinner">${t('loading')}</div></div>`}`;
 
       document.getElementById('logout').addEventListener('click', () => {
         clearSession();
         renderLayout('account');
         showAuth();
       });
+
+      // 🇦🇪 لوحة التاجر: عروض الأسعار والحجوزات
+      if (isWholesale()) { loadMyRfqs(); loadMyBookings(); return; }
 
       // ⭐ رصيد النقاط و💳 رصيد الاستبدال
       api('/auth', { headers: userHeaders() }).then((me) => {
@@ -177,6 +192,36 @@
         clearSession();
         return showAuth();
       }
+    }
+
+    /* ---------- 🇦🇪 لوحة التاجر: عروض الأسعار والحجوزات ---------- */
+    const RFQ_ST = { open: { t: t('rfq_st_open'), c: 'var(--amber)' }, sourced: { t: t('rfq_st_sourced'), c: 'var(--blue)' }, done: { t: t('rfq_st_done'), c: 'var(--green)' } };
+    async function loadMyRfqs() {
+      const box = document.getElementById('my-rfqs');
+      try {
+        const list = await api('/requests?mine=1', { headers: userHeaders() });
+        if (!list.length) { box.innerHTML = `<p style="color:var(--muted);">${t('td_no_rfqs')} <a href="/trade.html#rfq" style="color:var(--accent);">${t('nav_rfq')}</a></p>`; return; }
+        box.innerHTML = list.map((r) => {
+          const st = RFQ_ST[r.status] || RFQ_ST.open;
+          return `<div class="td-card">
+            <div class="td-top"><b>${esc(r.number)}</b><span class="badge" style="background:${st.c};color:#fff;">${st.t}</span></div>
+            <div class="td-body">${esc(r.partName)}</div>
+            <div class="td-meta">${new Date(r.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG')}${r.country ? ' · 🌍 ' + esc(r.country) : ''}</div>
+          </div>`;
+        }).join('');
+      } catch (e) { box.innerHTML = `<p style="color:var(--muted);">${esc(e.message)}</p>`; }
+    }
+    async function loadMyBookings() {
+      const box = document.getElementById('my-bookings');
+      try {
+        const list = await api('/containers?mine=1', { headers: userHeaders() });
+        if (!list.length) { box.innerHTML = `<p style="color:var(--muted);">${t('td_no_bookings')} <a href="/trade.html#share" style="color:var(--accent);">${t('share_title')}</a></p>`; return; }
+        box.innerHTML = list.map((bk) => `<div class="td-card">
+          <div class="td-top"><b>🚢 ${esc(bk.ref)}</b><span style="color:var(--accent);font-weight:700;">$ ${new Intl.NumberFormat('en-US').format(bk.shareUsd)}</span></div>
+          <div class="td-body">${esc(bk.port || '')} · ${esc(bk.containerName || '')} — ${bk.cbm} ${t('cbm_unit')}</div>
+          <div class="td-meta">${bk.etd ? t('share_etd') + ': ' + esc(bk.etd) : ''} · ${esc(bk.shipStatus || bk.status || '')}</div>
+        </div>`).join('');
+      } catch (e) { box.innerHTML = `<p style="color:var(--muted);">${esc(e.message)}</p>`; }
     }
 
     if (currentUser() && userToken()) showAccount();

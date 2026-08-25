@@ -185,11 +185,33 @@
       if (!CATALOG.length) return '';
       const best = [...CATALOG].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       return `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin: 8px 0 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin: 8px 0 14px;">
         <h2 style="margin:0;">📦 ${t('nav_catalog')}</h2>
-        <a href="/shop.html" style="color:var(--accent); font-weight:700;">${t('ws_view_catalog')} →</a>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          ${wsLocked() ? '' : `<a href="#" id="dl-pl" style="color:var(--accent); font-weight:700;">${t('dl_pricelist')}</a>`}
+          <a href="/shop.html" style="color:var(--accent); font-weight:700;">${t('ws_view_catalog')} →</a>
+        </div>
       </div>
       <div class="products-grid">${best.map(productCard).join('')}</div>`;
+    }
+
+    // ⬇️ تحميل قائمة الأسعار (CSV يفتح في Excel) — للتجار المسجّلين فقط
+    function downloadPriceList() {
+      const cols = ['SKU', 'الصنف', 'Item (EN)', 'Brand', 'Models', 'Condition', 'Wholesale AED', 'Wholesale USD', 'CBM', 'Weight kg', 'Stock'];
+      const esc2 = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+      const rows = CATALOG.map((p) => [
+        p.sku || '', p.name || '', p.nameEn || '', p.brand || '', (p.models || []).join(' / '),
+        'Used', Number(p.wholesalePrice) || 0, wsUnitAED(p, 1) ? (Number(p.wholesalePrice) / usdRate()).toFixed(2) : '',
+        p.cbm || '', p.weightKg || '', p.stock || 0,
+      ].map(esc2).join(','));
+      const csv = '﻿' + [cols.map(esc2).join(','), ...rows].join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'FixIt-Trade-PriceList-' + new Date().toISOString().slice(0, 10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      trackEvent('pricelist_dl');
     }
 
     /* ---------- 🧩 Share a Container ---------- */
@@ -284,6 +306,7 @@
       teaser.innerHTML = catalogTeaserHtml();
       // نظهر كروت التيزر فوراً (مش بالسكرول) عشان مايبقاش فيه فراغ
       teaser.querySelectorAll('.card').forEach((c) => c.classList.add('shown'));
+      document.getElementById('dl-pl')?.addEventListener('click', (e) => { e.preventDefault(); downloadPriceList(); });
       if (location.hash) {
         const el = document.querySelector(location.hash);
         if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);
