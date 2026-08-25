@@ -57,6 +57,44 @@
       </section>`;
     }
 
+    /* ---------- 🔔 اشتراك تنبيهات الوصولات ---------- */
+    function alertBoxHtml() {
+      const u = user();
+      return `
+      <section class="trade-panel alert-box" id="alerts">
+        <h2>🔔 ${t('alert_title')}</h2>
+        <div class="panel-sub">${t('alert_sub')}</div>
+        <div class="trade-grid">
+          <div class="form-stack">
+            <div><label>${t('rfq_name')}</label><input id="al-name" value="${u ? esc(u.name) : ''}"></div>
+            <div><label>${t('phone').replace(' *', '')}</label><input id="al-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="9715xxxxxxxx" value="${u ? esc(u.phone) : ''}"></div>
+          </div>
+          <div class="form-stack">
+            <div><label>${t('alert_interest')}</label><textarea id="al-interest" rows="3" placeholder="${esc(t('alert_interest_ph'))}"></textarea></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;"><button class="btn" id="al-go">${t('alert_subscribe')}</button>
+          <span id="al-msg" style="margin-inline-start:10px;font-size:14px;"></span></div>
+      </section>`;
+    }
+    function wireAlerts() {
+      const go = document.getElementById('al-go');
+      if (!go) return;
+      go.addEventListener('click', async () => {
+        const msg = document.getElementById('al-msg');
+        const name = document.getElementById('al-name').value.trim();
+        const phone = document.getElementById('al-phone').value.trim();
+        const interest = document.getElementById('al-interest').value.trim();
+        if (!name || !phone) { msg.style.color = 'var(--red)'; msg.textContent = t('fill_required'); return; }
+        go.disabled = true; go.textContent = t('sending');
+        try {
+          await api('/alerts', { method: 'POST', body: JSON.stringify({ name, phone, interest }) });
+          msg.style.color = '#4ade80'; msg.textContent = t('alert_done');
+          go.textContent = '✓';
+        } catch (e) { msg.style.color = 'var(--red)'; msg.textContent = e.message; go.disabled = false; go.textContent = t('alert_subscribe'); }
+      });
+    }
+
     /* ---------- شريط المصداقية ---------- */
     function statsBar() {
       const stats = wsConf().stats || [];
@@ -312,12 +350,13 @@
     }
 
     function render() {
-      root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + trustGrid() + processSteps() +
+      root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + alertBoxHtml() + trustGrid() + processSteps() +
         orderPadHtml() + shareHtml() + rfqHtml() + faqSection() +
         `<div id="catalog-teaser"></div>`;
       wireOrderPad();
       wireShare();
       wireRfq();
+      wireAlerts();
       const teaser = document.getElementById('catalog-teaser');
       teaser.innerHTML = catalogTeaserHtml();
       // نظهر كل الكروت فوراً (مش بالسكرول) عشان مايبقاش فيه فراغ

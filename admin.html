@@ -161,6 +161,7 @@
         <button data-tab="customers">👥 العملاء</button>
         <button data-tab="maintenance">🔧 الصيانة</button>
         <button data-tab="containers">🧩 حاويات الشحن</button>
+        <button data-tab="alerts">🔔 تنبيهات الوصول</button>
         <button data-tab="activity">📝 سجل العمليات</button>
         <button data-tab="settings">⚙️ إعدادات المتجر</button>
         <button data-tab="sync">🔄 المزامنة</button>
@@ -185,7 +186,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -1191,6 +1192,33 @@
           </tr>`).join('')}
         </table>` : '<small class="muted">مفيش حجوزات لسه</small>'}
       </div>`;
+    }
+
+    /* ==================== 🔔 تنبيهات الوصول (مشتركين) ==================== */
+    async function loadAlerts() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      let list = [];
+      try { list = await api('/alerts', { headers: authHeaders() }); } catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+      if (!list.length) { box.innerHTML = '<div class="empty-state"><span class="icon">🔔</span>مفيش مشتركين في التنبيهات لسه — التجار بيشتركوا من مكتب التجارة عشان توصلهم الوصولات الجديدة</div>'; return; }
+      box.innerHTML = `
+        <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">${list.length} تاجر مشترك — ابعتلهم على واتساب أول ما يوصل اللي بيدوّروا عليه 💪</p>
+        <div class="table-wrap"><table class="table">
+          <tr><th>التاجر</th><th>بيدوّر على</th><th>التاريخ</th><th></th><th></th></tr>
+          ${list.map((a) => `<tr>
+            <td>${esc(a.name)}<br><small dir="ltr" style="color:var(--muted);">${esc(a.phone)}</small></td>
+            <td>${esc(a.interest) || '<span style="color:var(--muted);">كل الوصولات</span>'}</td>
+            <td>${new Date(a.createdAt).toLocaleDateString('ar-EG')}</td>
+            <td><a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${esc(String(a.phone).replace(/[^\d]/g,''))}?text=${encodeURIComponent('أهلاً ' + a.name + ' 👋 وصلنا جديد في FixIt Trade!')}">💬 نبّه</a></td>
+            <td><button class="btn btn-sm btn-danger" data-al-del="${esc(a.id)}">🗑️</button></td>
+          </tr>`).join('')}
+        </table></div>`;
+      box.querySelectorAll('[data-al-del]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          if (!confirm('حذف المشترك؟')) return;
+          try { await api('/alerts?id=' + encodeURIComponent(b.dataset.alDel), { method: 'DELETE', headers: authHeaders() }); loadAlerts(); }
+          catch (e) { toast('⚠️ ' + e.message); }
+        }));
     }
 
     /* ==================== 📝 سجل العمليات ==================== */
