@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080" role="img" aria-label="FixIt — BMW & MINI Parts">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="80%">
+      <stop offset="0%" stop-color="#20243b"/>
+      <stop offset="55%" stop-color="#0f1220"/>
+      <stop offset="100%" stop-color="#05070f"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity=".10"/>
+      <stop offset="18%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a3fce"/>
+      <stop offset="100%" stop-color="#23268f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- panel -->
+  <rect x="0" y="0" width="1080" height="1080" fill="url(#bg)"/>
+  <rect x="40" y="40" width="1000" height="1000" rx="70" fill="none" stroke="#2b3150" stroke-width="3"/>
+  <rect x="40" y="40" width="1000" height="1000" rx="70" fill="url(#gloss)"/>
+
+  <!-- BMW roundel -->
+  <g transform="translate(315,300)">
+    <circle r="118" fill="#050505"/>
+    <circle r="96" fill="#ffffff"/>
+    <path d="M0,0 L0,-96 A96,96 0 0,1 96,0 Z" fill="#0166B1"/>
+    <path d="M0,0 L0,96 A96,96 0 0,1 -96,0 Z" fill="#0166B1"/>
+    <circle r="96" fill="none" stroke="#050505" stroke-width="2"/>
+    <text y="-101" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#ffffff" letter-spacing="3">BMW</text>
+  </g>
+
+  <!-- MINI winged badge -->
+  <g transform="translate(765,300)">
+    <!-- wings -->
+    <g fill="#c9ced8" stroke="#8b90a0" stroke-width="1.5">
+      <path d="M-30,0 C-70,-34 -130,-40 -190,-20 C-140,-6 -110,4 -70,26 C-64,10 -50,4 -30,4 Z"/>
+      <path d="M30,0 C70,-34 130,-40 190,-20 C140,-6 110,4 70,26 C64,10 50,4 30,4 Z"/>
+    </g>
+    <circle r="70" fill="#0b0b0b" stroke="#c9ced8" stroke-width="4"/>
+    <text y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">MINI</text>
+  </g>
+
+  <!-- FIXIT wordmark (same geometry as site header, scaled) -->
+  <svg x="146" y="470" width="788" height="265" viewBox="0 0 214 72" preserveAspectRatio="xMidYMid meet">
+    <g font-family="Archivo, 'Arial Black', sans-serif" font-size="58" font-style="italic" font-weight="900"
+       fill="url(#blue)" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+      <text x="8" y="56">FI</text>
+      <text x="146" y="56">IT</text>
+    </g>
+    <g fill="url(#blue)" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+      <polygon points="76,14 92,36 76,58 90,58 106,40 122,58 136,58 120,36 136,14 122,14 106,32 90,14"/>
+    </g>
+  </svg>
+
+  <!-- tagline -->
+  <text x="540" y="815" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="800" fill="#eef1f7" letter-spacing="4">BMW &amp; MINI PARTS</text>
+  <text x="540" y="885" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#9aa2b6">قطع غيار — استيراد جديد ومستعمل</text>
+  <text x="540" y="960" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#ff7a1a" letter-spacing="2">CAIRO · EGYPT</text>
+</svg>

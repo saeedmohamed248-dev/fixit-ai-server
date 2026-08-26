@@ -632,6 +632,22 @@ function logoHtml() {
   return 'Fix<em>It</em>';
 }
 
+// 🅵🅸🆇🅸🆃 لوجو FixIt الرسمي (SVG) — أزرق بحدود بيضا زي يافطة المحل، والـ X مثلثات
+function fixitLogoMark(h = 34) {
+  return `
+  <svg class="fixit-mark" viewBox="0 0 214 72" height="${h}" role="img" aria-label="FixIt" direction="ltr"
+       style="height:${h}px;width:auto;display:block;flex:0 0 auto;overflow:visible;direction:ltr;">
+    <g font-family="'Archivo','Segoe UI',system-ui,sans-serif" font-size="58" font-style="italic" font-weight="900"
+       direction="ltr" text-anchor="start" fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+      <text x="8" y="56">FI</text>
+      <text x="146" y="56">IT</text>
+    </g>
+    <g fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+      <polygon points="76,14 92,36 76,58 90,58 106,40 122,58 136,58 120,36 136,14 122,14 106,32 90,14"></polygon>
+    </g>
+  </svg>`;
+}
+
 function renderLayout(active = '') {
   window._layoutRendered = true;
   window._active = active;
@@ -659,11 +675,12 @@ function renderLayout(active = '') {
     <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(phoneDisplay())}</a></div>
     <header class="header">
       <div class="container header-inner">
-        <a class="logo" href="${isWholesale() ? '/trade.html' : '/index.html'}">
-          <span class="logo-mark">${isWholesale() ? '🌐' : '🔧'}</span>
-          <span class="logo-text">${isWholesale()
-            ? `Fix<em>It</em> <span class="trade-tag">TRADE</span><small>${LANG === 'en' ? esc(wsConf().taglineEn || '') : esc(wsConf().taglineAr || '')}</small>`
-            : `${logoHtml()}<small>${t('brand_tag')}</small>`}</span>
+        <a class="logo ${isWholesale() ? '' : 'logo-brand'}" href="${isWholesale() ? '/trade.html' : '/index.html'}">
+          ${isWholesale()
+            ? `<span class="logo-mark">🌐</span><span class="logo-text">Fix<em>It</em> <span class="trade-tag">TRADE</span><small>${LANG === 'en' ? esc(wsConf().taglineEn || '') : esc(wsConf().taglineAr || '')}</small></span>`
+            : (SITE.name && SITE.name !== 'FixIt'
+              ? `<span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}<small>${t('brand_tag')}</small></span>`
+              : `${fixitLogoMark(36)}<small class="logo-tagline">${t('brand_tag')}</small>`)}
         </a>
         <div class="hdr-search-wrap">
           <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
@@ -747,7 +764,7 @@ function renderLayout(active = '') {
       </div>` : `
       <div class="container footer-grid">
         <div>
-          <div class="logo"><span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span></div>
+          <div class="logo logo-brand">${SITE.name && SITE.name !== 'FixIt' ? `<span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span>` : fixitLogoMark(32)}</div>
           <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
           <div class="pay-badges">${t('pay_badges')}</div>
         </div>
