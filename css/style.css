@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@1,900&display=swap');
-/* ====== FixIt — التصميم العام (فاتح + برتقالي) ====== */
+/* ====== FixIt — التصميم العام (فاتح + أزرق اللوجو) ====== */
 :root {
-  --bg: #f4f5f7;
+  --bg: #f4f6fb;
   --card: #ffffff;
-  --card2: #f8fafc;
-  --line: #e4e7ec;
-  --text: #101828;
-  --muted: #667085;
-  --accent: #f97316;      /* FixIt orange */
-  --accent-dark: #ea580c;
-  --accent-deep: #c2410c;
-  --dark: #101828;        /* header/footer */
-  --dark2: #1d2939;
+  --card2: #f6f8fd;
+  --line: #e3e7f0;
+  --text: #0f1430;
+  --muted: #5c6480;
+  --accent: #2f33bf;      /* FixIt royal blue (نفس اللوجو) */
+  --accent-dark: #23279c;
+  --accent-deep: #191c78;
+  --dark: #0d1230;        /* header/footer — كحلي غامق */
+  --dark2: #171d42;
   --green: #12b76a;
   --amber: #f59e0b;
   --red: #ef4444;
@@ -54,7 +54,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  box-shadow: 0 0 0 3px rgba(47, 51, 191, 0.14);
 }
 label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px; font-weight: 500; }
 
@@ -93,7 +93,7 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   display: grid; place-items: center;
   background: var(--accent);
   font-size: 22px;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+  box-shadow: 0 4px 12px rgba(47, 51, 191, 0.35);
 }
 .logo-text { line-height: 1.1; }
 .logo-text em { font-style: normal; color: var(--accent); }
@@ -236,7 +236,7 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   font-size: 16px;
   font-weight: 700;
   transition: 0.2s;
-  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 6px rgba(47, 51, 191, 0.32);
 }
 .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -260,8 +260,8 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
 /* ====== الهيرو ====== */
 .hero {
   background:
-    radial-gradient(700px 340px at 85% -10%, rgba(249, 115, 22, 0.25), transparent),
-    radial-gradient(500px 260px at 8% 110%, rgba(249, 115, 22, 0.12), transparent),
+    radial-gradient(700px 340px at 85% -10%, rgba(47, 51, 191, 0.22), transparent),
+    radial-gradient(500px 260px at 8% 110%, rgba(47, 51, 191, 0.14), transparent),
     var(--dark);
   color: #fff;
   padding: 64px 0;
@@ -289,7 +289,7 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   font-weight: 500;
   transition: 0.2s;
 }
-.chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(249,115,22,0.1); }
+.chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(47,51,191,0.09); }
 
 /* ====== الأقسام ====== */
 .section { padding: 48px 0; }
@@ -529,7 +529,7 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   cursor: pointer;
   font-size: 14px;
 }
-.pay-option:has(input:checked) { border-color: var(--accent); background: #fff7ed; }
+.pay-option:has(input:checked) { border-color: var(--accent); background: #eef0ff; }
 .pay-option input { width: auto; }
 
 .empty-state { text-align: center; padding: 70px 20px; color: var(--muted); }
@@ -570,7 +570,7 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
   font-size: 15px;
 }
 .tl-step.done .tl-dot { background: var(--green); border-color: var(--green); color: #fff; }
-.tl-step.current .tl-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.2); }
+.tl-step.current .tl-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 5px rgba(47, 51, 191, 0.2); }
 .tl-step small { color: var(--muted); font-size: 12px; }
 .tl-step.done small, .tl-step.current small { color: var(--text); font-weight: 600; }
 
@@ -1214,7 +1214,7 @@ tr.order-row:hover td { background: var(--card2); }
 .sbc-form .btn{white-space:nowrap}
 
 /* عرض اليوم (فلاش) */
-.flash-band{background:linear-gradient(120deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;border-radius:18px;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.flash-band{background:linear-gradient(120deg,#eef0ff,#dfe3ff);border:1px solid #c7cdfb;border-radius:18px;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .flash-left{display:flex;flex-direction:column;gap:8px;align-items:flex-start;flex:1;min-width:240px}
 .flash-tag{background:var(--accent);color:#fff;font-weight:800;font-size:13px;padding:5px 12px;border-radius:999px}
 .flash-left h3{font-size:20px;color:var(--text)}
