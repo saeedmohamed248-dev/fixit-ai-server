@@ -1240,3 +1240,21 @@ tr.order-row:hover td { background: var(--card2); }
 .logo-tagline{font-size:10px;color:#98a2b3;font-weight:600;letter-spacing:1px;text-transform:uppercase;align-self:flex-end;padding-bottom:4px}
 .footer .fixit-mark{height:30px}
 @media(max-width:900px){ .logo-tagline{display:none} }
+
+/* ============================================================
+   📱 دعم تطبيق الموبايل (Capacitor) — المناطق الآمنة (النوتش/الحواف)
+   على الويب العادي env(safe-area-inset-*) = 0 فمفيش أي تأثير على الموقع.
+   ============================================================ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+/* لون منطقة شريط الحالة/النوتش يطابق أعلى الهيدر */
+html { background: var(--accent-dark); }
+/* الشريط العلوي بعيد عن النوتش، والأزرار العائمة بعيدة عن مؤشر الـ Home */
+.topbar { padding-top: calc(6px + var(--safe-top)); }
+.wa-float { bottom: calc(22px + var(--safe-bottom)); }
+.scroll-top { bottom: calc(90px + var(--safe-bottom)); }
+.footer-bottom { padding-bottom: calc(16px + var(--safe-bottom)); }
