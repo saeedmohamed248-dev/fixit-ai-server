@@ -8,7 +8,7 @@
     "dev": "node scripts/dev.js",
     "build:mobile": "node scripts/build-mobile.mjs",
     "cap:sync": "npm run build:mobile && cap sync",
-    "cap:assets": "capacitor-assets generate --assetPath mobile-assets --iconBackgroundColor #101828 --iconBackgroundColorDark #101828 --splashBackgroundColor #101828 --splashBackgroundColorDark #05070f",
+    "cap:assets": "capacitor-assets generate --assetPath mobile-assets --iconBackgroundColor '#101828' --iconBackgroundColorDark '#101828' --splashBackgroundColor '#101828' --splashBackgroundColorDark '#05070f'",
     "android": "npm run cap:sync && cap open android",
     "ios": "npm run cap:sync && cap open ios",
     "android:run": "npm run cap:sync && cap run android",
