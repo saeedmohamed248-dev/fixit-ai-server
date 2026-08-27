@@ -74,7 +74,7 @@ BMW,MINI,قطع غيار,سبير,parts,spare,عربية,صيانة,OEM,فرام
 |---|---|
 | التصنيف (Category) | Shopping / التسوّق |
 | تقييم المحتوى | Everyone / 3+ (للجميع) |
-| رابط سياسة الخصوصية | `https://fixitauto.parts/policies.html` |
+| رابط سياسة الخصوصية | `https://fixitauto.parts/privacy.html` |
 | إيميل الدعم | (إيميلك) |
 | موقع الدعم | `https://fixitauto.parts` |
 
