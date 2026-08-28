@@ -1,0 +1,108 @@
+# ☁️ بناء تطبيق FixIt في السحابة (Codemagic) — بدون Android Studio / Xcode / Mac
+# ------------------------------------------------------------------------------
+# Codemagic بياخد الكود من GitHub، يبني أندرويد + iOS على سيرفراته، ويرفعهم للمتاجر.
+# التوقيع (Signing) وربط حسابات المتاجر بيتظبطوا مرة واحدة من واجهة Codemagic —
+# التفاصيل في ملف CLOUD_BUILD.md. القيم اللي فيها TODO لازم تعدّلها.
+# ------------------------------------------------------------------------------
+
+workflows:
+
+  # ============ 🤖 أندرويد → Google Play ============
+  fixit-android:
+    name: FixIt — Android
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      node: 20
+      # ⬇️ من Codemagic UI: Teams → Code signing identities → ارفع keystore
+      #    وسمّي الـ reference: fixit_keystore  (زي اللي تحت)
+      android_signing:
+        - fixit_keystore
+      vars:
+        PACKAGE_NAME: "parts.fixitauto.app"
+    scripts:
+      - name: تثبيت الحزم
+        script: npm ci || npm install
+      - name: تجهيز الويب + إضافة أندرويد
+        script: |
+          npm run build:mobile
+          npx cap add android 2>/dev/null || true
+          npx cap sync android
+      - name: توليد الأيقونات
+        script: npm run cap:assets || true
+      - name: بناء حزمة الإصدار (AAB)
+        script: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      # ✉️ بيبعتلك إيميل بالنتيجة + ملف التطبيق
+      email:
+        recipients:
+          - sa3eeedmohamed@hotmail.com   # TODO: إيميلك
+        notify:
+          success: true
+          failure: true
+      # 📤 (اختياري) رفع تلقائي على Google Play — فعّله بعد ربط الحساب:
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS  # من Codemagic UI
+      #   track: internal          # internal → alpha → beta → production
+      #   submit_as_draft: true
+
+  # ============ 🍏 iOS → App Store (على Mac سحابي — مش محتاج تملك Mac) ============
+  fixit-ios:
+    name: FixIt — iOS
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      # ⬇️ من Codemagic UI: Teams → Integrations → App Store Connect → أضف مفتاح API
+      #    وسمّيه: fixit_asc  (زي اللي تحت)
+      app_store_connect: fixit_asc
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: parts.fixitauto.app
+      vars:
+        BUNDLE_ID: "parts.fixitauto.app"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+    scripts:
+      - name: تثبيت الحزم
+        script: npm ci || npm install
+      - name: تجهيز الويب + إضافة iOS
+        script: |
+          npm run build:mobile
+          npx cap add ios 2>/dev/null || true
+          npx cap sync ios
+      - name: توليد الأيقونات
+        script: npm run cap:assets || true
+      - name: تثبيت CocoaPods
+        script: |
+          cd ios/App && pod install
+      - name: تجهيز شهادات التوقيع
+        script: xcode-project use-profiles
+      - name: بناء ملف الـ IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - sa3eeedmohamed@hotmail.com   # TODO: إيميلك
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true       # يرفع لـ TestFlight للتجربة
+        # submit_to_app_store: true      # فعّلها لما تبقى جاهز للنشر العام
