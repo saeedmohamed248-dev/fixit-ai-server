@@ -1,5 +1,11 @@
 // كود مشترك بين كل الصفحات: الهيدر، الفوتر، السلة، الحساب، المفضلة، الاتصال بالـ API
-const API = '/api';
+
+// 📱 لما التطبيق يشتغل كتطبيق موبايل (أندرويد/iOS) عبر Capacitor بيكون محمّل
+// محلياً من https://localhost، فالمسار النسبي /api مش هيوصل للسيرفر. عشان كده
+// بنوجّه نداءات الـ API لدومين الإنتاج. على الويب العادي بيفضل نسبي زي ما هو.
+const PROD_ORIGIN = 'https://fixitauto.parts';
+const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+const API = IS_NATIVE ? PROD_ORIGIN + '/api' : '/api';
 
 /* ---------- 🇪🇬🇦🇪 الفرع: قطاعي (مصر) / جملة (الإمارات) ---------- */
 // الوضع محفوظ في المتصفح، والافتراضي القطاعي (مصر). العملة في الجملة: درهم/دولار
@@ -789,7 +795,7 @@ function renderLayout(active = '') {
           <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
         </div>
       </div>`}
-      <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')}</div>
+      <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
@@ -803,4 +809,67 @@ function renderLayout(active = '') {
 
   applyI18n();
   updateCartBadge();
+}
+
+/* ============================================================
+   📱 تهيئة تطبيق الموبايل (Capacitor) — أندرويد / iOS
+   كل ده بيشتغل فقط جوه التطبيق (IS_NATIVE)، وعلى الويب مفيش أي تأثير.
+   ============================================================ */
+function nativePlugin(name) {
+  return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null;
+}
+
+function initNativeApp() {
+  if (!IS_NATIVE) return;
+
+  // شريط الحالة: خلفية بلون الهوية ونص فاتح، والمحتوى تحته (مش تحت النوتش)
+  const StatusBar = nativePlugin('StatusBar');
+  if (StatusBar) {
+    try { StatusBar.setOverlaysWebView({ overlay: false }); } catch {}
+    try { StatusBar.setStyle({ style: 'DARK' }); } catch {}       // نص فاتح على خلفية غامقة
+    try { StatusBar.setBackgroundColor({ color: '#23279c' }); } catch {} // أزرق الهوية (أندرويد)
+  }
+
+  // إخفاء شاشة البداية بعد ما الصفحة تجهز فعلاً
+  const SplashScreen = nativePlugin('SplashScreen');
+  if (SplashScreen) { try { SplashScreen.hide(); } catch {} }
+
+  // زرار الرجوع في أندرويد: يرجّع صفحة، ولو مفيش تاريخ يخرج من التطبيق
+  const App = nativePlugin('App');
+  if (App && App.addListener) {
+    try {
+      App.addListener('backButton', ({ canGoBack }) => {
+        if (canGoBack || (window.history && history.length > 1)) history.back();
+        else if (App.exitApp) App.exitApp();
+      });
+    } catch {}
+  }
+
+  // الروابط الخارجية (واتساب/اتصال/إيميل/مواقع) تفتح في تطبيق النظام
+  // بدل ما تفتح جوه شاشة التطبيق. الروابط الداخلية للموقع تفضل جوه التطبيق.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (!href || href.startsWith('#')) return;
+    const isExternalScheme = /^(tel:|mailto:|whatsapp:|geo:|sms:)/i.test(href);
+    const isHttp = /^https?:\/\//i.test(href);
+    const isInternalHttp = isHttp && (href.startsWith(location.origin) || href.startsWith('https://localhost'));
+    if (isExternalScheme || (isHttp && !isInternalHttp)) {
+      e.preventDefault();
+      // واتساب/اتصال/إيميل: نسلّمها لتطبيق النظام مباشرة عشان يفتح التطبيق الصح.
+      // باقي المواقع: نفتحها في متصفح داخلي مريح (يرجع للتطبيق بضغطة).
+      const handoff = isExternalScheme || /wa\.me|api\.whatsapp\.com/i.test(href);
+      const Browser = nativePlugin('Browser');
+      if (!handoff && isHttp && Browser) { try { return void Browser.open({ url: href }); } catch {} }
+      window.open(href, '_system');
+    }
+  }, true);
+}
+
+// نشغّل التهيئة أول ما الصفحة تجهز (بعد ما window.Capacitor يبقى متاح)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNativeApp);
+} else {
+  initNativeApp();
 }

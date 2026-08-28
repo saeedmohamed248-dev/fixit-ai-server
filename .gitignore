@@ -1,0 +1,30 @@
+# ===== Node / Capacitor =====
+node_modules/
+# محتوى الويب المُجهّز للتطبيق (بيتولّد من: npm run build:mobile)
+www/
+
+# ===== Android (يتولّد من: npx cap add android) =====
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/capacitor-cordova-android-plugins/
+android/local.properties
+android/.idea/
+*.keystore
+*.jks
+
+# ===== iOS (يتولّد من: npx cap add ios) =====
+ios/App/Pods/
+ios/App/build/
+ios/App/output/
+ios/App/App/public/
+DerivedData/
+*.xcuserstate
+
+# ===== نظام / محرر =====
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local

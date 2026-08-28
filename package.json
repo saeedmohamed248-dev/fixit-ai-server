@@ -3,8 +3,28 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "متجر قطع غيار BMW & MINI - استيراد جديد ومستعمل",
+  "description": "متجر قطع غيار BMW & MINI - استيراد جديد ومستعمل + تطبيق موبايل (أندرويد/iOS)",
   "scripts": {
-    "dev": "node scripts/dev.js"
+    "dev": "node scripts/dev.js",
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "cap:sync": "npm run build:mobile && cap sync",
+    "cap:assets": "capacitor-assets generate --assetPath mobile-assets --iconBackgroundColor '#101828' --iconBackgroundColorDark '#101828' --splashBackgroundColor '#101828' --splashBackgroundColorDark '#05070f'",
+    "android": "npm run cap:sync && cap open android",
+    "ios": "npm run cap:sync && cap open ios",
+    "android:run": "npm run cap:sync && cap run android",
+    "ios:run": "npm run cap:sync && cap run ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/browser": "^6.0.4",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.2.0"
   }
 }
