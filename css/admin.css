@@ -1,0 +1,246 @@
+/* ============================================================
+   🛍️ لوحة تحكم FixIt — تصميم على طراز Shopify Admin (Polaris)
+   كل الأنماط هنا مقصورة على .sh-admin / .admin-body فمابتأثرش على المتجر.
+   ============================================================ */
+/* الأدمن دايماً على خلفية رمادية فاتحة — نلغي خلفية النوتش الزرقا الخاصة بالموبايل */
+html { background: #f1f1f1; }
+
+.admin-body {
+  --sh-bg: #f1f1f1;
+  --sh-surface: #ffffff;
+  --sh-surface-sub: #fafafa;
+  --sh-sidebar: #fbfbfb;
+  --sh-border: #e1e1e1;
+  --sh-border-strong: #d1d1d1;
+  --sh-text: #303030;
+  --sh-muted: #616161;
+  --sh-faint: #8a8a8a;
+  --sh-primary: #303030;      /* زرار أساسي غامق (زي شوبيفاي) */
+  --sh-primary-hover: #1a1a1a;
+  --sh-green: #008060;        /* أخضر شوبيفاي — الحفظ والإيجابي */
+  --sh-green-hover: #006e52;
+  --sh-green-bg: #e3f1ed;
+  --sh-amber: #b98900;
+  --sh-amber-bg: #fdf4e3;
+  --sh-red: #d72c0d;
+  --sh-red-bg: #fbeae5;
+  --sh-blue: #2f33bf;
+  --sh-radius: 12px;
+  --sh-radius-sm: 8px;
+  --sh-shadow: 0 1px 0 rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.04);
+  background: var(--sh-bg);
+  color: var(--sh-text);
+  display: block;
+  min-height: 100vh;
+  overflow-x: hidden; /* السايدبار المخفي على الموبايل بيتزحلق بره الشاشة */
+}
+
+/* ---------- القشرة: سايدبار + محتوى ---------- */
+.sh-admin { display: flex; min-height: 100vh; background: var(--sh-bg); }
+
+.sh-sidebar {
+  width: 240px; flex: 0 0 240px;
+  background: var(--sh-sidebar);
+  border-inline-end: 1px solid var(--sh-border);
+  position: sticky; top: 0; align-self: flex-start;
+  height: 100vh; display: flex; flex-direction: column;
+  padding: 12px 12px 8px;
+  overflow-y: auto;
+}
+.sh-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 14px; margin-bottom: 6px;
+}
+.sh-brand img { width: 34px; height: 34px; border-radius: 8px; }
+.sh-brand b { font-size: 17px; color: var(--sh-text); }
+.sh-brand small { display: block; font-size: 11px; color: var(--sh-faint); font-weight: 600; }
+
+.sh-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.sh-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: start;
+  padding: 8px 10px; border: none; border-radius: var(--sh-radius-sm);
+  background: transparent; color: var(--sh-text);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background .12s;
+}
+.sh-nav-item .ic { font-size: 16px; width: 20px; text-align: center; }
+.sh-nav-item:hover { background: #f0f0f0; }
+.sh-nav-item.active { background: #e7e7e7; color: #000; }
+.sh-nav-item .badge {
+  margin-inline-start: auto; background: var(--sh-green); color: #fff;
+  font-size: 11px; font-weight: 800; min-width: 18px; height: 18px;
+  border-radius: 9px; display: grid; place-items: center; padding: 0 5px;
+}
+.sh-nav-sep { height: 1px; background: var(--sh-border); margin: 8px 4px; }
+.sh-side-foot { padding: 6px 4px 2px; }
+.sh-side-foot a, .sh-side-foot button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 10px; border-radius: var(--sh-radius-sm);
+  background: transparent; border: none; color: var(--sh-muted);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: start;
+}
+.sh-side-foot a:hover, .sh-side-foot button:hover { background: #f0f0f0; color: var(--sh-text); }
+
+/* ---------- المحتوى ---------- */
+.sh-main { flex: 1; min-width: 0; max-width: 100%; display: flex; flex-direction: column; overflow-x: hidden; }
+.sh-topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 20px;
+  background: var(--sh-surface); border-bottom: 1px solid var(--sh-border);
+}
+.sh-menu-btn {
+  display: none; border: none; background: transparent; font-size: 22px;
+  cursor: pointer; color: var(--sh-text); padding: 4px 8px; border-radius: 8px;
+}
+.sh-menu-btn:hover { background: #f0f0f0; }
+.sh-topbar-title { font-size: 16px; font-weight: 800; color: var(--sh-text); }
+.sh-topbar-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
+
+.sh-content { padding: 22px; max-width: 1180px; width: 100%; margin: 0 auto; }
+.sh-content > * { animation: shFade .18s ease; }
+@keyframes shFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- كروت الإحصائيات ---------- */
+.sh-admin .stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px; margin-bottom: 20px;
+}
+.sh-admin .stat-card {
+  background: var(--sh-surface); border: 1px solid var(--sh-border);
+  border-radius: var(--sh-radius); padding: 16px 18px; box-shadow: var(--sh-shadow);
+}
+.sh-admin .stat-card .label { font-size: 13px; color: var(--sh-muted); font-weight: 600; margin-bottom: 8px; }
+.sh-admin .stat-card .value { font-size: 26px; font-weight: 800; color: var(--sh-text); line-height: 1.1; }
+
+/* ---------- الكروت العامة والحاويات ---------- */
+.sh-admin .order-card,
+.sh-admin .panel {
+  background: var(--sh-surface); border: 1px solid var(--sh-border);
+  border-radius: var(--sh-radius); padding: 16px 18px; box-shadow: var(--sh-shadow);
+  margin-bottom: 14px;
+}
+.sh-admin .order-row:hover { border-color: var(--sh-border-strong); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.sh-admin h1 { font-size: 22px; font-weight: 800; }
+.sh-admin h2 { font-size: 18px; font-weight: 800; }
+.sh-admin h3 { font-size: 16px; font-weight: 800; color: var(--sh-text); }
+
+/* ---------- الجداول ---------- */
+.sh-admin .table-wrap {
+  background: var(--sh-surface); border: 1px solid var(--sh-border);
+  border-radius: var(--sh-radius); overflow: auto; box-shadow: var(--sh-shadow);
+}
+.sh-admin .table { width: 100%; border-collapse: collapse; }
+.sh-admin .table th {
+  background: var(--sh-surface-sub); color: var(--sh-muted);
+  font-size: 12px; font-weight: 700; text-transform: none;
+  padding: 11px 14px; text-align: start; border-bottom: 1px solid var(--sh-border);
+  position: sticky; top: 0;
+}
+.sh-admin .table td { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+.sh-admin .table tr:last-child td { border-bottom: none; }
+.sh-admin .table tbody tr:hover { background: #fafafa; }
+
+/* ---------- الأزرار ---------- */
+.sh-admin .btn {
+  background: var(--sh-primary); color: #fff; border: 1px solid var(--sh-primary);
+  border-radius: var(--sh-radius-sm); padding: 9px 16px; font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: .12s; display: inline-flex; align-items: center; gap: 6px;
+}
+.sh-admin .btn:hover { background: var(--sh-primary-hover); border-color: var(--sh-primary-hover); }
+.sh-admin .btn-sm { padding: 6px 12px; font-size: 13px; }
+.sh-admin .btn-outline {
+  background: var(--sh-surface); color: var(--sh-text); border: 1px solid var(--sh-border-strong);
+}
+.sh-admin .btn-outline:hover { background: #f6f6f6; border-color: #b5b5b5; }
+.sh-admin .btn-green, .sh-admin #modal-save, .sh-admin .btn-save {
+  background: var(--sh-green); border-color: var(--sh-green); color: #fff;
+}
+.sh-admin .btn-green:hover, .sh-admin #modal-save:hover, .sh-admin .btn-save:hover {
+  background: var(--sh-green-hover); border-color: var(--sh-green-hover);
+}
+.sh-admin .btn-danger { background: var(--sh-red); border-color: var(--sh-red); color: #fff; }
+
+/* ---------- المدخلات ---------- */
+.sh-admin input, .sh-admin select, .sh-admin textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--sh-border-strong);
+  border-radius: var(--sh-radius-sm); font: inherit; font-size: 14px; background: #fff; color: var(--sh-text);
+}
+.sh-admin input:focus, .sh-admin select:focus, .sh-admin textarea:focus {
+  outline: none; border-color: #616161; box-shadow: 0 0 0 3px rgba(48,48,48,.12);
+}
+.sh-admin label { font-size: 13px; font-weight: 700; color: var(--sh-muted); display: block; margin-bottom: 5px; }
+
+/* ---------- شارات الحالة ---------- */
+.sh-admin .status-pill {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; border: 1px solid transparent;
+}
+.sh-admin .st-new { background: var(--sh-amber-bg); color: var(--sh-amber); }
+.sh-admin .st-confirmed { background: var(--sh-green-bg); color: var(--sh-green); }
+.sh-admin .st-shipped { background: #e6effb; color: #1f5fbf; }
+.sh-admin .st-delivered { background: #e7e7e7; color: #303030; }
+.sh-admin .st-cancelled { background: var(--sh-red-bg); color: var(--sh-red); }
+
+/* ---------- الرسم البياني ---------- */
+.sh-admin .chart-bars { display: flex; align-items: flex-end; gap: 12px; height: 160px; padding-top: 20px; }
+.sh-admin .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
+.sh-admin .chart-bar { width: 100%; max-width: 46px; background: linear-gradient(180deg, #00a37a, var(--sh-green)); border-radius: 8px 8px 0 0; }
+.sh-admin .chart-val { font-size: 11px; color: var(--sh-muted); font-weight: 700; }
+.sh-admin .chart-col small { color: var(--sh-faint); font-size: 12px; }
+
+/* ---------- تخطيط عمودين ---------- */
+.sh-admin .cart-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+
+/* ---------- حالات فارغة وملاحظات ---------- */
+.sh-admin .empty-state {
+  background: var(--sh-surface); border: 1px dashed var(--sh-border-strong);
+  border-radius: var(--sh-radius); padding: 44px 20px; text-align: center; color: var(--sh-muted);
+}
+.sh-admin .empty-state .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+.sh-admin .note {
+  background: var(--sh-amber-bg); border: 1px solid #f0d999; color: #7a5b00;
+  border-radius: var(--sh-radius-sm); padding: 12px 14px; font-size: 14px;
+}
+.sh-admin .spinner { padding: 40px; text-align: center; color: var(--sh-muted); }
+
+/* ---------- شريط أدوات القسم ---------- */
+.sh-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+
+/* ---------- شاشة الدخول ---------- */
+.admin-body .login-box {
+  max-width: 380px; margin: 12vh auto; background: var(--sh-surface);
+  border: 1px solid var(--sh-border); border-radius: 16px; padding: 32px 28px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.08); text-align: center;
+}
+.admin-body .login-box h2 { margin-bottom: 18px; font-size: 22px; }
+.admin-body .login-box input { margin-bottom: 12px; }
+.admin-body .login-box .btn {
+  background: var(--sh-green); color: #fff; border: none; border-radius: var(--sh-radius-sm);
+  padding: 11px; font-weight: 700; cursor: pointer;
+}
+
+/* ---------- المودالات ---------- */
+.admin-body .modal { border-radius: 16px; }
+.admin-body .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
+
+/* ---------- الموبايل ---------- */
+.sh-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 40; }
+@media (max-width: 900px) {
+  .sh-admin .cart-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sh-sidebar {
+    position: fixed; top: 0; bottom: 0; inset-inline-start: 0; z-index: 50;
+    width: 264px; display: none;
+    box-shadow: 0 0 28px rgba(0,0,0,.22);
+  }
+  .sh-admin.nav-open .sh-sidebar { display: flex; animation: shDrawer .2s ease; }
+  .sh-admin.nav-open .sh-scrim { display: block; animation: shFade .2s ease; }
+  @keyframes shDrawer { from { opacity: .3; } to { opacity: 1; } }
+  .sh-menu-btn { display: inline-flex; }
+  .sh-topbar { padding: 0 14px; }
+  .sh-topbar-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-content { padding: 16px; }
+}

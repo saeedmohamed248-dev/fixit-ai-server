@@ -11,13 +11,10 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
-<body>
-  <div id="site-header"></div>
-
-  <main class="section">
-    <div class="container" id="admin-container"></div>
-  </main>
+<body class="admin-body">
+  <div id="admin-container"></div>
 
   <!-- نافذة إضافة/تعديل منتج -->
   <div class="modal-overlay" id="product-modal">
@@ -92,8 +89,28 @@
   <script>
     // لوحة التحكم دايماً بالثيم الفاتح النظيف (مش سكين الجملة الداكن)
     document.documentElement.dataset.mode = 'retail';
-    renderLayout('');
     const container = document.getElementById('admin-container');
+
+    // 🛍️ خريطة الأقسام: المفتاح ← الأيقونة + الاسم (على طراز Shopify)
+    const NAV = [
+      { tab: 'dashboard', ic: '🏠', label: 'نظرة عامة' },
+      { tab: 'orders', ic: '📦', label: 'الطلبات' },
+      { tab: 'products', ic: '🔧', label: 'المنتجات والمخزون' },
+      { tab: 'customers', ic: '👥', label: 'العملاء' },
+      { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
+      { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
+      { sep: true },
+      { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
+      { tab: 'questions', ic: '❓', label: 'الأسئلة' },
+      { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
+      { tab: 'maintenance', ic: '🛠️', label: 'الصيانة' },
+      { tab: 'containers', ic: '🧩', label: 'حاويات الشحن' },
+      { sep: true },
+      { tab: 'activity', ic: '📝', label: 'سجل العمليات' },
+      { tab: 'sync', ic: '🔄', label: 'المزامنة' },
+      { tab: 'settings', ic: '⚙️', label: 'إعدادات المتجر' },
+    ];
+    const NAV_LABEL = Object.fromEntries(NAV.filter((n) => n.tab).map((n) => [n.tab, n.label]));
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
     const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔', credit: '💳', maintenance: '🔧' };
@@ -142,47 +159,63 @@
         localStorage.removeItem('admin_token');
         return showLogin(e.message);
       }
+      const newOrdersCount = ordersCache.filter((o) => o.status === 'new').length;
+      const navHtml = NAV.map((n) => n.sep
+        ? '<div class="sh-nav-sep"></div>'
+        : `<button class="sh-nav-item" data-tab="${n.tab}"><span class="ic">${n.ic}</span><span>${n.label}</span>${
+            n.tab === 'orders' && newOrdersCount ? `<span class="badge" id="nav-orders-badge">${newOrdersCount}</span>` : ''
+          }</button>`).join('');
       container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-        <h1>لوحة التحكم 🎛️</h1>
-        <div style="display: flex; gap: 8px;">
-          <a class="btn btn-outline btn-sm" href="/index.html" target="_blank">عرض المتجر ↗</a>
-          <button class="btn btn-outline btn-sm" id="logout">تسجيل خروج</button>
+      <div class="sh-admin" id="sh-admin">
+        <div class="sh-scrim" id="sh-scrim"></div>
+        <aside class="sh-sidebar" id="sh-sidebar">
+          <div class="sh-brand">
+            <img src="/assets/fixit-logo-square.png" alt="FixIt">
+            <div><b>FixIt</b><small>لوحة التحكم</small></div>
+          </div>
+          <nav class="sh-nav" id="sh-nav">${navHtml}</nav>
+          <div class="sh-nav-sep"></div>
+          <div class="sh-side-foot">
+            <a href="/index.html" target="_blank">🛍️ عرض المتجر ↗</a>
+            <button id="logout">🚪 تسجيل خروج</button>
+          </div>
+        </aside>
+        <div class="sh-main">
+          <header class="sh-topbar">
+            <button class="sh-menu-btn" id="sh-menu">☰</button>
+            <div class="sh-topbar-title" id="sh-title">نظرة عامة</div>
+            <div class="sh-topbar-actions">
+              <a class="btn btn-outline btn-sm" href="/index.html" target="_blank">عرض المتجر ↗</a>
+            </div>
+          </header>
+          <main class="sh-content"><div id="tab-content"></div></main>
         </div>
-      </div>
-      <div class="admin-tabs">
-        <button data-tab="dashboard" class="active">📊 نظرة عامة</button>
-        <button data-tab="analytics">📈 التحليلات والزيارات</button>
-        <button data-tab="orders">📦 الطلبات</button>
-        <button data-tab="requests">🔎 طلبات القطع</button>
-        <button data-tab="questions">❓ الأسئلة</button>
-        <button data-tab="products">🔧 المنتجات والمخزون</button>
-        <button data-tab="coupons">🎟️ خصومات وهدايا</button>
-        <button data-tab="customers">👥 العملاء</button>
-        <button data-tab="maintenance">🔧 الصيانة</button>
-        <button data-tab="containers">🧩 حاويات الشحن</button>
-        <button data-tab="alerts">🔔 تنبيهات الوصول</button>
-        <button data-tab="activity">📝 سجل العمليات</button>
-        <button data-tab="settings">⚙️ إعدادات المتجر</button>
-        <button data-tab="sync">🔄 المزامنة</button>
-      </div>
-      <div id="tab-content"></div>`;
+      </div>`;
+
+      const shAdmin = document.getElementById('sh-admin');
+      const closeNav = () => shAdmin.classList.remove('nav-open');
+      document.getElementById('sh-menu').addEventListener('click', () => shAdmin.classList.toggle('nav-open'));
+      document.getElementById('sh-scrim').addEventListener('click', closeNav);
       document.getElementById('logout').addEventListener('click', () => {
         localStorage.removeItem('admin_token');
         showLogin();
       });
-      container.querySelectorAll('.admin-tabs button').forEach((b) => {
-        b.addEventListener('click', () => {
-          container.querySelectorAll('.admin-tabs button').forEach((x) => x.classList.remove('active'));
-          b.classList.add('active');
-          showTab(b.dataset.tab);
-        });
+
+      function selectTab(tab) {
+        container.querySelectorAll('.sh-nav-item').forEach((x) => x.classList.toggle('active', x.dataset.tab === tab));
+        const label = NAV_LABEL[tab] || 'لوحة التحكم';
+        document.getElementById('sh-title').textContent = label;
+        document.title = label + ' | FixIt';
+        if (location.hash.replace('#', '') !== tab) history.replaceState(null, '', '#' + tab);
+        closeNav();
+        showTab(tab);
+      }
+      container.querySelectorAll('.sh-nav-item').forEach((b) => {
+        b.addEventListener('click', () => selectTab(b.dataset.tab));
       });
-      // فتح تاب معين من الرابط: /admin.html#orders أو #settings ...
+      // فتح قسم معين من الرابط: /admin.html#orders أو #settings ...
       const hashTab = location.hash.replace('#', '');
-      const initial = container.querySelector(`.admin-tabs [data-tab="${hashTab}"]`) ? hashTab : 'dashboard';
-      container.querySelectorAll('.admin-tabs button').forEach((x) => x.classList.toggle('active', x.dataset.tab === initial));
-      showTab(initial);
+      selectTab(NAV_LABEL[hashTab] ? hashTab : 'dashboard');
     }
 
     function showTab(tab) {
@@ -1289,7 +1322,6 @@
             const saved = await api('/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
             localStorage.setItem('site_settings', JSON.stringify(saved));
             applySettings(saved);
-            renderLayout('');
             toast('✅ الإعدادات اتحفظت واتطبقت على الموقع');
           } catch (e) { toast('⚠️ ' + e.message); }
         });
