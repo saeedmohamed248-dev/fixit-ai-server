@@ -30,11 +30,11 @@ workflows:
           npx cap sync android
       - name: توليد الأيقونات
         script: npm run cap:assets || true
-      - name: بناء حزمة الإصدار (AAB)
+      - name: بناء الإصدار (AAB للمتجر + APK للتثبيت المباشر)
         script: |
           cd android
           chmod +x ./gradlew
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease assembleRelease
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
