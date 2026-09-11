@@ -1,11 +1,14 @@
 // نقطة مزامنة المخزون مع الأنظمة الخارجية (شوبيفاي / موس تك / أي نظام تاني)
 // الفكرة: لو قطعة اتباعت في النظام التاني، النظام ده يبعت إشعار هنا فيتخصم المخزون تلقائياً.
 //
-// GET  /api/sync?secret=XXX  → قائمة المخزون الحالي (SKU + الكمية + السعر) للسحب من النظام الخارجي
+// GET  /api/sync?secret=XXX  → قائمة المخزون الحالي (SKU + الكمية + السعر + الفروع) للسحب من النظام الخارجي
 // POST /api/sync?secret=XXX  → خصم مخزون. يقبل شكلين:
 //    1) بسيط:            { "sku": "BP-123", "quantity": 1 }
 //    2) Shopify webhook:  { "line_items": [ { "sku": "BP-123", "quantity": 1 }, ... ] }
 //       (اربط webhook "orders/create" من شوبيفاي على الرابط ده مع ?secret=)
+//
+// 🏬 موس تك بيبعت كمان توزيع المخزون على الفروع (branches) + الفرع الافتراضي
+//    للشحن (originBranch...) عشان الموقع يعرف القطعة بتتشحن منين ويحسب الشحن.
 //
 // لازم ضبط متغير SYNC_SECRET في إعدادات Vercel قبل الاستخدام.
 import { getProducts, saveProducts, logActivity } from '../db.js';
@@ -24,6 +27,26 @@ function checkSecret(req, res) {
   return true;
 }
 
+// 🏬 تطبيع بيانات الفروع الجاية من موس تك على المنتج (توزيع المخزون + فرع الشحن)
+function applyBranchFields(target, item, existing = {}) {
+  if (Array.isArray(item.branches)) target.branches = item.branches;
+  else if (target.branches === undefined) target.branches = existing.branches || [];
+
+  if (item.originBranchId !== undefined && item.originBranchId !== null) {
+    target.originBranchId = item.originBranchId;
+  } else if (target.originBranchId === undefined) {
+    target.originBranchId = existing.originBranchId ?? null;
+  }
+
+  if (item.originBranch) target.originBranch = item.originBranch;
+  else if (target.originBranch === undefined) target.originBranch = existing.originBranch || '';
+
+  if (item.originLocation) target.originLocation = item.originLocation;
+  else if (target.originLocation === undefined) target.originLocation = existing.originLocation || '';
+
+  return target;
+}
+
 export default async function handler(req, res) {
   if (cors(req, res)) return;
   if (!checkSecret(req, res)) return;
@@ -34,6 +57,11 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const inventory = products.map((p) => ({
         sku: p.sku, name: p.name, stock: p.stock, price: p.price, condition: p.condition,
+        // 🏬 من أي فرع بتتشحن القطعة + توزيع المخزون على الفروع
+        branches: p.branches || [],
+        originBranchId: p.originBranchId ?? null,
+        originBranch: p.originBranch || '',
+        originLocation: p.originLocation || '',
       }));
       return res.status(200).json(inventory);
     }
@@ -42,7 +70,7 @@ export default async function handler(req, res) {
       const body = req.body || {};
 
       // ✨ مزامنة كاملة من Mouss Tec: إنشاء/تحديث منتجات بالكامل حسب الـ SKU
-      // { action: "upsert", items: [{ sku, name, brand, condition, price, stock, models, oem, ... }] }
+      // { action: "upsert", items: [{ sku, name, brand, condition, price, stock, models, oem, branches, originBranch... }] }
       if (body.action === 'upsert' && Array.isArray(body.items)) {
         let created = 0, updated = 0;
         for (const item of body.items) {
@@ -61,6 +89,8 @@ export default async function handler(req, res) {
             image: item.image || existing?.image || '',
             description: item.description || existing?.description || '',
           };
+          // 🏬 توزيع الفروع + الفرع الافتراضي للشحن
+          applyBranchFields(fields, item, existing || {});
           if (existing) { Object.assign(existing, fields); updated++; }
           else {
             products.push({
@@ -76,7 +106,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, created, updated });
       }
 
-      // ✨ تحديث مخزون مطلق (القيمة النهائية مش خصم): { action: "set", items: [{ sku, stock, price? }] }
+      // ✨ تحديث مخزون مطلق (القيمة النهائية مش خصم): { action: "set", items: [{ sku, stock, price?, branches?, originBranch? }] }
       if (body.action === 'set' && Array.isArray(body.items)) {
         const updated = [];
         for (const item of body.items) {
@@ -84,6 +114,8 @@ export default async function handler(req, res) {
           if (!product) continue;
           product.stock = Math.max(0, Number(item.stock) || 0);
           if (item.price) product.price = Number(item.price);
+          // 🏬 حدّث توزيع الفروع لو موس تك بعته (المخزون ممكن يكون اتنقل بين الفروع)
+          applyBranchFields(product, item, product);
           updated.push({ sku: product.sku, stock: product.stock });
         }
         await saveProducts(products);
