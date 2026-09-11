@@ -81,6 +81,11 @@ export default async function handler(req, res) {
         image: body.image || '',
         images: Array.isArray(body.images) ? body.images : [],
         description: body.description || '',
+        // 🏬 توزيع الفروع + الفرع الافتراضي للشحن (بيتملّي من مزامنة موس تك)
+        branches: Array.isArray(body.branches) ? body.branches : [],
+        originBranchId: body.originBranchId ?? null,
+        originBranch: body.originBranch || '',
+        originLocation: body.originLocation || '',
         createdAt: new Date().toISOString(),
         sold: 0,
         ratingAvg: 0,
