@@ -1,5 +1,6 @@
-// GET    /api/products            → قائمة المنتجات (مع فلاتر اختيارية)
-// GET    /api/products?id=p1      → منتج واحد
+// GET    /api/products            → قائمة المنتجات (المتاح في المخزون فقط)
+// GET    /api/products?all=1       → كل المنتجات بما فيها اللي مخزونها صفر (إدارة)
+// GET    /api/products?id=p1      → منتج واحد (بيرجع حتى لو مخزونه صفر)
 // POST   /api/products            → إضافة منتج (إدارة)
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
     const products = await getProducts();
 
     if (req.method === 'GET') {
-      const { id, q, brand, category, condition, model, sort } = req.query;
+      const { id, q, brand, category, condition, model, sort, all } = req.query;
 
       if (id) {
         const product = products.find((p) => p.id === id);
@@ -28,6 +29,10 @@ export default async function handler(req, res) {
       }
 
       let list = products;
+      // 🚫 إخفاء المنتجات اللي مخزونها صفر من المتجر تلقائياً (المتجر يعرض المتاح بس).
+      //    ?all=1 بيرجّع الكل (للإدارة/الأدوات). المنتج بيفضل محفوظ — بس مش بيظهر
+      //    في القوايم، ويرجع لوحده أول ما مخزونه يزيد من مزامنة موس تك.
+      if (!all) list = list.filter((p) => Number(p.stock) > 0);
       if (brand) list = list.filter((p) => p.brand === brand);
       if (category) list = list.filter((p) => p.category === category);
       if (condition) list = list.filter((p) => p.condition === condition);
