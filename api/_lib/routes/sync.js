@@ -125,6 +125,23 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, updated });
       }
 
+      // 🧹 تنضيف: الموقع يطابق موس تك بالظبط. { action: "prune", skus: [ ...كل SKU نشط في موس تك ] }
+      //    بيحذف أي منتج ليه sku مش موجود في القائمة (زي المنتجات التجريبية أو القديمة).
+      //    المنتجات من غير sku (اللي اتعملت على الموقع مباشرة) بتتساب زي ما هي.
+      if (body.action === 'prune' && Array.isArray(body.skus)) {
+        const keep = new Set(body.skus.filter(Boolean).map(String));
+        let removed = 0;
+        const kept = products.filter((p) => {
+          if (p.sku && !keep.has(String(p.sku))) { removed++; return false; }
+          return true;
+        });
+        await saveProducts(kept);
+        if (removed) {
+          await logActivity('sync', `🧹 تنضيف موس تك: حذف ${removed} منتج مش موجود في المخزون`);
+        }
+        return res.status(200).json({ ok: true, removed, kept: kept.length });
+      }
+
       // ندعم الشكل البسيط وشكل Shopify order webhook
       const lines = Array.isArray(body.line_items)
         ? body.line_items
