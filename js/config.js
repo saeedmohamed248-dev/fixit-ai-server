@@ -121,3 +121,17 @@ window.SITE = {
     },
   },
 };
+
+// 💬 شات الرد الآلي (Omnichannel AI) — بيظهر في كل صفحات المتجر تلقائياً.
+// المفتاح ده عام (مخصّص للتضمين في الموقع) — مش سر. الشات بيتحمّل من سيرفر موس تك
+// وبيرد على العملاء بالذكاء الاصطناعي (بيقرأ المنتجات والأسعار من موس تك).
+(function () {
+  try {
+    if (/admin\.html/i.test(location.pathname)) return; // من غير شات على لوحة التحكم
+    var WIDGET_KEY = 'wid_UsaGap2Em2K5_0n8h63LdtfvYnWu-h1x';
+    var s = document.createElement('script');
+    s.src = 'https://mousstec.com/omnichannel/widget/' + WIDGET_KEY + '.js';
+    s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) { /* الشات ما يوقفش الموقع أبداً */ }
+})();
