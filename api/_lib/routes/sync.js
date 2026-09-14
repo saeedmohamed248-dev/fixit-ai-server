@@ -47,6 +47,31 @@ function applyBranchFields(target, item, existing = {}) {
   return target;
 }
 
+// 🖼️ نسخ صورة المنتج إلى Cloudinary (رابط دائم)
+// موس تك بيبعت رابط صورة إما مؤقّت (S3 موقّع بينتهي بعد ساعة) أو محلي (نسبي) —
+// الاتنين بيكسروا الصورة على الموقع بعد شوية. الحل: أول ما توصل الصورة، الموقع
+// بينسخها لـ Cloudinary (unsigned preset) ويستخدم الرابط الدائم اللي مايكسرش.
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || 'gbooxyif';
+const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET || 'fixit_unsigned';
+const _stripQuery = (u) => (u || '').split('?')[0];
+
+async function rehostImage(imageUrl) {
+  if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) return null;
+  if (/res\.cloudinary\.com/i.test(imageUrl)) return imageUrl; // دائم بالفعل
+  try {
+    const form = new URLSearchParams();
+    form.set('file', imageUrl);          // Cloudinary بيجيب الصورة من الرابط ده
+    form.set('upload_preset', UPLOAD_PRESET);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: 'POST', body: form,
+    });
+    const data = await r.json().catch(() => ({}));
+    return data.secure_url || null;
+  } catch {
+    return null; // فشل النسخ → نسيب الرابط الأصلي (المزامنة ما تتكسرش)
+  }
+}
+
 export default async function handler(req, res) {
   if (cors(req, res)) return;
   if (!checkSecret(req, res)) return;
@@ -73,7 +98,18 @@ export default async function handler(req, res) {
       // { action: "upsert", items: [{ sku, name, brand, condition, price, stock, models, oem, branches, originBranch... }] }
       if (body.action === 'upsert' && Array.isArray(body.items)) {
         let created = 0, updated = 0;
-        for (const item of body.items) {
+        // 🖼️ انسخ أي صورة جديدة/متغيّرة إلى Cloudinary بالتوازي قبل الحفظ — عشان
+        //    نستخدم رابط دائم. لو الصورة نفس المصدر اللي اتنسخ قبل كده بنسيبها.
+        const resolvedImages = await Promise.all(body.items.map(async (item) => {
+          if (!item || !item.image) return null;
+          const ex = products.find((p) => p.sku === item.sku);
+          if (ex?.imageSource && _stripQuery(item.image) === ex.imageSource && ex.image) {
+            return ex.image; // نفس الصورة المنسوخة قبل كده
+          }
+          return (await rehostImage(item.image)) || ex?.image || item.image;
+        }));
+        for (let i = 0; i < body.items.length; i++) {
+          const item = body.items[i];
           if (!item.sku || !item.name) continue;
           const existing = products.find((p) => p.sku === item.sku);
           const fields = {
@@ -86,7 +122,9 @@ export default async function handler(req, res) {
             stock: Math.max(0, Number(item.stock) || 0),
             models: Array.isArray(item.models) ? item.models : existing?.models || [],
             oem: item.oem || existing?.oem || '',
-            image: item.image || existing?.image || '',
+            image: resolvedImages[i] || existing?.image || '',
+            // نخزّن مصدر الصورة (بدون التوقيع المؤقّت) عشان نعرف نتخطّاها لو متغيّرتش
+            imageSource: item.image ? _stripQuery(item.image) : (existing?.imageSource || ''),
             description: item.description || existing?.description || '',
           };
           // 🏬 توزيع الفروع + الفرع الافتراضي للشحن
