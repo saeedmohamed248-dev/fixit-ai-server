@@ -230,7 +230,7 @@
       try {
         const [orders, prods, customers] = await Promise.all([
           api('/orders', { headers: authHeaders() }),
-          api('/products'),
+          api('/products?all=1'),
           api('/auth?action=customers', { headers: authHeaders() }).catch(() => []),
         ]);
         ordersCache = orders;
@@ -449,7 +449,7 @@
       try {
         const [questions, prods] = await Promise.all([
           api('/questions', { headers: authHeaders() }),
-          api('/products'),
+          api('/products?all=1'),
         ]);
         const pname2 = (pid) => prods.find((p) => p.id === pid)?.name || '؟';
         box.innerHTML = questions.length ? `
@@ -649,7 +649,7 @@
     async function loadProducts() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
-      products = await api('/products');
+      products = await api('/products?all=1');
       box.innerHTML = `
       <div style="margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn btn-sm" id="add-product">+ إضافة منتج</button>
