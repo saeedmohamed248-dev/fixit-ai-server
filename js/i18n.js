@@ -326,6 +326,8 @@ const I18N = {
   /* ---------- صفحة المنتج ---------- */
   sku: { ar: 'رقم القطعة (SKU)', en: 'Part number (SKU)' },
   oem: { ar: 'رقم OEM', en: 'OEM number' },
+  choose_part_no: { ar: 'اختر رقم البارت المطابق لقطعتك', en: 'Choose the part number matching your unit' },
+  part_no_options: { ar: 'أرقام البارت المتاحة', en: 'Available part numbers' },
   supplier: { ar: 'الصانع', en: 'Manufacturer' },
   condition: { ar: 'الحالة', en: 'Condition' },
   used_checked: { ar: 'مستعمل وارد (مفحوص)', en: 'Used import (inspected)' },
