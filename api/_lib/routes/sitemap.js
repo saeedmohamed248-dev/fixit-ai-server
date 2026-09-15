@@ -6,7 +6,9 @@ export default async function handler(req, res) {
   try {
     const host = 'https://' + (req.headers.host || 'fixitauto.parts');
     const staticPages = ['/', '/shop.html', '/trade.html', '/about.html', '/trade-terms.html', '/request.html', '/track.html', '/policies.html', '/assistant.html'];
-    const products = await getProducts();
+    // 🚫 نعرض المتاح في المخزون بس — المنتجات مخزون-صفر مخفية عن العملاء
+    //    ومحركات البحث كمان (متجهش لصفحة "غير متوفر").
+    const products = (await getProducts()).filter((p) => Number(p.stock) > 0);
 
     const urls = [
       ...staticPages.map((p) => `<url><loc>${host}${p}</loc></url>`),
