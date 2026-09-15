@@ -67,6 +67,8 @@ export default async function handler(req, res) {
         orderItems.push({
           id: product.id, sku: product.sku, name: product.name,
           condition: product.condition, category: product.category, price: product.price, qty,
+          // 🔢 البارت نمبر اللي العميل اختاره (لو القطعة ليها أكتر من رقم)
+          partNumber: String(item.partNumber || '').trim(),
         });
       }
 
