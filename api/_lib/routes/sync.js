@@ -12,7 +12,7 @@
 //
 // لازم ضبط متغير SYNC_SECRET في إعدادات Vercel قبل الاستخدام.
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, productCategory } from '../util.js';
+import { cors, productCategory, productBrand, productSupplier } from '../util.js';
 
 function checkSecret(req, res) {
   if (!process.env.SYNC_SECRET) {
@@ -115,7 +115,9 @@ export default async function handler(req, res) {
           const fields = {
             name: item.name,
             nameEn: item.nameEn || existing?.nameEn || '',
-            brand: item.brand || 'BMW',
+            // 🚗 موس تك بيبعت اسم المورّد في brand — نخزّنه كـ supplier ونحسب نوع
+            //    العربية (BMW/MINI) من الاسم/الموديلات عشان الفلتر يشتغل صح.
+            supplier: productSupplier({ brand: item.brand, supplier: item.supplier }),
             condition: item.condition === 'used' ? 'used' : 'new',
             price: Number(item.price) || 0,
             oldPrice: Number(item.oldPrice) || existing?.oldPrice || 0,
@@ -130,6 +132,8 @@ export default async function handler(req, res) {
           // 🗂️ فئة المنتج: نستخدم اللي موس تك بعتها لو معروفة، وإلا نستنتجها من الاسم
           //    عشان المتجر يتنظّم في فئات بدل "أخرى".
           fields.category = productCategory({ category: item.category, name: fields.name });
+          // 🚗 نوع العربية (بيعتمد على الاسم والموديلات)
+          fields.brand = productBrand({ brand: item.brand, name: fields.name, models: fields.models });
           // 🏬 توزيع الفروع + الفرع الافتراضي للشحن
           applyBranchFields(fields, item, existing || {});
           if (existing) { Object.assign(existing, fields); updated++; }
