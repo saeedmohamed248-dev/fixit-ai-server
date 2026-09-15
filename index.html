@@ -219,7 +219,7 @@
         </div>`).join('');
     })();
 
-    const CATS = ['فرامل', 'فلاتر وصيانة', 'عفشة وتعليق', 'كهرباء وإشعال', 'تبريد', 'وقود', 'هيكل وإكسسوارات'];
+    const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
       <a class="cat-card" href="/shop.html?category=${encodeURIComponent(c)}">
         <span class="icon">${categoryIcon(c)}</span>

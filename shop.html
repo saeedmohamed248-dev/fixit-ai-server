@@ -130,14 +130,10 @@
       });
       history.replaceState(null, '', qs.toString() ? '?' + qs : location.pathname);
       try {
-        // all=1 → نعرض الكتالوج كامل حتى المنتجات اللي مخزونها صفر، عشان العميل
-        // يقدر يلاقي أي قطعة بالبحث. غير المتوفر بيظهر بعلامة «غير متوفر» ومن غير
-        // زر شراء (متعامل معاه في productCard) — والرابط الظاهر يفضل نضيف بدون all.
-        const apiQs = new URLSearchParams(qs); apiQs.set('all', '1');
-        lastResults = wsCatalogFilter(await api('/products?' + apiQs));
+        // 🚫 المتجر بيعرض المتاح في المخزون بس — أي منتج مخزونه صفر مابيظهرش للعميل.
+        //    (الـ API بيفلتر stock>0 تلقائياً لما مانبعتش all=1).
+        lastResults = wsCatalogFilter(await api('/products' + (qs.toString() ? '?' + qs : '')));
         if (document.getElementById('f-sort').value === 'newest') lastResults = [...lastResults].sort(byNewest);
-        // المتوفر أولاً ثم المنتهي (فرز ثابت يحافظ على ترتيب الفرز المختار داخل كل مجموعة)
-        lastResults.sort((a, b) => (Number(b.stock) > 0) - (Number(a.stock) > 0));
         currentPage = 1;
         document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
         renderPage();
@@ -146,9 +142,9 @@
       }
     }
 
-    // قوائم الموديلات والفئات من الكتالوج كامل (all=1) عشان الفلاتر تغطي كل القطع
-    // حتى المنتهية، فالبحث بالموديل/الفئة يلاقي أي قطعة.
-    api('/products?all=1').then((all) => {
+    // قوائم الموديلات والفئات من المتاح في المخزون بس — عشان الفلاتر مايظهروش
+    // موديل/فئة نتيجتها فاضية (كل قطعها مخزونها صفر ومخفية عن العميل).
+    api('/products').then((all) => {
       const products = wsCatalogFilter(all);
       const models = [...new Set(products.flatMap((p) => p.models))].sort();
       const cats = [...new Set(products.map((p) => p.category))];

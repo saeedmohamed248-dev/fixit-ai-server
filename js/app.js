@@ -481,7 +481,8 @@ function pdesc(p) { return LANG === 'en' && p.descriptionEn ? p.descriptionEn : 
 
 const CATEGORY_ICONS = {
   'فرامل': '🛑', 'فلاتر وصيانة': '🛢️', 'عفشة وتعليق': '🔩',
-  'كهرباء وإشعال': '⚡', 'تبريد': '❄️', 'وقود': '⛽', 'هيكل وإكسسوارات': '🚗',
+  'كهرباء وإشعال': '⚡', 'تبريد': '❄️', 'وقود': '⛽', 'محرك': '⚙️',
+  'هيكل وإكسسوارات': '🚗', 'أخرى': '🔧',
 };
 function categoryIcon(cat) { return CATEGORY_ICONS[cat] || '🔧'; }
 

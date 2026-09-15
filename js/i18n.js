@@ -579,6 +579,7 @@ const I18N = {
   'cat_كهرباء وإشعال': { ar: 'كهرباء وإشعال', en: 'Electrical & Ignition' },
   cat_تبريد: { ar: 'تبريد', en: 'Cooling' },
   cat_وقود: { ar: 'وقود', en: 'Fuel' },
+  cat_محرك: { ar: 'محرك', en: 'Engine' },
   'cat_هيكل وإكسسوارات': { ar: 'هيكل وإكسسوارات', en: 'Body & Accessories' },
   cat_أخرى: { ar: 'أخرى', en: 'Other' },
 };

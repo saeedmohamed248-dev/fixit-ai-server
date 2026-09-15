@@ -12,7 +12,7 @@
 //
 // لازم ضبط متغير SYNC_SECRET في إعدادات Vercel قبل الاستخدام.
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors } from '../util.js';
+import { cors, productCategory } from '../util.js';
 
 function checkSecret(req, res) {
   if (!process.env.SYNC_SECRET) {
@@ -127,6 +127,9 @@ export default async function handler(req, res) {
             imageSource: item.image ? _stripQuery(item.image) : (existing?.imageSource || ''),
             description: item.description || existing?.description || '',
           };
+          // 🗂️ فئة المنتج: نستخدم اللي موس تك بعتها لو معروفة، وإلا نستنتجها من الاسم
+          //    عشان المتجر يتنظّم في فئات بدل "أخرى".
+          fields.category = productCategory({ category: item.category, name: fields.name });
           // 🏬 توزيع الفروع + الفرع الافتراضي للشحن
           applyBranchFields(fields, item, existing || {});
           if (existing) { Object.assign(existing, fields); updated++; }
