@@ -326,6 +326,7 @@ const I18N = {
   /* ---------- صفحة المنتج ---------- */
   sku: { ar: 'رقم القطعة (SKU)', en: 'Part number (SKU)' },
   oem: { ar: 'رقم OEM', en: 'OEM number' },
+  supplier: { ar: 'الصانع', en: 'Manufacturer' },
   condition: { ar: 'الحالة', en: 'Condition' },
   used_checked: { ar: 'مستعمل وارد (مفحوص)', en: 'Used import (inspected)' },
   fits: { ar: 'يناسب موديلات', en: 'Fits models' },

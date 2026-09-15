@@ -5,7 +5,12 @@
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, requireAdmin, productCategory } from '../util.js';
+import { cors, requireAdmin, productCategory, productBrand, productSupplier } from '../util.js';
+
+// نضمن حقول العرض المشتقّة (فئة + نوع عربية + مورّد) للمنتجات الجاية من موس تك
+function withDerived(p) {
+  return { ...p, category: productCategory(p), brand: productBrand(p), supplier: productSupplier(p) };
+}
 
 // حساب الحجم بالمتر المكعب من الأبعاد (سم): الطول×العرض×الارتفاع ÷ مليون
 function cbmFromDims(o) {
@@ -25,15 +30,13 @@ export default async function handler(req, res) {
       if (id) {
         const product = products.find((p) => p.id === id);
         if (!product) return res.status(404).json({ error: 'المنتج غير موجود' });
-        // نضمن فئة للمنتج (منتجات موس تك بتوصل من غير فئة) — بنستنتجها من الاسم
-        return res.status(200).json({ ...product, category: productCategory(product) });
+        // نضمن الحقول المشتقّة (منتجات موس تك بتوصل من غير فئة ونوع عربية صحيح)
+        return res.status(200).json(withDerived(product));
       }
 
-      // 🗂️ نضمن فئة لكل منتج قبل الفلترة عشان فلتر الفئة والتنظيم يشتغلوا حتى
-      //    على المنتجات اللي اتزامنت من موس تك من غير فئة.
-      let list = products.map((p) => (
-        p.category && productCategory(p) === p.category ? p : { ...p, category: productCategory(p) }
-      ));
+      // 🗂️ نضمن فئة + نوع عربية (BMW/MINI) + مورّد لكل منتج قبل الفلترة عشان
+      //    الفلاتر والتنظيم يشتغلوا حتى على المنتجات اللي اتزامنت من موس تك.
+      let list = products.map(withDerived);
       // 🚫 إخفاء المنتجات اللي مخزونها صفر من المتجر تلقائياً (المتجر يعرض المتاح بس).
       //    ?all=1 بيرجّع الكل (للإدارة/الأدوات). المنتج بيفضل محفوظ — بس مش بيظهر
       //    في القوايم، ويرجع لوحده أول ما مخزونه يزيد من مزامنة موس تك.

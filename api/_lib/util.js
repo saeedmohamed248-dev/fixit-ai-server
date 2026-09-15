@@ -78,6 +78,33 @@ export function productCategory(p) {
   return inferCategory(p && p.name);
 }
 
+// 🚗 استنتاج نوع العربية (BMW/MINI) من الاسم/الموديلات.
+//    موس تك بيحط في حقل brand اسم المورّد/الصانع (AYD, BOSCH, LEMFORDER...) مش
+//    نوع العربية، فبنستنتج النوع من أكواد الشاسيه وكلمات ميني عشان فلتر
+//    BMW/MINI يشتغل صح. (ميني(?!وم) عشان "ألومنيوم" ماتتحسبش ميني).
+const _MINI_RE = /(\bMINI\b|ميني(?!وم)|كوبر|\bR5[0-9]\b|\bR6[01]\b|\bF5[4-7]\b|\bF60\b|\bN1[2468]\b)/i;
+export function inferCarMake(name, models) {
+  const hay = String(name || '') + ' ' + (Array.isArray(models) ? models.join(' ') : '');
+  return _MINI_RE.test(hay) ? 'MINI' : 'BMW';
+}
+
+// "BMW"/"MINI" هي القيمة الافتراضية في موس تك فمابنعتبرهاش اسم مورّد.
+const _CARMAKE_PLACEHOLDER = /^(bmw|mini|mini\s*bmw)$/i;
+
+// اسم الصانع/المورّد (اللي موس تك بيبعته في brand) — نعرضه زي المواقع العالمية.
+export function productSupplier(p) {
+  if (p && p.supplier) return p.supplier;
+  const raw = String((p && p.brand) || '').trim();
+  return _CARMAKE_PLACEHOLDER.test(raw) ? '' : raw;
+}
+
+// نوع العربية النهائي للفلترة/الشارة: نحترم MINI لو متسجّلة صراحة، وإلا نستنتج من الاسم.
+export function productBrand(p) {
+  const raw = String((p && p.brand) || '').trim();
+  if (/^mini$/i.test(raw)) return 'MINI';
+  return inferCarMake(p && p.name, p && p.models);
+}
+
 // حماية عمليات الإدارة: لازم ضبط ADMIN_TOKEN في إعدادات Vercel
 export function requireAdmin(req, res) {
   if (!process.env.ADMIN_TOKEN) {

@@ -119,6 +119,7 @@
             <table class="meta-table">
               <tr><td>${t('sku')}</td><td dir="ltr" style="text-align: start;">${esc(p.sku) || '—'}</td></tr>
               <tr><td>${t('oem')}</td><td dir="ltr" style="text-align: start;">${esc(p.oem) || '—'}</td></tr>
+              ${p.supplier ? `<tr><td>${t('supplier')}</td><td dir="ltr" style="text-align: start;">${esc(p.supplier)}</td></tr>` : ''}
               <tr><td>${t('condition')}</td><td>${p.condition === 'used' ? t('used_checked') : t('cond_new')}</td></tr>
               <tr><td>${t('fits')}</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
               <tr><td>${t('available')}</td><td>${out ? `<span style="color: var(--red);">${t('out_stock')}</span>` : p.stock <= 2 ? `<span style="color: var(--amber);">${t('low_stock', { n: p.stock })}</span>` : p.stock + ' ' + t('pieces')}</td></tr>
