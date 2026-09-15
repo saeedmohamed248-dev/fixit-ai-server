@@ -5,7 +5,7 @@
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, requireAdmin } from '../util.js';
+import { cors, requireAdmin, productCategory } from '../util.js';
 
 // حساب الحجم بالمتر المكعب من الأبعاد (سم): الطول×العرض×الارتفاع ÷ مليون
 function cbmFromDims(o) {
@@ -25,10 +25,15 @@ export default async function handler(req, res) {
       if (id) {
         const product = products.find((p) => p.id === id);
         if (!product) return res.status(404).json({ error: 'المنتج غير موجود' });
-        return res.status(200).json(product);
+        // نضمن فئة للمنتج (منتجات موس تك بتوصل من غير فئة) — بنستنتجها من الاسم
+        return res.status(200).json({ ...product, category: productCategory(product) });
       }
 
-      let list = products;
+      // 🗂️ نضمن فئة لكل منتج قبل الفلترة عشان فلتر الفئة والتنظيم يشتغلوا حتى
+      //    على المنتجات اللي اتزامنت من موس تك من غير فئة.
+      let list = products.map((p) => (
+        p.category && productCategory(p) === p.category ? p : { ...p, category: productCategory(p) }
+      ));
       // 🚫 إخفاء المنتجات اللي مخزونها صفر من المتجر تلقائياً (المتجر يعرض المتاح بس).
       //    ?all=1 بيرجّع الكل (للإدارة/الأدوات). المنتج بيفضل محفوظ — بس مش بيظهر
       //    في القوايم، ويرجع لوحده أول ما مخزونه يزيد من مزامنة موس تك.
