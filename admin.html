@@ -1277,7 +1277,7 @@
     }
 
     /* ==================== ⚙️ إعدادات المتجر ==================== */
-    const PRESET_COLORS = ['#f97316', '#e11d48', '#2563eb', '#16a34a', '#9333ea', '#0891b2', '#111827'];
+    const PRESET_COLORS = ['#2f33bf', '#2563eb', '#e11d48', '#f97316', '#16a34a', '#9333ea', '#0891b2', '#111827'];
     async function loadSettings() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
@@ -1293,7 +1293,7 @@
             <div>
               <label>اللون الأساسي للموقع</label>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="color" id="s-accent" value="${esc(s.accent || '#f97316')}" style="width: 60px; height: 42px; padding: 3px;">
+                <input type="color" id="s-accent" value="${esc(s.accent || '#2f33bf')}" style="width: 60px; height: 42px; padding: 3px;">
                 <div style="display: flex; gap: 5px;">
                   ${PRESET_COLORS.map((c) => `<span class="swatch" data-color="${c}" style="background: ${c};"></span>`).join('')}
                 </div>
@@ -1301,15 +1301,47 @@
             </div>
             <div><label>رقم الواتساب (بكود الدولة: 2010...)</label><input id="s-whatsapp" dir="ltr" value="${esc(s.whatsapp || SITE.whatsapp)}"></div>
             <div><label>الرقم المعروض في الموقع</label><input id="s-phoneDisplay" dir="ltr" value="${esc(s.phoneDisplay || SITE.phoneDisplay)}"></div>
-            <div><label>رقم انستاباي</label><input id="s-instapay" dir="ltr" value="${esc(s.instapay || SITE.instapay)}"></div>
-            <div><label>رقم المحفظة الإلكترونية</label><input id="s-wallet" dir="ltr" value="${esc(s.wallet || SITE.wallet)}"></div>
+            <div><label>رقم انستاباي (العميل بيحوّل عليه)</label><input id="s-instapay" dir="ltr" value="${esc(s.instapay || SITE.instapay)}"></div>
+            <div><label>رقم المحفظة / فودافون كاش (العميل بيحوّل عليه)</label><input id="s-wallet" dir="ltr" value="${esc(s.wallet || SITE.wallet)}"></div>
             <div><label>شحن مجاني فوق (ج.م) — اكتب 0 للإلغاء</label><input id="s-freeShippingOver" type="number" min="0" value="${s.freeShippingOver ?? SITE.freeShippingOver}"></div>
             <div></div>
             <div class="full"><label>رسالة الشريط العلوي (عربي) — سيبها فاضية للافتراضي</label><input id="s-topbarAr" value="${esc(s.topbarAr || '')}" placeholder="🚚 شحن لجميع المحافظات — مجاني فوق ٥٬٠٠٠ ج.م"></div>
             <div class="full"><label>رسالة الشريط العلوي (إنجليزي)</label><input id="s-topbarEn" dir="ltr" value="${esc(s.topbarEn || '')}" placeholder="🚚 Delivery all over Egypt"></div>
           </div>
-          <button class="btn" id="s-save">💾 حفظ وتطبيق على الموقع</button>
+
+          <div class="pay-status" style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px;">
+            <h4 style="margin-bottom: 6px;">💳 طرق الدفع</h4>
+            <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">دي الطرق اللي العميل بيدفع بيها من صفحة السلة</p>
+            <div class="pay-rows" style="display: grid; gap: 8px; font-size: 14px;">
+              <div class="pay-row">✅ <b>الدفع عند الاستلام (كاش)</b> — شغّال دايماً</div>
+              <div class="pay-row">🏦 <b>انستاباي</b> — العميل بيحوّل على <b dir="ltr" id="pm-instapay">${esc(s.instapay || SITE.instapay)}</b></div>
+              <div class="pay-row">📱 <b>فودافون كاش / محفظة</b> — العميل بيحوّل على <b dir="ltr" id="pm-wallet">${esc(s.wallet || SITE.wallet)}</b></div>
+              <div class="pay-row" id="pm-card">💳 <b>بطاقة بنكية (Paymob)</b> — <span style="color: var(--muted);">بنراجع الحالة...</span></div>
+            </div>
+            <p id="pm-card-hint" style="color: var(--muted); font-size: 12.5px; margin-top: 10px; display: none;"></p>
+          </div>
+
+          <button class="btn" id="s-save" style="margin-top: 18px;">💾 حفظ وتطبيق على الموقع</button>
         </div>`;
+
+        // 💳 حالة الدفع بالبطاقة (Paymob) — للعرض فقط (المفاتيح سرّية وبتتحط في إعدادات الاستضافة)
+        (async () => {
+          const row = document.getElementById('pm-card');
+          const hint = document.getElementById('pm-card-hint');
+          if (!row) return;
+          try {
+            const pay = await api('/pay');
+            if (pay && pay.enabled) {
+              row.innerHTML = '💳 <b>بطاقة بنكية (Paymob)</b> — <span style="color: var(--green); font-weight: 700;">مفعّل ومربوط ✓</span>';
+            } else {
+              row.innerHTML = '💳 <b>بطاقة بنكية (Paymob)</b> — <span style="color: var(--amber); font-weight: 700;">غير مفعّل</span>';
+              hint.style.display = 'block';
+              hint.innerHTML = 'عشان تفعّل الدفع بالبطاقة، ضيف مفاتيح Paymob في إعدادات الاستضافة (Environment Variables) — دي مفاتيح سرّية مبتتحطش في اللوحة: <b dir="ltr">PAYMOB_API_KEY</b>، <b dir="ltr">PAYMOB_INTEGRATION_ID</b>، <b dir="ltr">PAYMOB_IFRAME_ID</b>، <b dir="ltr">PAYMOB_HMAC_SECRET</b>.';
+            }
+          } catch {
+            row.innerHTML = '💳 <b>بطاقة بنكية (Paymob)</b> — <span style="color: var(--muted);">تعذّر التحقق من الحالة</span>';
+          }
+        })();
 
         box.querySelectorAll('.swatch').forEach((sw) =>
           sw.addEventListener('click', () => { document.getElementById('s-accent').value = sw.dataset.color; }));
