@@ -478,7 +478,7 @@
               coupon: appliedCoupon ? appliedCoupon.code : '',
               usePoints: usePoints ? myPoints : 0,
               useCredit: useCredit,
-              items: Object.entries(c).map(([id, qty]) => ({ id, qty })),
+              items: Object.entries(c).map(([id, qty]) => ({ id, qty, partNumber: getPartChoices()[id] || '' })),
             }),
           });
           setCart({});

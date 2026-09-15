@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       if (q) {
         const term = q.trim().toLowerCase();
         list = list.filter((p) =>
-          [p.name, p.nameEn || '', p.sku, p.oem, p.description, ...p.models]
+          [p.name, p.nameEn || '', p.sku, p.oem, p.description, ...p.models, ...(p.partNumbers || [])]
             .join(' ')
             .toLowerCase()
             .includes(term)

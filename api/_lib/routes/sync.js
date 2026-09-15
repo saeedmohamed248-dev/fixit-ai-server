@@ -128,6 +128,10 @@ export default async function handler(req, res) {
             // نخزّن مصدر الصورة (بدون التوقيع المؤقّت) عشان نعرف نتخطّاها لو متغيّرتش
             imageSource: item.image ? _stripQuery(item.image) : (existing?.imageSource || ''),
             description: item.description || existing?.description || '',
+            // 🔢 كل أرقام البارت لنفس القطعة (الأساسي + الإضافية) — العميل يختار رقمه
+            partNumbers: Array.isArray(item.partNumbers)
+              ? item.partNumbers.map((x) => String(x || '').trim()).filter(Boolean)
+              : (existing?.partNumbers || []),
           };
           // 🗂️ فئة المنتج: نستخدم اللي موس تك بعتها لو معروفة، وإلا نستنتجها من الاسم
           //    عشان المتجر يتنظّم في فئات بدل "أخرى".

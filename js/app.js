@@ -357,6 +357,18 @@ function removeFromCart(id) {
   const cart = getCart();
   delete cart[id];
   setCart(cart);
+  const pc = getPartChoices();
+  if (pc[id]) { delete pc[id]; try { localStorage.setItem('cartPart', JSON.stringify(pc)); } catch {} }
+}
+/* 🔢 البارت نمبر اللي العميل اختاره لكل قطعة في السلة (لنفس القطعة أكتر من رقم) */
+function getPartChoices() {
+  try { return JSON.parse(localStorage.getItem('cartPart')) || {}; }
+  catch { return {}; }
+}
+function setPartChoice(id, partNumber) {
+  const pc = getPartChoices();
+  if (partNumber) pc[id] = String(partNumber); else delete pc[id];
+  try { localStorage.setItem('cartPart', JSON.stringify(pc)); } catch {}
 }
 function cartCount() {
   return Object.values(getCart()).reduce((a, b) => a + b, 0);
