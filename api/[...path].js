@@ -23,10 +23,11 @@ import leadtime from './_lib/routes/leadtime.js';
 import track from './_lib/routes/track.js';
 import describe from './_lib/routes/describe.js';
 import alerts from './_lib/routes/alerts.js';
+import savings from './_lib/routes/savings.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings,
 };
 
 export default async function handler(req, res) {
