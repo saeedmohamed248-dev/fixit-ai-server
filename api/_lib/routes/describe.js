@@ -2,14 +2,15 @@
 // POST /api/describe  { name, brand?, models?, category?, condition? }  (إدارة)
 // يرجّع { nameEn, description, descriptionEn }
 import { cors, requireAdmin } from '../util.js';
+import { aiEnabled, aiJSON } from '../ai.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!requireAdmin(req, res)) return;
 
-  if (!process.env.OPENAI_KEY) {
-    return res.status(503).json({ error: 'بوت الكتابة غير مفعّل: أضِف OPENAI_KEY في إعدادات Vercel' });
+  if (!aiEnabled()) {
+    return res.status(503).json({ error: 'بوت الكتابة غير مفعّل: أضِف GEMINI_API_KEY في إعدادات Vercel' });
   }
 
   try {
@@ -35,21 +36,7 @@ ${info}
 }
 خلي الكلام واقعي وصادق (مستعمل وارد لو الحالة مستعمل). بدون أي نص خارج الـ JSON.`;
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'فشل الاتصال بالبوت' });
-
-    let out = {};
-    try { out = JSON.parse(data.choices?.[0]?.message?.content || '{}'); } catch { out = {}; }
+    const out = await aiJSON(prompt, [], { temperature: 0.5 });
     const clip = (s, n) => String(s || '').slice(0, n);
     return res.status(200).json({
       nameEn: clip(out.nameEn, 200),

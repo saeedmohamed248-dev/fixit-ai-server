@@ -4,6 +4,7 @@
 //   يرجّع: { currency, lineItems:[...], matched:[...], unmatched:[...], totals:{...} }
 import { getProducts } from '../db.js';
 import { cors, rateLimit, productBrand, productSupplier } from '../util.js';
+import { aiEnabled, aiJSON } from '../ai.js';
 
 // توحيد أكواد القطع للمطابقة: حروف/أرقام كبيرة بدون أي فواصل
 function normCode(s) {
@@ -123,23 +124,7 @@ const EXTRACT_PROMPT = `أنت محلل فواتير قطع غيار سيارا�
 قواعد: تجاهل أي سطور مش قطع (ضرائب، خصومات، إجمالي، مصاريف). سعر الوحدة رقم من غير عملة. لو مفيش بنود قطع أرجع items: [].`;
 
 async function extractInvoice(images) {
-  const content = [{ type: 'text', text: EXTRACT_PROMPT }];
-  for (const url of images) content.push({ type: 'image_url', image_url: { url } });
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_KEY}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content }],
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      max_tokens: 2000,
-    }),
-  });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.error?.message || 'فشل تحليل الفاتورة');
-  let parsed = {};
-  try { parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}'); } catch { parsed = {}; }
+  const parsed = await aiJSON(EXTRACT_PROMPT, images, { maxTokens: 2048 });
   return { currency: parsed.currency || 'EGP', items: Array.isArray(parsed.items) ? parsed.items : [] };
 }
 
@@ -148,8 +133,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   // حد أقصى للطلبات (البوت بيستهلك رصيد OpenAI): 4 محاولات في الدقيقة لكل IP
   if (!rateLimit(req, res, 'savings', 4)) return;
-  if (!process.env.OPENAI_KEY) {
-    return res.status(503).json({ error: 'الحاسبة غير مفعّلة: أضِف OPENAI_KEY في إعدادات Vercel' });
+  if (!aiEnabled()) {
+    return res.status(503).json({ error: 'الحاسبة غير مفعّلة: أضِف GEMINI_API_KEY في إعدادات Vercel' });
   }
 
   try {

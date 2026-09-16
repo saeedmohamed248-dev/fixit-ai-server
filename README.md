@@ -54,7 +54,7 @@ wholesale: {
 | `AUTH_SECRET` | مفتاح توقيع جلسات حسابات العملاء (أي نص عشوائي طويل) | ✅ للإنتاج |
 | `SYNC_SECRET` | رمز سري لربط المخزون مع نظام خارجي | عند الربط |
 | `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` | حفظ دائم للمنتجات والطلبات (مجاني من [upstash.com](https://upstash.com)) | ✅ للإنتاج |
-| `OPENAI_KEY` | تشغيل "اسأل الخبير" | اختياري |
+| `GEMINI_API_KEY` | تشغيل خدمات الذكاء الاصطناعي (اسأل الخبير + حاسبة التوفير + بوتات الكتابة/التقدير) — Google Gemini بباقة مجانية | اختياري |
 | `MOUSSTEC_WEBHOOK_URL` + `MOUSSTEC_SECRET` | إرسال طلبات الموقع لسيستم Mouss Tec كفواتير مسودة | عند ربط موس تك |
 | `PAYMOB_API_KEY` + `PAYMOB_INTEGRATION_ID` + `PAYMOB_IFRAME_ID` + `PAYMOB_HMAC_SECRET` | الدفع أونلاين بالبطاقة (فيزا/ماستركارد) عبر Paymob | عند تفعيل الدفع بالكارت |
 
