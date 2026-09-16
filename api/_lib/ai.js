@@ -1,9 +1,9 @@
 // 🤖 طبقة الذكاء الاصطناعي — Google Gemini (باقة مجانية سخية + رؤية).
 //   بديل OpenAI: نفس الوظائف (نص / JSON / رؤية / دردشة) بمفتاح واحد مجاني.
 //   الإعداد في Vercel: GEMINI_API_KEY (أو AI_VISION_API_KEY). الموديل اختياري
-//   عبر GEMINI_MODEL (افتراضي gemini-2.0-flash — سريع ومجاني ويدعم الصور و JSON).
+//   عبر GEMINI_MODEL (افتراضي gemini-3.6-flash — سريع ومجاني ويدعم الصور و JSON).
 const KEY = () => process.env.GEMINI_API_KEY || process.env.AI_VISION_API_KEY || process.env.GOOGLE_API_KEY;
-const MODEL = () => process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL = () => process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export function aiEnabled() { return Boolean(KEY()); }
