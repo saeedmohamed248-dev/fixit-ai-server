@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>احسب توفيرك | FixIt</title>
-  <meta name="description" content="ارفع فاتورة قطع الغيار بتاعتك واعرف كنت هتوفّر كام مع FixIt — البوت بيقرأ الفاتورة ويقارن الأسعار.">
+  <meta name="description" content="ارفع فاتورة أو مقايسة قطع غيار واعرف كنت هتوفّر كام مع FixIt — البوت بيقرأها ويقارن الأسعار.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -16,9 +16,20 @@
     .sav-hero h1 { font-size: clamp(24px, 5vw, 40px); margin-bottom: 8px; }
     .sav-hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
     .sav-card { max-width: 760px; margin: 20px auto; background: var(--card, #fff); border: 1px solid var(--border, #e4e7ec); border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
-    .drop { border: 2px dashed var(--border, #d0d5dd); border-radius: 14px; padding: 28px 16px; text-align: center; cursor: pointer; transition: .15s; }
+    .sav-steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .sav-steps .st { font-size: 12px; color: var(--muted); background: var(--bg,#f9fafb); border: 1px solid var(--border,#eef0f3); border-radius: 999px; padding: 5px 12px; }
+    .sav-steps .st.on { background: var(--accent-dark,#c2410c); color: #fff; border-color: transparent; }
+    .reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .reg-grid .full { grid-column: 1/-1; }
+    .reg-grid label { display:block; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .reg-grid input { width: 100%; }
+    .mode-toggle { display:flex; gap:8px; margin: 4px 0 14px; }
+    .mode-toggle button { flex:1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--border,#d0d5dd); background: var(--bg,#fff); font-weight: 800; cursor: pointer; font-size: 14px; }
+    .mode-toggle button.on { border-color: var(--accent-dark,#c2410c); background: rgba(242,102,0,.06); color: var(--accent-dark,#c2410c); }
+    .mode-hint { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+    .drop { border: 2px dashed var(--border, #d0d5dd); border-radius: 14px; padding: 26px 16px; text-align: center; cursor: pointer; transition: .15s; }
     .drop:hover, .drop.drag { border-color: var(--accent-dark, #c2410c); background: rgba(242,102,0,.04); }
-    .drop .big { font-size: 40px; }
+    .drop .big { font-size: 38px; }
     .drop .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
     .previews { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; justify-content: center; }
     .previews .thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border,#e4e7ec); }
@@ -27,27 +38,26 @@
     .sav-actions { text-align: center; margin-top: 16px; }
     .sav-loading { text-align: center; padding: 24px; color: var(--muted); }
     .sav-hero-num { text-align: center; margin: 6px 0 18px; }
-    .sav-hero-num .amount { font-size: clamp(34px, 8vw, 64px); font-weight: 900; color: #067647; line-height: 1; }
+    .sav-hero-num .amount { font-size: clamp(34px, 8vw, 60px); font-weight: 900; color: #067647; line-height: 1; }
     .sav-hero-num .pct { display: inline-block; margin-top: 8px; background: #ecfdf3; color: #067647; font-weight: 800; padding: 4px 14px; border-radius: 999px; }
-    .sav-hero-num.neg .amount { color: var(--accent-dark, #c2410c); }
     .totals-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 12px 0 4px; }
-    .totals-row .tbox { flex: 1; min-width: 160px; text-align: center; background: var(--bg, #f9fafb); border: 1px solid var(--border,#eef0f3); border-radius: 12px; padding: 12px; }
+    .totals-row .tbox { flex: 1; min-width: 150px; text-align: center; background: var(--bg, #f9fafb); border: 1px solid var(--border,#eef0f3); border-radius: 12px; padding: 12px; }
     .totals-row .tbox .lbl { font-size: 12px; color: var(--muted); }
     .totals-row .tbox .val { font-size: 20px; font-weight: 800; margin-top: 4px; }
-    .sav-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    .sav-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .sav-table th, .sav-table td { padding: 9px 8px; border-bottom: 1px solid var(--border,#eef0f3); text-align: start; }
     .sav-table th { color: var(--muted); font-weight: 700; font-size: 12px; }
     .sav-table .num { text-align: end; white-space: nowrap; }
     .sav-table .save-pos { color: #067647; font-weight: 800; }
-    .sav-table .save-neg { color: var(--accent-dark,#c2410c); font-weight: 700; }
     .sav-part { display: flex; align-items: center; gap: 8px; }
     .sav-part img { width: 34px; height: 34px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border,#eef0f3); }
-    .sav-tag { font-size: 10px; background: #f2f4f7; color: #475467; padding: 1px 6px; border-radius: 6px; }
-    .sav-unmatched { margin-top: 18px; }
-    .sav-unmatched ul { margin: 8px 0 0; padding-inline-start: 18px; color: var(--muted); font-size: 13px; }
-    .sav-section-h { font-size: 15px; font-weight: 800; margin-top: 18px; }
-    .sav-cta { text-align: center; margin-top: 20px; }
-    .sav-err { text-align: center; color: var(--red,#d92d20); padding: 16px; }
+    .sav-section-h { font-size: 15px; font-weight: 800; margin-top: 20px; display:flex; align-items:center; gap:6px; }
+    .staff-box { margin-top: 8px; border: 1px solid #fed7aa; background: #fff7ed; border-radius: 12px; padding: 12px 14px; }
+    .staff-box .staff-note { color: #9a3412; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+    .staff-box ul { margin: 0; padding-inline-start: 18px; color: #7c2d12; font-size: 13.5px; }
+    .sav-cta { text-align: center; margin-top: 22px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .sav-err { text-align: center; color: var(--red,#d92d20); padding: 14px; }
+    @media (max-width: 520px){ .reg-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -60,9 +70,31 @@
         <p data-i18n="sav_sub"></p>
       </div>
 
-      <div class="sav-card" id="sav-card">
-        <!-- مرحلة الرفع -->
-        <div id="sav-upload-stage">
+      <div class="sav-card">
+        <div class="sav-steps">
+          <span class="st on" id="step1">1 · <span data-i18n="sav_step_reg"></span></span>
+          <span class="st" id="step2">2 · <span data-i18n="sav_step_upload"></span></span>
+          <span class="st" id="step3">3 · <span data-i18n="sav_step_result"></span></span>
+        </div>
+
+        <!-- مرحلة 1: التسجيل -->
+        <div id="stage-reg">
+          <div class="reg-grid">
+            <div class="full"><label data-i18n="sav_name"></label><input id="c-name" data-i18n-ph="sav_name_ph"></div>
+            <div><label data-i18n="sav_phone"></label><input id="c-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="01xxxxxxxxx"></div>
+            <div><label data-i18n="sav_car"></label><input id="c-car" data-i18n-ph="sav_car_ph"></div>
+          </div>
+          <div class="sav-err" id="reg-err" style="display:none;"></div>
+          <div class="sav-actions"><button class="btn" id="reg-next" data-i18n="sav_continue"></button></div>
+        </div>
+
+        <!-- مرحلة 2: الرفع -->
+        <div id="stage-upload" style="display:none;">
+          <div class="mode-toggle">
+            <button id="mode-invoice" class="on" data-mode="invoice" data-i18n="sav_mode_invoice"></button>
+            <button id="mode-quote" data-mode="quote" data-i18n="sav_mode_quote"></button>
+          </div>
+          <div class="mode-hint" id="mode-hint"></div>
           <label class="drop" id="drop">
             <div class="big">🧾</div>
             <div><b data-i18n="sav_upload"></b></div>
@@ -71,17 +103,18 @@
           </label>
           <div class="previews" id="previews"></div>
           <div class="sav-actions">
+            <button class="btn btn-outline btn-sm" id="reg-back" data-i18n="sav_back"></button>
             <button class="btn" id="go" disabled data-i18n="sav_analyze"></button>
           </div>
         </div>
 
         <!-- التحميل -->
         <div class="sav-loading" id="sav-loading" style="display:none;">
-          <div class="spinner-dot">⏳</div>
+          <div style="font-size:34px;">⏳</div>
           <p data-i18n="sav_analyzing"></p>
         </div>
 
-        <!-- النتيجة -->
+        <!-- مرحلة 3: النتيجة -->
         <div id="sav-result" style="display:none;"></div>
       </div>
     </div>
@@ -96,25 +129,67 @@
     renderLayout('savings');
     document.title = t('sav_title') + ' | ' + (SITE.name || 'FixIt');
 
-    const fileInput = document.getElementById('file');
-    const drop = document.getElementById('drop');
-    const previews = document.getElementById('previews');
-    const goBtn = document.getElementById('go');
-    const uploadStage = document.getElementById('sav-upload-stage');
-    const loading = document.getElementById('sav-loading');
-    const resultBox = document.getElementById('sav-result');
+    const $ = (id) => document.getElementById(id);
+    let mode = 'invoice';
+    let images = [];
+    let customer = {};
 
-    let images = []; // data URLs (مضغوطة)
+    // استرجاع بيانات العميل لو سجّل قبل كده
+    try {
+      const saved = JSON.parse(localStorage.getItem('sav_customer') || '{}');
+      if (saved.name) $('c-name').value = saved.name;
+      if (saved.phone) $('c-phone').value = saved.phone;
+      if (saved.car) $('c-car').value = saved.car;
+    } catch {}
 
-    // ضغط الصورة قبل الرفع (أقصى بُعد 1600px، JPEG) عشان الطلب يبقى خفيف
+    function setStep(n) {
+      [1, 2, 3].forEach((i) => $('step' + i).classList.toggle('on', i <= n));
+    }
+    function updateModeHint() {
+      $('mode-hint').textContent = mode === 'quote' ? t('sav_mode_quote_hint') : t('sav_mode_invoice_hint');
+      $('drop').querySelector('.hint').textContent = t('sav_upload_hint');
+    }
+
+    // مرحلة 1 → 2
+    $('reg-next').addEventListener('click', () => {
+      const name = $('c-name').value.trim();
+      const phone = $('c-phone').value.trim();
+      const car = $('c-car').value.trim();
+      const err = $('reg-err');
+      if (!name) return showRegErr(t('sav_err_name'));
+      if (!/^01\d{9}$/.test(phone.replace(/[\s-]/g, ''))) return showRegErr(t('sav_err_phone'));
+      if (!car) return showRegErr(t('sav_err_car'));
+      err.style.display = 'none';
+      customer = { name, phone, car };
+      try { localStorage.setItem('sav_customer', JSON.stringify(customer)); } catch {}
+      $('stage-reg').style.display = 'none';
+      $('stage-upload').style.display = '';
+      setStep(2);
+      updateModeHint();
+    });
+    function showRegErr(m) { const e = $('reg-err'); e.textContent = m; e.style.display = ''; }
+
+    $('reg-back').addEventListener('click', () => {
+      $('stage-upload').style.display = 'none';
+      $('stage-reg').style.display = '';
+      setStep(1);
+    });
+
+    // اختيار الوضع
+    ['invoice', 'quote'].forEach((m) => $('mode-' + m).addEventListener('click', () => {
+      mode = m;
+      $('mode-invoice').classList.toggle('on', m === 'invoice');
+      $('mode-quote').classList.toggle('on', m === 'quote');
+      updateModeHint();
+    }));
+
+    // ضغط الصور قبل الرفع
     function compress(file) {
       return new Promise((resolve) => {
-        const img = new Image();
-        const fr = new FileReader();
+        const img = new Image(); const fr = new FileReader();
         fr.onload = () => { img.src = fr.result; };
         img.onload = () => {
-          const max = 1600;
-          let { width: w, height: h } = img;
+          const max = 1600; let { width: w, height: h } = img;
           if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
           const c = document.createElement('canvas'); c.width = w; c.height = h;
           c.getContext('2d').drawImage(img, 0, 0, w, h);
@@ -124,123 +199,121 @@
         fr.readAsDataURL(file);
       });
     }
-
     function renderPreviews() {
-      previews.innerHTML = images.map((src, i) => `
+      $('previews').innerHTML = images.map((src, i) => `
         <div class="thumb"><img src="${src}" alt=""><button data-rm="${i}" title="حذف">×</button></div>`).join('');
-      previews.querySelectorAll('[data-rm]').forEach((b) =>
+      $('previews').querySelectorAll('[data-rm]').forEach((b) =>
         b.addEventListener('click', () => { images.splice(Number(b.dataset.rm), 1); renderPreviews(); syncBtn(); }));
     }
-    function syncBtn() { goBtn.disabled = images.length === 0; }
-
+    function syncBtn() { $('go').disabled = images.length === 0; }
     async function addFiles(files) {
       for (const f of Array.from(files).slice(0, 4 - images.length)) {
         if (!f.type.startsWith('image/')) continue;
-        const d = await compress(f);
-        if (d) images.push(d);
+        const d = await compress(f); if (d) images.push(d);
       }
-      images = images.slice(0, 4);
-      renderPreviews(); syncBtn();
+      images = images.slice(0, 4); renderPreviews(); syncBtn();
     }
-
-    fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+    $('file').addEventListener('change', (e) => addFiles(e.target.files));
+    const drop = $('drop');
     ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
     ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
     drop.addEventListener('drop', (e) => { if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
 
-    goBtn.addEventListener('click', analyze);
+    $('go').addEventListener('click', analyze);
 
     async function analyze() {
-      uploadStage.style.display = 'none';
-      resultBox.style.display = 'none';
-      loading.style.display = '';
+      $('stage-upload').style.display = 'none';
+      $('sav-result').style.display = 'none';
+      $('sav-loading').style.display = '';
+      setStep(3);
       try {
         const data = await api('/savings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ images }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode, customer, images }),
         });
         renderResult(data);
       } catch (e) {
-        resultBox.innerHTML = `<div class="sav-err">${esc(e.message) || t('sav_err')}</div>` + retryBtn();
-        loading.style.display = 'none'; resultBox.style.display = '';
-        wireRetry();
+        $('sav-result').innerHTML = `<div class="sav-err">${esc(e.message) || t('sav_err')}</div>` + backBtn();
+        $('sav-loading').style.display = 'none'; $('sav-result').style.display = '';
+        wireBack();
       }
     }
-
-    function retryBtn() {
-      return `<div class="sav-cta"><button class="btn btn-outline" id="retry" data-i18n="sav_change">${t('sav_change')}</button></div>`;
-    }
-    function wireRetry() {
-      const r = document.getElementById('retry');
-      if (r) r.addEventListener('click', () => { images = []; renderPreviews(); syncBtn(); resultBox.style.display = 'none'; uploadStage.style.display = ''; });
-    }
+    function backBtn() { return `<div class="sav-cta"><button class="btn btn-outline" id="again" data-i18n="sav_again">${t('sav_again')}</button></div>`; }
+    function wireBack() { const b = $('again'); if (b) b.addEventListener('click', () => location.reload()); }
 
     function partCell(m) {
       const p = m.product || {};
       const img = p.image ? `<img src="${esc(p.image)}" alt="">` : '';
-      const tag = m.how === 'name' ? `<span class="sav-tag">${t('sav_by_name')}</span>` : '';
       const link = p.id ? `/product.html?id=${esc(p.id)}` : '#';
-      return `<div class="sav-part">${img}<div><a href="${link}">${esc(m.name || p.name)}</a> ${tag}${p.sku ? `<div style="font-size:11px;color:var(--muted);" dir="ltr">${esc(p.sku)}</div>` : ''}</div></div>`;
+      return `<div class="sav-part">${img}<div><a href="${link}">${esc(m.name || p.name)}</a>${p.sku ? `<div style="font-size:11px;color:var(--muted);" dir="ltr">${esc(p.sku)}</div>` : ''}</div></div>`;
     }
 
     function renderResult(data) {
-      loading.style.display = 'none';
-      resultBox.style.display = '';
+      $('sav-loading').style.display = 'none';
+      $('sav-result').style.display = '';
       const tt = data.totals || {};
-      if (!tt.matchedCount) {
-        resultBox.innerHTML = `<div class="sav-err">${t('sav_none')}</div>` + retryBtn();
-        wireRetry();
-        return;
-      }
-      const saving = tt.saving || 0;
-      const positive = saving > 0;
-      let html = `
-        <div class="sav-hero-num ${positive ? '' : 'neg'}">
-          ${positive
-            ? `<div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
-               <div class="amount">${money(saving)}</div>
-               <div class="pct">${t('sav_result_pct')} ${tt.savingPct}%</div>`
-            : `<div class="amount">${t('sav_cheaper_note')}</div>`}
-        </div>
-        <div class="totals-row">
-          <div class="tbox"><div class="lbl">${t('sav_their_total')}</div><div class="val">${money(tt.theirTotal)}</div></div>
-          <div class="tbox"><div class="lbl">${t('sav_our_total')}</div><div class="val" style="color:#067647;">${money(tt.ourTotal)}</div></div>
-        </div>
-        <div class="sav-section-h">${t('sav_matched')} (${tt.matchedCount})</div>
-        <table class="sav-table">
-          <thead><tr>
-            <th>${t('sav_col_part')}</th><th class="num">${t('sav_col_qty')}</th>
-            <th class="num">${t('sav_col_yours')}</th><th class="num">${t('sav_col_ours')}</th><th class="num">${t('sav_col_save')}</th>
-          </tr></thead>
-          <tbody>
-            ${data.matched.map((m) => `
-              <tr>
-                <td>${partCell(m)}</td>
-                <td class="num">${m.qty}</td>
-                <td class="num">${money(m.theirLine)}</td>
-                <td class="num" style="color:#067647;">${money(m.ourLine)}</td>
-                <td class="num ${m.saving >= 0 ? 'save-pos' : 'save-neg'}">${m.saving >= 0 ? '' : '+'}${money(Math.abs(m.saving))}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>`;
+      const conf = data.confident || [];
+      let html = '';
 
-      if (data.unmatched && data.unmatched.length) {
+      if (!conf.length && !(data.unsure||[]).length && !(data.unmatched||[]).length) {
+        $('sav-result').innerHTML = `<div class="sav-err">${t('sav_none')}</div>` + backBtn();
+        wireBack(); return;
+      }
+
+      // ملخّص التوفير (وضع الفاتورة فقط، ولو فيه قطع مؤكدة بأسعار)
+      if (data.mode !== 'quote' && tt.matchedCount && tt.theirTotal > 0) {
+        const positive = tt.saving > 0;
         html += `
-          <div class="sav-unmatched">
-            <div class="sav-section-h">${t('sav_unmatched')} (${data.unmatched.length})</div>
-            <div class="hint" style="color:var(--muted);font-size:12px;">${t('sav_unmatched_hint')}</div>
-            <ul>${data.unmatched.map((u) => `<li>${esc(u.name || u.code || '—')}</li>`).join('')}</ul>
+          <div class="sav-hero-num">
+            ${positive
+              ? `<div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
+                 <div class="amount">${money(tt.saving)}</div>
+                 <div class="pct">${t('sav_result_pct')} ${tt.savingPct}%</div>`
+              : `<div class="amount" style="color:var(--accent-dark);font-size:22px;">${t('sav_cheaper_note')}</div>`}
+          </div>
+          <div class="totals-row">
+            <div class="tbox"><div class="lbl">${t('sav_their_total')}</div><div class="val">${money(tt.theirTotal)}</div></div>
+            <div class="tbox"><div class="lbl">${t('sav_our_total')}</div><div class="val" style="color:#067647;">${money(tt.ourTotal)}</div></div>
           </div>`;
       }
 
-      html += `
-        <div class="sav-cta">
+      // القطع المؤكدة
+      if (conf.length) {
+        const invoiceMode = data.mode !== 'quote';
+        html += `<div class="sav-section-h">✅ ${t(invoiceMode ? 'sav_matched' : 'sav_priced')} (${conf.length})</div>
+          <table class="sav-table"><thead><tr>
+            <th>${t('sav_col_part')}</th><th class="num">${t('sav_col_qty')}</th>
+            ${invoiceMode ? `<th class="num">${t('sav_col_yours')}</th>` : ''}
+            <th class="num">${t('sav_col_ours')}</th>
+            ${invoiceMode ? `<th class="num">${t('sav_col_save')}</th>` : ''}
+          </tr></thead><tbody>
+          ${conf.map((m) => `<tr>
+            <td>${partCell(m)}</td>
+            <td class="num">${m.qty}</td>
+            ${invoiceMode ? `<td class="num">${m.theirLine ? money(m.theirLine) : '—'}</td>` : ''}
+            <td class="num" style="color:#067647;">${money(m.ourLine)}</td>
+            ${invoiceMode ? `<td class="num ${m.saving >= 0 ? 'save-pos' : ''}">${m.saving > 0 ? money(m.saving) : '—'}</td>` : ''}
+          </tr>`).join('')}
+          </tbody></table>`;
+      }
+
+      // القطع اللي محتاجة مراجعة موظف (غير متأكد + غير موجود)
+      const staff = [...(data.unsure || []).map((u) => ({ ...u, why: t('sav_why_unsure') })),
+                     ...(data.unmatched || []).map((u) => ({ ...u, why: t('sav_why_missing') }))];
+      if (staff.length) {
+        html += `<div class="sav-section-h">📞 ${t('sav_staff_title')} (${staff.length})</div>
+          <div class="staff-box">
+            <div class="staff-note">${t('sav_staff_note')}</div>
+            <ul>${staff.map((u) => `<li>${esc(u.name || u.code || '—')} — <span style="opacity:.8">${esc(u.why)}</span></li>`).join('')}</ul>
+          </div>`;
+      }
+
+      html += `<div class="sav-cta">
           <a class="btn" href="/shop.html">${t('sav_cta_shop')}</a>
-          ${retryBtn().replace('sav-cta', '').replace(/<\/?div[^>]*>/g, '')}
-        </div>`;
-      resultBox.innerHTML = html;
-      wireRetry();
+          <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(t('sav_wa_msg'))}">${t('sav_cta_wa')}</a>
+        </div>` + backBtn();
+      $('sav-result').innerHTML = html;
+      wireBack();
     }
   </script>
 </body>

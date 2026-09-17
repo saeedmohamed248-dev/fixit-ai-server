@@ -100,6 +100,7 @@
       { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
       { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
       { sep: true },
+      { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
       { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
       { tab: 'questions', ic: '❓', label: 'الأسئلة' },
       { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
@@ -113,9 +114,10 @@
     const NAV_LABEL = Object.fromEntries(NAV.filter((n) => n.tab).map((n) => [n.tab, n.label]));
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
     const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
-    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔', credit: '💳', maintenance: '🔧' };
+    const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔', credit: '💳', maintenance: '🔧', savings: '🧾' };
     let products = [];
     let ordersCache = [];
+    let leadsCache = [];
     let customersCache = [];
     let editingId = null;
 
@@ -159,11 +161,16 @@
         localStorage.removeItem('admin_token');
         return showLogin(e.message);
       }
+      // 🧾 طلبات حاسبة التوفير الجديدة (لإشعار القائمة الجانبية)
+      try { leadsCache = await api('/savings', { headers: authHeaders() }); } catch { leadsCache = []; }
       const newOrdersCount = ordersCache.filter((o) => o.status === 'new').length;
+      const newLeadsCount = leadsCache.filter((l) => l.status === 'new').length;
       const navHtml = NAV.map((n) => n.sep
         ? '<div class="sh-nav-sep"></div>'
         : `<button class="sh-nav-item" data-tab="${n.tab}"><span class="ic">${n.ic}</span><span>${n.label}</span>${
             n.tab === 'orders' && newOrdersCount ? `<span class="badge" id="nav-orders-badge">${newOrdersCount}</span>` : ''
+          }${
+            n.tab === 'leads' && newLeadsCount ? `<span class="badge" id="nav-leads-badge">${newLeadsCount}</span>` : ''
           }</button>`).join('');
       container.innerHTML = `
       <div class="sh-admin" id="sh-admin">
@@ -219,7 +226,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -249,9 +256,13 @@
         });
         const maxDay = Math.max(...days.map((d) => d.total), 1);
 
+        const newLeads = leadsCache.filter((l) => l.status === 'new').length;
         box.innerHTML = `
+        ${newLeads ? `<a href="#leads" id="dash-leads-alert" style="display:flex;align-items:center;gap:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-weight:800;text-decoration:none;">
+          🧾 عندك ${newLeads} طلب جديد في حاسبة التوفير — اضغط للمتابعة ←</a>` : ''}
         <div class="stats-grid">
           <div class="stat-card"><div class="label">💰 إجمالي المبيعات</div><div class="value">${money(sales)}</div></div>
+          <div class="stat-card"><div class="label">🧾 طلبات حاسبة التوفير الجديدة</div><div class="value" style="color: var(--amber);">${newLeads}</div></div>
           <div class="stat-card"><div class="label">📦 عدد الطلبات</div><div class="value">${orders.length}</div></div>
           <div class="stat-card"><div class="label">🆕 طلبات تحتاج تأكيد</div><div class="value" style="color: var(--amber);">${newOrders}</div></div>
           <div class="stat-card"><div class="label">👥 عملاء مسجّلين</div><div class="value">${customers.length}</div></div>
@@ -298,6 +309,10 @@
           </div>
         </div>`;
         bindOrderRows(box);
+        document.getElementById('dash-leads-alert')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          container.querySelector('.sh-nav-item[data-tab="leads"]')?.click();
+        });
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
@@ -364,6 +379,89 @@
 
     /* ==================== 🔎 طلبات القطع ==================== */
     const REQ_STATUS = { open: '🟠 جديد', sourced: '🔵 اتوفّرت', done: '✅ اتقفل' };
+    /* ==================== 🧾 حاسبة التوفير / المقايسات ==================== */
+    function updateLeadsBadge() {
+      const n = leadsCache.filter((l) => l.status === 'new').length;
+      const btn = container.querySelector('.sh-nav-item[data-tab="leads"]');
+      if (!btn) return;
+      let badge = btn.querySelector('#nav-leads-badge');
+      if (n > 0) {
+        if (!badge) { badge = document.createElement('span'); badge.className = 'badge'; badge.id = 'nav-leads-badge'; btn.appendChild(badge); }
+        badge.textContent = n;
+      } else if (badge) { badge.remove(); }
+    }
+    async function loadLeads() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const leads = leadsCache = await api('/savings', { headers: authHeaders() });
+        if (!leads.length) {
+          box.innerHTML = '<div class="empty-state"><span class="icon">🧾</span>مفيش طلبات لسه — العملاء بيرفعوا فواتيرهم/مقايساتهم من صفحة "احسب توفيرك"</div>';
+          return;
+        }
+        const money = (n) => new Intl.NumberFormat('ar-EG').format(Math.round(n || 0)) + ' ج.م';
+        const modeLabel = (m) => m === 'quote' ? '📋 مقايسة' : '🧾 فاتورة';
+        const partList = (arr, why) => arr && arr.length
+          ? `<ul style="margin:4px 0 0;padding-inline-start:18px;color:var(--muted);font-size:13px;">${arr.map((x) => `<li>${esc(x.name || x.code || '—')}${x.qty>1?` ×${x.qty}`:''}${why?` <span style="color:#b54708;">(${why})</span>`:''}</li>`).join('')}</ul>`
+          : '';
+        box.innerHTML = `
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">كل عميل استخدم الحاسبة — بياناته وصور فاتورته/مقايسته والقطع اللي محتاجة مراجعة. عدد الطلبات: ${leads.length}</p>
+          <div style="display:grid;gap:14px;">
+          ${leads.map((l) => `
+            <div class="card-box" style="border:1px solid var(--border,#e4e7ec);border-radius:14px;padding:14px;${l.needsStaff ? 'border-inline-start:4px solid #f59e0b;' : ''}">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
+                <div>
+                  <b style="font-size:16px;">${esc(l.name)}</b> · <span dir="ltr">${esc(l.phone)}</span>
+                  <div style="color:var(--muted);font-size:13px;">🚗 ${esc(l.car || '—')} · ${modeLabel(l.mode)} · ${new Date(l.at).toLocaleString('ar-EG')}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  ${l.status === 'new' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🆕 جديد</span>' : '<span style="color:#067647;font-size:12px;">✅ تمّت المتابعة</span>'}
+                  <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(l.phone)}?text=${encodeURIComponent('أهلاً ' + l.name + ' 👋 بخصوص القطع اللي رفعتها على موقع ' + SITE.name)}">💬 كلّمه</a>
+                  ${l.status === 'new' ? `<button class="btn btn-sm btn-outline" data-done="${esc(l.id)}">تمّت المتابعة ✓</button>` : ''}
+                  <button class="btn btn-sm btn-danger" data-ldel="${esc(l.id)}">حذف</button>
+                </div>
+              </div>
+              ${l.needsStaff ? '<div style="margin-top:8px;background:#fff7ed;color:#9a3412;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;">⚠️ فيه قطع محتاجة مراجعة والتواصل مع العميل</div>' : ''}
+              <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;">
+                <span>✅ متطابق: <b>${l.totals?.matchedCount || 0}</b></span>
+                <span>❓ غير متأكد: <b>${l.totals?.unsureCount || 0}</b></span>
+                <span>🚫 غير موجود: <b>${l.totals?.unmatchedCount || 0}</b></span>
+                ${l.mode !== 'quote' && l.totals?.saving ? `<span style="color:#067647;font-weight:800;">💰 التوفير: ${money(l.totals.saving)} (${l.totals.savingPct}%)</span>` : ''}
+              </div>
+              ${(l.unsure?.length || l.unmatched?.length) ? `<div style="margin-top:8px;">
+                <b style="font-size:13px;">قطع للمراجعة:</b>
+                ${partList(l.unsure, 'مش متأكد')}
+                ${partList(l.unmatched, 'مش موجود')}
+              </div>` : ''}
+              ${l.imageUrls?.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                ${l.imageUrls.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border,#e4e7ec);"></a>`).join('')}
+              </div>` : '<div style="color:var(--muted);font-size:12px;margin-top:8px;">مفيش صور محفوظة</div>'}
+            </div>`).join('')}
+          </div>`;
+        // "تمّت المتابعة" — يحدّث الحالة ويقلّل عدّاد الإشعار
+        box.querySelectorAll('[data-done]').forEach((b) => b.addEventListener('click', async () => {
+          b.disabled = true;
+          try {
+            await api('/savings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ id: b.dataset.done, status: 'handled' }) });
+            const l = leadsCache.find((x) => x.id === b.dataset.done); if (l) l.status = 'handled';
+            updateLeadsBadge();
+            loadLeads();
+          } catch (e) { alert(e.message); b.disabled = false; }
+        }));
+        box.querySelectorAll('[data-ldel]').forEach((b) => b.addEventListener('click', async () => {
+          if (!confirm('حذف الطلب نهائياً؟')) return;
+          try {
+            await api('/savings?id=' + encodeURIComponent(b.dataset.ldel), { method: 'DELETE', headers: authHeaders() });
+            leadsCache = leadsCache.filter((x) => x.id !== b.dataset.ldel);
+            updateLeadsBadge();
+            loadLeads();
+          } catch (e) { alert(e.message); }
+        }));
+      } catch (e) {
+        box.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span>${esc(e.message)}</div>`;
+      }
+    }
+
     async function loadRequests() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
