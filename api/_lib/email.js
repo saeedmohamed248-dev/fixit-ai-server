@@ -96,6 +96,23 @@ export function sendMaintenanceReminder(entry, email) {
   return send(email, 'تذكير صيانة عربيتك — FixIt', html);
 }
 
+// 🧾 إشعار للإدارة بطلب حاسبة توفير / تسعير مقايسة جديد
+export function sendSavingsLeadEmail(lead, to) {
+  const dest = to || process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL;
+  if (!dest) return;
+  const modeLabel = lead.mode === 'quote' ? 'تسعير مقايسة' : 'حساب توفير من فاتورة';
+  const t = lead.totals || {};
+  const needs = (lead.unsure?.length || 0) + (lead.unmatched?.length || 0);
+  const html = wrap(`طلب جديد: ${modeLabel} 🧾`, `
+    <p><b>العميل:</b> ${escapeHtml(lead.name)} — <b>الموبايل:</b> ${escapeHtml(lead.phone)}</p>
+    <p><b>العربية:</b> ${escapeHtml(lead.car || '—')}</p>
+    <p><b>قطع تم تسعيرها:</b> ${t.matchedCount || 0} · <b>محتاجة مراجعة موظف:</b> ${needs}</p>
+    ${lead.mode !== 'quote' && t.saving ? `<p><b>التوفير المقدّر:</b> ${money(t.saving)} (${t.savingPct}%)</p>` : ''}
+    <p>الصور والتفاصيل الكاملة في لوحة التحكم:</p>
+    <p><a href="https://fixitauto.parts/admin.html#leads" style="background:#f97316;color:#fff;padding:11px 22px;border-radius:10px;text-decoration:none;display:inline-block;">افتح لوحة التحكم ←</a></p>`);
+  return send(dest, `طلب ${modeLabel} — ${lead.name}`, html);
+}
+
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

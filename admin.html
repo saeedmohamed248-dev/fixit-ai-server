@@ -100,6 +100,7 @@
       { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
       { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
       { sep: true },
+      { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
       { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
       { tab: 'questions', ic: '❓', label: 'الأسئلة' },
       { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
@@ -219,7 +220,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -364,6 +365,57 @@
 
     /* ==================== 🔎 طلبات القطع ==================== */
     const REQ_STATUS = { open: '🟠 جديد', sourced: '🔵 اتوفّرت', done: '✅ اتقفل' };
+    /* ==================== 🧾 حاسبة التوفير / المقايسات ==================== */
+    async function loadLeads() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const leads = await api('/savings', { headers: authHeaders() });
+        if (!leads.length) {
+          box.innerHTML = '<div class="empty-state"><span class="icon">🧾</span>مفيش طلبات لسه — العملاء بيرفعوا فواتيرهم/مقايساتهم من صفحة "احسب توفيرك"</div>';
+          return;
+        }
+        const money = (n) => new Intl.NumberFormat('ar-EG').format(Math.round(n || 0)) + ' ج.م';
+        const modeLabel = (m) => m === 'quote' ? '📋 مقايسة' : '🧾 فاتورة';
+        const partList = (arr, why) => arr && arr.length
+          ? `<ul style="margin:4px 0 0;padding-inline-start:18px;color:var(--muted);font-size:13px;">${arr.map((x) => `<li>${esc(x.name || x.code || '—')}${x.qty>1?` ×${x.qty}`:''}${why?` <span style="color:#b54708;">(${why})</span>`:''}</li>`).join('')}</ul>`
+          : '';
+        box.innerHTML = `
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">كل عميل استخدم الحاسبة — بياناته وصور فاتورته/مقايسته والقطع اللي محتاجة مراجعة. عدد الطلبات: ${leads.length}</p>
+          <div style="display:grid;gap:14px;">
+          ${leads.map((l) => `
+            <div class="card-box" style="border:1px solid var(--border,#e4e7ec);border-radius:14px;padding:14px;${l.needsStaff ? 'border-inline-start:4px solid #f59e0b;' : ''}">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
+                <div>
+                  <b style="font-size:16px;">${esc(l.name)}</b> · <span dir="ltr">${esc(l.phone)}</span>
+                  <div style="color:var(--muted);font-size:13px;">🚗 ${esc(l.car || '—')} · ${modeLabel(l.mode)} · ${new Date(l.at).toLocaleString('ar-EG')}</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(l.phone)}?text=${encodeURIComponent('أهلاً ' + l.name + ' 👋 بخصوص القطع اللي رفعتها على موقع ' + SITE.name)}">💬 كلّمه</a>
+                </div>
+              </div>
+              ${l.needsStaff ? '<div style="margin-top:8px;background:#fff7ed;color:#9a3412;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;">⚠️ فيه قطع محتاجة مراجعة والتواصل مع العميل</div>' : ''}
+              <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;">
+                <span>✅ متطابق: <b>${l.totals?.matchedCount || 0}</b></span>
+                <span>❓ غير متأكد: <b>${l.totals?.unsureCount || 0}</b></span>
+                <span>🚫 غير موجود: <b>${l.totals?.unmatchedCount || 0}</b></span>
+                ${l.mode !== 'quote' && l.totals?.saving ? `<span style="color:#067647;font-weight:800;">💰 التوفير: ${money(l.totals.saving)} (${l.totals.savingPct}%)</span>` : ''}
+              </div>
+              ${(l.unsure?.length || l.unmatched?.length) ? `<div style="margin-top:8px;">
+                <b style="font-size:13px;">قطع للمراجعة:</b>
+                ${partList(l.unsure, 'مش متأكد')}
+                ${partList(l.unmatched, 'مش موجود')}
+              </div>` : ''}
+              ${l.imageUrls?.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                ${l.imageUrls.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border,#e4e7ec);"></a>`).join('')}
+              </div>` : '<div style="color:var(--muted);font-size:12px;margin-top:8px;">مفيش صور محفوظة</div>'}
+            </div>`).join('')}
+          </div>`;
+      } catch (e) {
+        box.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span>${esc(e.message)}</div>`;
+      }
+    }
+
     async function loadRequests() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';

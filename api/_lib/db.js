@@ -90,6 +90,11 @@ const alertsCol = makeCollection('alerts');
 export const getAlerts = alertsCol.get;
 export const saveAlerts = alertsCol.save;
 
+// 🧾 طلبات حاسبة التوفير / تسعير المقايسات — بيانات العميل + صور + النتيجة
+const savingsCol = makeCollection('savings_leads');
+export const getSavingsLeads = savingsCol.get;
+export const saveSavingsLeads = savingsCol.save;
+
 const containersCol = makeCollection('containers');
 // أول تشغيل: نزرع حاوية تجريبية (زي المنتجات) عشان قسم المشاركة مايبقاش فاضي
 export async function getContainers() {
