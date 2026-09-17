@@ -13,7 +13,7 @@ document.documentElement.dataset.mode = localStorage.getItem('mode') === 'wholes
 const I18N = {
   /* ---------- عام / Layout ---------- */
   brand_tag: { ar: 'قطع غيار BMW & MINI', en: 'BMW & MINI Auto Parts' },
-  topbar: { ar: '🚚 شحن لجميع المحافظات', en: '🚚 Delivery all over Egypt' },
+  topbar: { ar: '🚚 شحن في نفس اليوم لجميع المحافظات', en: '🚚 Same-day delivery all over Egypt' },
   topbar_free: { ar: 'مجاني فوق', en: 'Free over' },
   whatsapp: { ar: 'واتساب', en: 'WhatsApp' },
   /* ---------- 🇦🇪 فرع الجملة (الإمارات) ---------- */
@@ -97,7 +97,7 @@ const I18N = {
   na_sub: { ar: 'أحدث القطع اللي نزلت المخزن — تابعنا باستمرار', en: 'Freshest parts just landed — check back often' },
   na_none: { ar: 'مفيش وصولات جديدة دلوقتي — تابعنا قريباً', en: 'No new arrivals right now — check back soon' },
   /* شريط الثقة + دوّر بعربيتك + عرض اليوم + الآراء (الصفحة القطاعية) */
-  trust_ship: { ar: 'شحن لكل المحافظات', en: 'Delivery nationwide' },
+  trust_ship: { ar: 'شحن في نفس اليوم', en: 'Same-day delivery' },
   trust_genuine: { ar: 'قطع أصلية مضمونة', en: 'Genuine guaranteed parts' },
   trust_cod: { ar: 'دفع عند الاستلام', en: 'Cash on delivery' },
   trust_inspect: { ar: 'فحص قبل التسليم', en: 'Inspected before delivery' },
@@ -299,7 +299,7 @@ const I18N = {
   suggest_all: { ar: 'عرض كل النتائج ←', en: 'View all results →' },
   suggest_none: { ar: 'مفيش نتائج لـ', en: 'No results for' },
   ask_expert: { ar: 'اسأل الخبير 🤖', en: 'Ask the Expert 🤖' },
-  footer_desc: { ar: 'كل القطع مفحوصة وبضمان، استيراد مباشر من أوروبا وأمريكا.', en: 'Every part is inspected and guaranteed — imported directly from Europe and the USA.' },
+  footer_desc: { ar: 'كل القطع مفحوصة وبضمان، استيراد مباشر من أوروبا وأمريكا والإمارات واليابان.', en: 'Every part is inspected and guaranteed — imported directly from Europe, the USA, the UAE and Japan.' },
   footer_shop: { ar: 'التسوق', en: 'Shop' },
   footer_all: { ar: 'كل المنتجات', en: 'All products' },
   footer_bmw: { ar: 'قطع BMW', en: 'BMW parts' },
@@ -328,7 +328,7 @@ const I18N = {
   /* ---------- الرئيسية ---------- */
   title_home: { ar: 'FixIt | قطع غيار BMW & MINI استيراد جديد ومستعمل', en: 'FixIt | BMW & MINI Parts — New & Used Import' },
   hero_title: { ar: 'قطع غيار <span>BMW</span> و <span>MINI</span> بضمان', en: 'Genuine <span>BMW</span> & <span>MINI</span> Parts, Guaranteed' },
-  hero_sub: { ar: 'استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.', en: 'Direct import — genuine new parts and inspected used parts from Europe and the USA, all guaranteed. Search by part name, chassis or OEM number.' },
+  hero_sub: { ar: 'استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا والإمارات واليابان، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.', en: 'Direct import — genuine new parts and inspected used parts from Europe, the USA, the UAE and Japan, all guaranteed. Search by part name, chassis or OEM number.' },
   hero_search_ph: { ar: '🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...', en: '🔍 Search by part name, OEM number or model (e.g. F30)...' },
   search_btn: { ar: 'بحث', en: 'Search' },
   chip_new: { ar: 'جديد أصلي', en: 'Genuine New' },
@@ -341,9 +341,9 @@ const I18N = {
   feat1_t: { ar: 'فحص شامل', en: 'Fully Inspected' },
   feat1_d: { ar: 'كل قطعة مستعملة بتتفحص بالكامل قبل البيع وبنضمنها.', en: 'Every used part is fully tested before sale and guaranteed.' },
   feat2_t: { ar: 'استيراد مباشر', en: 'Direct Import' },
-  feat2_d: { ar: 'وارد أوروبا وأمريكا بدون وسطاء، فالأسعار أفضل.', en: 'Sourced from Europe and the USA with no middlemen — better prices.' },
-  feat3_t: { ar: 'شحن سريع', en: 'Fast Delivery' },
-  feat3_d: { ar: 'توصيل لجميع المحافظات خلال ٢-٤ أيام عمل.', en: 'Nationwide delivery within 2-4 business days.' },
+  feat2_d: { ar: 'وارد أوروبا وأمريكا والإمارات واليابان بدون وسطاء، فالأسعار أفضل.', en: 'Sourced from Europe, the USA, the UAE and Japan with no middlemen — better prices.' },
+  feat3_t: { ar: 'شحن في نفس اليوم', en: 'Same-Day Delivery' },
+  feat3_d: { ar: 'توصيل سريع في نفس اليوم — اطلب دلوقتي ووصلك بأسرع وقت.', en: 'Fast same-day delivery — order now and get it quickly.' },
   feat4_t: { ar: 'خبير يساعدك', en: 'Expert Help' },
   feat4_d: { ar: 'مش عارف اسم القطعة؟ اسأل الخبير الذكي وهيوصلك ليها.', en: "Not sure which part you need? Ask our AI expert." },
   cta_title: { ar: 'مش لاقي القطعة اللي بتدور عليها؟', en: "Can't find the part you're looking for?" },
@@ -503,7 +503,7 @@ const I18N = {
   pol4_t: { ar: 'طرق الدفع', en: 'Payment Methods' },
   pol4_d: { ar: 'الدفع عند الاستلام (كاش للمندوب) — أو تحويل انستاباي / محفظة إلكترونية قبل الشحن. بالنسبة للقطع الغالية أو اللي بتتوفر بالطلب، ممكن نطلب عربون بسيط لتأكيد الجدية.', en: 'Cash on delivery — or InstaPay / e-wallet transfer before dispatch. For high-value or special-order parts we may ask for a small deposit.' },
   pol5_t: { ar: 'من نحن', en: 'About Us' },
-  pol5_d: { ar: 'FixIt متخصصون في قطع غيار BMW وMINI Cooper — استيراد مباشر من أوروبا وأمريكا بدون وسطاء. هدفنا توفير قطع أصلية مضمونة بأسعار عادلة مع خدمة عملاء محترمة.', en: 'FixIt specialises in BMW and MINI Cooper parts — imported directly from Europe and the USA with no middlemen. Our goal: genuine, guaranteed parts at fair prices with respectful customer service.' },
+  pol5_d: { ar: 'FixIt متخصصون في قطع غيار BMW وMINI Cooper — استيراد مباشر من أوروبا وأمريكا والإمارات واليابان بدون وسطاء. هدفنا توفير قطع أصلية مضمونة بأسعار عادلة مع خدمة عملاء محترمة.', en: 'FixIt specialises in BMW and MINI Cooper parts — imported directly from Europe, the USA, the UAE and Japan with no middlemen. Our goal: genuine, guaranteed parts at fair prices with respectful customer service.' },
   pol_wa: { ar: 'عندك سؤال؟ كلمنا واتساب 💬', en: 'Have a question? Chat on WhatsApp 💬' },
 
   /* ---------- المساعد ---------- */
