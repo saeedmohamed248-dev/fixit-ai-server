@@ -742,6 +742,7 @@ function renderLayout(active = '') {
           <a href="/shop.html?brand=MINI">MINI</a>
           <a href="/shop.html?condition=used">${t('nav_used')}</a>
           <a href="/shop.html?condition=new">${t('nav_new')}</a>
+          <a href="/savings.html" class="nav-savings ${active === 'savings' ? 'active' : ''}">${t('nav_savings')}</a>
           <a href="/track.html" class="${active === 'track' ? 'active' : ''}">${t('nav_track')}</a>
           <a href="/assistant.html" class="${active === 'assistant' ? 'active' : ''}">${t('nav_expert')}</a>
           `}

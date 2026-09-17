@@ -427,6 +427,17 @@ label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px
 .card-models { font-size: 12.5px; color: var(--muted); }
 .card-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .price { font-size: 19px; font-weight: 800; color: var(--accent-dark); letter-spacing: -0.3px; }
+/* 🧾💰 بانر حاسبة التوفير في الرئيسية */
+.savings-band { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: linear-gradient(90deg, #ecfdf3, #f0fdf4); border: 1px solid #abefc6;
+  border-radius: 16px; padding: 16px 20px; text-decoration: none; color: inherit; transition: .15s; }
+.savings-band:hover { box-shadow: 0 8px 24px rgba(6,118,71,.14); transform: translateY(-1px); }
+.savings-band .sb-ic { font-size: 30px; }
+.savings-band .sb-text { flex: 1; min-width: 200px; font-weight: 800; font-size: clamp(15px, 2.4vw, 19px); color: #05603a; }
+.savings-band .sb-go { background: #067647; color: #fff; font-weight: 800; padding: 9px 18px; border-radius: 999px; white-space: nowrap; }
+.nav-savings { color: #067647 !important; font-weight: 800; }
+[data-mode="wholesale"] .savings-band { background: rgba(18,183,106,.10); border-color: rgba(18,183,106,.3); }
+[data-mode="wholesale"] .savings-band .sb-text { color: #4ade80; }
 .old-price { font-size: 13px; color: var(--muted); text-decoration: line-through; margin-inline-end: 6px; }
 .stock-out { font-size: 13px; color: var(--red); font-weight: 700; }
 .stars { color: var(--amber); letter-spacing: 1px; font-size: 14px; }

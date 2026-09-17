@@ -2,6 +2,7 @@
 // POST /api/leadtime  { country, mode }   mode = 'sea' | 'air'
 // يرجّع { minDays, maxDays, baseMin, baseMax, mode } بعد إضافة هامش احتياطي
 import { cors, rateLimit } from '../util.js';
+import { aiEnabled, aiJSON } from '../ai.js';
 
 // تقديرات احتياطية (أيام) من الإمارات لو البوت مش متاح — تعكس ظروف حالية متحفّظة
 const FALLBACK = {
@@ -29,29 +30,16 @@ export default async function handler(req, res) {
 
     let baseMin, baseMax, source = 'fallback';
 
-    if (process.env.OPENAI_KEY) {
+    if (aiEnabled()) {
       try {
         const modeAr = m === 'air' ? 'شحن جوي' : 'شحن بحري (حاوية)';
         const prompt = `أنت خبير لوجستيات شحن دولي. قدّر مدة الشحن الواقعية الحالية (بالأيام) من الإمارات (الشارقة/جبل علي) إلى "${country || 'وجهة دولية'}" عن طريق ${modeAr}.
 خُد في اعتبارك ظروف الشحن الحالية (زحام الموانئ، اضطرابات البحر الأحمر، مواعيد الإبحار). أرجع JSON فقط:
 {"minDays": number, "maxDays": number}
 أرقام واقعية فقط بدون أي نص إضافي.`;
-        const r = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_KEY}` },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.3,
-            response_format: { type: 'json_object' },
-          }),
-        });
-        const data = await r.json();
-        if (r.ok) {
-          const out = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-          const mn = Number(out.minDays), mx = Number(out.maxDays);
-          if (mn > 0 && mx >= mn) { baseMin = Math.round(mn); baseMax = Math.round(mx); source = 'ai'; }
-        }
+        const out = await aiJSON(prompt, [], { temperature: 0.3 });
+        const mn = Number(out.minDays), mx = Number(out.maxDays);
+        if (mn > 0 && mx >= mn) { baseMin = Math.round(mn); baseMax = Math.round(mx); source = 'ai'; }
       } catch { /* نسقط على التقدير الاحتياطي */ }
     }
 

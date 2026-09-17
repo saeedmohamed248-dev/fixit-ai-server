@@ -2,14 +2,15 @@
 // POST /api/estimate  { name, brand?, models?, category? }  (إدارة)
 // يرجّع { lengthCm, widthCm, heightCm, weightKg }
 import { cors, requireAdmin } from '../util.js';
+import { aiEnabled, aiJSON } from '../ai.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!requireAdmin(req, res)) return;
 
-  if (!process.env.OPENAI_KEY) {
-    return res.status(503).json({ error: 'بوت التقدير غير مفعّل: أضِف OPENAI_KEY في إعدادات Vercel' });
+  if (!aiEnabled()) {
+    return res.status(503).json({ error: 'بوت التقدير غير مفعّل: أضِف GEMINI_API_KEY في إعدادات Vercel' });
   }
 
   try {
@@ -30,21 +31,7 @@ ${desc}
 {"lengthCm": number, "widthCm": number, "heightCm": number, "weightKg": number}
 لو القطعة كبيرة زي موتور كامل (N20/N52...) أو نص كت (half-cut) قدّر بواقعية (الموتور ~90×70×70 سم و150-200 كجم مثلاً). أرقام فقط، بدون أي نص إضافي.`;
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'فشل الاتصال بالبوت' });
-
-    let out = {};
-    try { out = JSON.parse(data.choices?.[0]?.message?.content || '{}'); } catch { out = {}; }
+    const out = await aiJSON(prompt, [], { temperature: 0.2 });
     const num = (v, min, max) => {
       const n = Math.round((Number(v) || 0) * 10) / 10;
       return Math.max(min, Math.min(max, n));

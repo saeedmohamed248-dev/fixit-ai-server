@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>احسب توفيرك | FixIt</title>
+  <meta name="description" content="ارفع فاتورة قطع الغيار بتاعتك واعرف كنت هتوفّر كام مع FixIt — البوت بيقرأ الفاتورة ويقارن الأسعار.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101828">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .sav-hero { text-align: center; padding: 8px 0 4px; }
+    .sav-hero h1 { font-size: clamp(24px, 5vw, 40px); margin-bottom: 8px; }
+    .sav-hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .sav-card { max-width: 760px; margin: 20px auto; background: var(--card, #fff); border: 1px solid var(--border, #e4e7ec); border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
+    .drop { border: 2px dashed var(--border, #d0d5dd); border-radius: 14px; padding: 28px 16px; text-align: center; cursor: pointer; transition: .15s; }
+    .drop:hover, .drop.drag { border-color: var(--accent-dark, #c2410c); background: rgba(242,102,0,.04); }
+    .drop .big { font-size: 40px; }
+    .drop .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .previews { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; justify-content: center; }
+    .previews .thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border,#e4e7ec); }
+    .previews .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .previews .thumb button { position: absolute; top: 2px; inset-inline-end: 2px; background: rgba(0,0,0,.6); color: #fff; border: 0; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 1; }
+    .sav-actions { text-align: center; margin-top: 16px; }
+    .sav-loading { text-align: center; padding: 24px; color: var(--muted); }
+    .sav-hero-num { text-align: center; margin: 6px 0 18px; }
+    .sav-hero-num .amount { font-size: clamp(34px, 8vw, 64px); font-weight: 900; color: #067647; line-height: 1; }
+    .sav-hero-num .pct { display: inline-block; margin-top: 8px; background: #ecfdf3; color: #067647; font-weight: 800; padding: 4px 14px; border-radius: 999px; }
+    .sav-hero-num.neg .amount { color: var(--accent-dark, #c2410c); }
+    .totals-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 12px 0 4px; }
+    .totals-row .tbox { flex: 1; min-width: 160px; text-align: center; background: var(--bg, #f9fafb); border: 1px solid var(--border,#eef0f3); border-radius: 12px; padding: 12px; }
+    .totals-row .tbox .lbl { font-size: 12px; color: var(--muted); }
+    .totals-row .tbox .val { font-size: 20px; font-weight: 800; margin-top: 4px; }
+    .sav-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    .sav-table th, .sav-table td { padding: 9px 8px; border-bottom: 1px solid var(--border,#eef0f3); text-align: start; }
+    .sav-table th { color: var(--muted); font-weight: 700; font-size: 12px; }
+    .sav-table .num { text-align: end; white-space: nowrap; }
+    .sav-table .save-pos { color: #067647; font-weight: 800; }
+    .sav-table .save-neg { color: var(--accent-dark,#c2410c); font-weight: 700; }
+    .sav-part { display: flex; align-items: center; gap: 8px; }
+    .sav-part img { width: 34px; height: 34px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border,#eef0f3); }
+    .sav-tag { font-size: 10px; background: #f2f4f7; color: #475467; padding: 1px 6px; border-radius: 6px; }
+    .sav-unmatched { margin-top: 18px; }
+    .sav-unmatched ul { margin: 8px 0 0; padding-inline-start: 18px; color: var(--muted); font-size: 13px; }
+    .sav-section-h { font-size: 15px; font-weight: 800; margin-top: 18px; }
+    .sav-cta { text-align: center; margin-top: 20px; }
+    .sav-err { text-align: center; color: var(--red,#d92d20); padding: 16px; }
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container">
+      <div class="sav-hero">
+        <h1 data-i18n="sav_title"></h1>
+        <p data-i18n="sav_sub"></p>
+      </div>
+
+      <div class="sav-card" id="sav-card">
+        <!-- مرحلة الرفع -->
+        <div id="sav-upload-stage">
+          <label class="drop" id="drop">
+            <div class="big">🧾</div>
+            <div><b data-i18n="sav_upload"></b></div>
+            <div class="hint" data-i18n="sav_upload_hint"></div>
+            <input type="file" id="file" accept="image/*" multiple capture="environment" hidden>
+          </label>
+          <div class="previews" id="previews"></div>
+          <div class="sav-actions">
+            <button class="btn" id="go" disabled data-i18n="sav_analyze"></button>
+          </div>
+        </div>
+
+        <!-- التحميل -->
+        <div class="sav-loading" id="sav-loading" style="display:none;">
+          <div class="spinner-dot">⏳</div>
+          <p data-i18n="sav_analyzing"></p>
+        </div>
+
+        <!-- النتيجة -->
+        <div id="sav-result" style="display:none;"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('savings');
+    document.title = t('sav_title') + ' | ' + (SITE.name || 'FixIt');
+
+    const fileInput = document.getElementById('file');
+    const drop = document.getElementById('drop');
+    const previews = document.getElementById('previews');
+    const goBtn = document.getElementById('go');
+    const uploadStage = document.getElementById('sav-upload-stage');
+    const loading = document.getElementById('sav-loading');
+    const resultBox = document.getElementById('sav-result');
+
+    let images = []; // data URLs (مضغوطة)
+
+    // ضغط الصورة قبل الرفع (أقصى بُعد 1600px، JPEG) عشان الطلب يبقى خفيف
+    function compress(file) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const fr = new FileReader();
+        fr.onload = () => { img.src = fr.result; };
+        img.onload = () => {
+          const max = 1600;
+          let { width: w, height: h } = img;
+          if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = () => resolve(null);
+        fr.readAsDataURL(file);
+      });
+    }
+
+    function renderPreviews() {
+      previews.innerHTML = images.map((src, i) => `
+        <div class="thumb"><img src="${src}" alt=""><button data-rm="${i}" title="حذف">×</button></div>`).join('');
+      previews.querySelectorAll('[data-rm]').forEach((b) =>
+        b.addEventListener('click', () => { images.splice(Number(b.dataset.rm), 1); renderPreviews(); syncBtn(); }));
+    }
+    function syncBtn() { goBtn.disabled = images.length === 0; }
+
+    async function addFiles(files) {
+      for (const f of Array.from(files).slice(0, 4 - images.length)) {
+        if (!f.type.startsWith('image/')) continue;
+        const d = await compress(f);
+        if (d) images.push(d);
+      }
+      images = images.slice(0, 4);
+      renderPreviews(); syncBtn();
+    }
+
+    fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+    ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
+    drop.addEventListener('drop', (e) => { if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
+
+    goBtn.addEventListener('click', analyze);
+
+    async function analyze() {
+      uploadStage.style.display = 'none';
+      resultBox.style.display = 'none';
+      loading.style.display = '';
+      try {
+        const data = await api('/savings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images }),
+        });
+        renderResult(data);
+      } catch (e) {
+        resultBox.innerHTML = `<div class="sav-err">${esc(e.message) || t('sav_err')}</div>` + retryBtn();
+        loading.style.display = 'none'; resultBox.style.display = '';
+        wireRetry();
+      }
+    }
+
+    function retryBtn() {
+      return `<div class="sav-cta"><button class="btn btn-outline" id="retry" data-i18n="sav_change">${t('sav_change')}</button></div>`;
+    }
+    function wireRetry() {
+      const r = document.getElementById('retry');
+      if (r) r.addEventListener('click', () => { images = []; renderPreviews(); syncBtn(); resultBox.style.display = 'none'; uploadStage.style.display = ''; });
+    }
+
+    function partCell(m) {
+      const p = m.product || {};
+      const img = p.image ? `<img src="${esc(p.image)}" alt="">` : '';
+      const tag = m.how === 'name' ? `<span class="sav-tag">${t('sav_by_name')}</span>` : '';
+      const link = p.id ? `/product.html?id=${esc(p.id)}` : '#';
+      return `<div class="sav-part">${img}<div><a href="${link}">${esc(m.name || p.name)}</a> ${tag}${p.sku ? `<div style="font-size:11px;color:var(--muted);" dir="ltr">${esc(p.sku)}</div>` : ''}</div></div>`;
+    }
+
+    function renderResult(data) {
+      loading.style.display = 'none';
+      resultBox.style.display = '';
+      const tt = data.totals || {};
+      if (!tt.matchedCount) {
+        resultBox.innerHTML = `<div class="sav-err">${t('sav_none')}</div>` + retryBtn();
+        wireRetry();
+        return;
+      }
+      const saving = tt.saving || 0;
+      const positive = saving > 0;
+      let html = `
+        <div class="sav-hero-num ${positive ? '' : 'neg'}">
+          ${positive
+            ? `<div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
+               <div class="amount">${money(saving)}</div>
+               <div class="pct">${t('sav_result_pct')} ${tt.savingPct}%</div>`
+            : `<div class="amount">${t('sav_cheaper_note')}</div>`}
+        </div>
+        <div class="totals-row">
+          <div class="tbox"><div class="lbl">${t('sav_their_total')}</div><div class="val">${money(tt.theirTotal)}</div></div>
+          <div class="tbox"><div class="lbl">${t('sav_our_total')}</div><div class="val" style="color:#067647;">${money(tt.ourTotal)}</div></div>
+        </div>
+        <div class="sav-section-h">${t('sav_matched')} (${tt.matchedCount})</div>
+        <table class="sav-table">
+          <thead><tr>
+            <th>${t('sav_col_part')}</th><th class="num">${t('sav_col_qty')}</th>
+            <th class="num">${t('sav_col_yours')}</th><th class="num">${t('sav_col_ours')}</th><th class="num">${t('sav_col_save')}</th>
+          </tr></thead>
+          <tbody>
+            ${data.matched.map((m) => `
+              <tr>
+                <td>${partCell(m)}</td>
+                <td class="num">${m.qty}</td>
+                <td class="num">${money(m.theirLine)}</td>
+                <td class="num" style="color:#067647;">${money(m.ourLine)}</td>
+                <td class="num ${m.saving >= 0 ? 'save-pos' : 'save-neg'}">${m.saving >= 0 ? '' : '+'}${money(Math.abs(m.saving))}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+
+      if (data.unmatched && data.unmatched.length) {
+        html += `
+          <div class="sav-unmatched">
+            <div class="sav-section-h">${t('sav_unmatched')} (${data.unmatched.length})</div>
+            <div class="hint" style="color:var(--muted);font-size:12px;">${t('sav_unmatched_hint')}</div>
+            <ul>${data.unmatched.map((u) => `<li>${esc(u.name || u.code || '—')}</li>`).join('')}</ul>
+          </div>`;
+      }
+
+      html += `
+        <div class="sav-cta">
+          <a class="btn" href="/shop.html">${t('sav_cta_shop')}</a>
+          ${retryBtn().replace('sav-cta', '').replace(/<\/?div[^>]*>/g, '')}
+        </div>`;
+      resultBox.innerHTML = html;
+      wireRetry();
+    }
+  </script>
+</body>
+</html>
