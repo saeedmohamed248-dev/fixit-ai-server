@@ -152,6 +152,25 @@ export default async function handler(req, res) {
     return res.status(200).json(await getSavingsLeads());
   }
 
+  // إدارة: تحديد طلب كـ "تمّت المتابعة" (يشيله من عدّاد الإشعار)، أو حذفه
+  if (req.method === 'PUT') {
+    if (!requireAdmin(req, res)) return;
+    const { id, status } = req.body || {};
+    const list = await getSavingsLeads();
+    const lead = list.find((l) => l.id === id);
+    if (!lead) return res.status(404).json({ error: 'الطلب غير موجود' });
+    lead.status = status === 'new' ? 'new' : 'handled';
+    await saveSavingsLeads(list);
+    return res.status(200).json({ ok: true });
+  }
+  if (req.method === 'DELETE') {
+    if (!requireAdmin(req, res)) return;
+    const list = await getSavingsLeads();
+    const next = list.filter((l) => l.id !== req.query.id);
+    await saveSavingsLeads(next);
+    return res.status(200).json({ ok: true });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!rateLimit(req, res, 'savings', 4)) return;
   if (!aiEnabled()) {
