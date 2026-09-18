@@ -123,21 +123,25 @@ const EXTRACT_PROMPT = `أنت محلل فواتير ومقايسات قطع غ�
 { "currency":"العملة لو ظاهرة (مثال EGP)", "items":[ { "code":"", "oem":"", "name":"", "name_ar":"", "qty":1, "unit_price":0 } ] }
 تجاهل السطور اللي مش قطع (ضرائب/خصم/إجمالي/مصاريف/توقيع). لو مفيش بنود قطع أرجع items: [].`;
 
-async function extractInvoice(images) {
-  const parsed = await aiJSON(EXTRACT_PROMPT, images, { maxTokens: 2048 });
+async function extractInvoice(media, texts) {
+  const extraText = (texts && texts.length)
+    ? 'محتوى ملفات إضافية (Excel/CSV/نص) رفعها العميل — عاملها زي بنود فاتورة/مقايسة:\n' + texts.join('\n----\n')
+    : undefined;
+  const parsed = await aiJSON(EXTRACT_PROMPT, media, { maxTokens: 2048, extraText });
   return { currency: parsed.currency || 'EGP', items: Array.isArray(parsed.items) ? parsed.items : [] };
 }
 
-// ---------- رفع الصور لـ Cloudinary (رابط دائم عشان الإدارة تشوفها) ----------
+// ---------- رفع الملفات لـ Cloudinary (رابط دائم عشان الإدارة تشوفها) ----------
+// auto/upload بيتعامل مع الصور و PDF (والملفات التانية كـ raw) في نفس النقطة.
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || 'gbooxyif';
 const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET || 'fixit_unsigned';
-async function uploadImage(dataUrl) {
+async function uploadDoc(dataUrl) {
   try {
     const form = new URLSearchParams();
     form.set('file', dataUrl);
     form.set('upload_preset', UPLOAD_PRESET);
     form.set('folder', 'fixit_invoices');
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: form });
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method: 'POST', body: form });
     const data = await r.json().catch(() => ({}));
     return data.secure_url || null;
   } catch { return null; }
@@ -189,16 +193,23 @@ export default async function handler(req, res) {
     if (!validPhone(phone)) return res.status(400).json({ error: 'اكتب رقم موبايل صحيح (11 رقم يبدأ بـ 01)' });
     if (!car) return res.status(400).json({ error: 'اكتب نوع عربيتك (مثال: BMW F30 2016)' });
 
-    let images = body.images;
-    if (typeof images === 'string') images = [images];
-    if (!Array.isArray(images) || !images.length) return res.status(400).json({ error: 'ارفع صورة الفاتورة/المقايسة الأول' });
-    images = images.slice(0, 4).filter((u) => typeof u === 'string' && /^(data:image\/|https?:\/\/)/i.test(u));
-    if (!images.length) return res.status(400).json({ error: 'صيغة الصورة غير مدعومة — ارفع صورة (JPG/PNG)' });
+    // 📎 نقبل كل الصيغ: صور + PDF (تتبعت للبوت كمرفقات) + Excel/CSV/نص (اتحوّل لنص في المتصفح)
+    let files = body.files || body.images || [];
+    if (typeof files === 'string') files = [files];
+    files = (Array.isArray(files) ? files : []).slice(0, 6)
+      .filter((u) => typeof u === 'string'
+        && /^(data:(image\/[a-z0-9.+-]+|application\/pdf);base64,|https?:\/\/)/i.test(u));
+    let texts = body.texts || [];
+    if (typeof texts === 'string') texts = [texts];
+    texts = (Array.isArray(texts) ? texts : []).map((x) => String(x || '').slice(0, 50000)).filter(Boolean).slice(0, 6);
+    if (!files.length && !texts.length) {
+      return res.status(400).json({ error: 'ارفع فاتورتك/مقايستك الأول (صورة، PDF، Excel أو أي ملف)' });
+    }
 
-    // نرفع الصور لـ Cloudinary بالتوازي (روابط دائمة للإدارة) — الفشل ما يوقفش العملية
-    const imageUrls = (await Promise.all(images.map(uploadImage))).filter(Boolean);
+    // نرفع الملفات لـ Cloudinary بالتوازي (روابط دائمة للإدارة) — الفشل ما يوقفش العملية
+    const imageUrls = (await Promise.all(files.map(uploadDoc))).filter(Boolean);
 
-    const { currency, items } = await extractInvoice(images);
+    const { currency, items } = await extractInvoice(files, texts);
     const result = compareInvoice(items, await getProducts());
     const needsStaff = result.unsure.length > 0 || result.unmatched.length > 0;
 
@@ -208,6 +219,7 @@ export default async function handler(req, res) {
       at: new Date().toISOString(),
       mode, name, phone, car,
       imageUrls,
+      textDocs: texts.length,
       currency,
       lineCount: items.length,
       confident: result.confident,

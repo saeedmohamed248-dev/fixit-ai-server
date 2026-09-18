@@ -99,7 +99,7 @@
             <div class="big">🧾</div>
             <div><b data-i18n="sav_upload"></b></div>
             <div class="hint" data-i18n="sav_upload_hint"></div>
-            <input type="file" id="file" accept="image/*" multiple capture="environment" hidden>
+            <input type="file" id="file" accept="image/*,application/pdf,.pdf,.xls,.xlsx,.csv,.txt" multiple hidden>
           </label>
           <div class="previews" id="previews"></div>
           <div class="sav-actions">
@@ -122,6 +122,7 @@
 
   <div id="site-footer"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
@@ -131,7 +132,7 @@
 
     const $ = (id) => document.getElementById(id);
     let mode = 'invoice';
-    let images = [];
+    let docs = []; // {kind:'image'|'pdf'|'text', dataUrl?, text?, name}
     let customer = {};
 
     // استرجاع بيانات العميل لو سجّل قبل كده
@@ -183,7 +184,16 @@
       updateModeHint();
     }));
 
-    // ضغط الصور قبل الرفع
+    // قراءة ملف كـ data URL
+    function readDataURL(file) {
+      return new Promise((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => resolve(null);
+        fr.readAsDataURL(file);
+      });
+    }
+    // ضغط الصور قبل الرفع (تصغير + JPEG)
     function compress(file) {
       return new Promise((resolve) => {
         const img = new Image(); const fr = new FileReader();
@@ -199,19 +209,53 @@
         fr.readAsDataURL(file);
       });
     }
-    function renderPreviews() {
-      $('previews').innerHTML = images.map((src, i) => `
-        <div class="thumb"><img src="${src}" alt=""><button data-rm="${i}" title="حذف">×</button></div>`).join('');
-      $('previews').querySelectorAll('[data-rm]').forEach((b) =>
-        b.addEventListener('click', () => { images.splice(Number(b.dataset.rm), 1); renderPreviews(); syncBtn(); }));
+    // تحويل ملف Excel/CSV لنص (كل الشيتات) عبر SheetJS
+    function parseSheet(file) {
+      return new Promise((resolve) => {
+        try {
+          const fr = new FileReader();
+          fr.onload = () => {
+            try {
+              const wb = XLSX.read(fr.result, { type: 'array' });
+              const parts = wb.SheetNames.map((n) => XLSX.utils.sheet_to_csv(wb.Sheets[n]));
+              resolve(parts.join('\n').slice(0, 50000));
+            } catch { resolve(null); }
+          };
+          fr.onerror = () => resolve(null);
+          fr.readAsArrayBuffer(file);
+        } catch { resolve(null); }
+      });
     }
-    function syncBtn() { $('go').disabled = images.length === 0; }
+    function docIcon(kind) { return kind === 'pdf' ? '📄' : kind === 'text' ? '📊' : '🧾'; }
+    function renderPreviews() {
+      $('previews').innerHTML = docs.map((d, i) => d.kind === 'image'
+        ? `<div class="thumb"><img src="${d.dataUrl}" alt=""><button data-rm="${i}" title="حذف">×</button></div>`
+        : `<div class="thumb" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg,#f9fafb);padding:4px;text-align:center;">
+             <span style="font-size:26px;">${docIcon(d.kind)}</span>
+             <span style="font-size:9px;line-height:1.1;overflow:hidden;max-height:22px;word-break:break-all;">${esc((d.name||'').slice(0,18))}</span>
+             <button data-rm="${i}" title="حذف">×</button></div>`).join('');
+      $('previews').querySelectorAll('[data-rm]').forEach((b) =>
+        b.addEventListener('click', () => { docs.splice(Number(b.dataset.rm), 1); renderPreviews(); syncBtn(); }));
+    }
+    function syncBtn() { $('go').disabled = docs.length === 0; }
+    function isSheet(f) { return /\.(xlsx|xls|csv)$/i.test(f.name) || /spreadsheet|excel|csv/i.test(f.type); }
     async function addFiles(files) {
-      for (const f of Array.from(files).slice(0, 4 - images.length)) {
-        if (!f.type.startsWith('image/')) continue;
-        const d = await compress(f); if (d) images.push(d);
+      for (const f of Array.from(files).slice(0, 6 - docs.length)) {
+        if (f.type.startsWith('image/')) {
+          const d = await compress(f); if (d) docs.push({ kind: 'image', dataUrl: d, name: f.name });
+        } else if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+          const d = await readDataURL(f); if (d) docs.push({ kind: 'pdf', dataUrl: d, name: f.name });
+        } else if (isSheet(f)) {
+          const txt = await parseSheet(f);
+          if (txt) docs.push({ kind: 'text', text: 'ملف: ' + f.name + '\n' + txt, name: f.name });
+          else alert('تعذّر قراءة الملف: ' + f.name);
+        } else {
+          // أي صيغة تانية: نجرّب نبعتها كمرفق (لو البوت يقدر يقرأها)
+          const d = await readDataURL(f);
+          if (d) docs.push({ kind: /^data:image|application\/pdf/.test(d) ? 'pdf' : 'file', dataUrl: d, name: f.name });
+        }
       }
-      images = images.slice(0, 4); renderPreviews(); syncBtn();
+      docs = docs.slice(0, 6); renderPreviews(); syncBtn();
     }
     $('file').addEventListener('change', (e) => addFiles(e.target.files));
     const drop = $('drop');
@@ -227,9 +271,11 @@
       $('sav-loading').style.display = '';
       setStep(3);
       try {
+        const files = docs.filter((d) => d.dataUrl && (d.kind === 'image' || d.kind === 'pdf' || d.kind === 'file')).map((d) => d.dataUrl);
+        const texts = docs.filter((d) => d.kind === 'text' && d.text).map((d) => d.text);
         const data = await api('/savings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, customer, images }),
+          body: JSON.stringify({ mode, customer, files, texts }),
         });
         renderResult(data);
       } catch (e) {

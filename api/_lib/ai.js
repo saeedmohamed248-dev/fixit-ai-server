@@ -26,14 +26,28 @@ async function callGemini(contents, { json = false, temperature = 0.4, system, m
     },
   };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  const r = await fetch(`${BASE}/${MODEL()}:generateContent?key=${encodeURIComponent(key)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error?.message || `فشل الاتصال بالذكاء الاصطناعي (${r.status})`);
-  return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+  const url = `${BASE}/${MODEL()}:generateContent?key=${encodeURIComponent(key)}`;
+  const payload = JSON.stringify(body);
+  // 🔁 إعادة محاولة عند الضغط المؤقت (429/500/503/overloaded) — بتراجع بسيط
+  let data = {}, status = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+    status = r.status;
+    data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+    }
+    const msg = (data.error?.message || '').toLowerCase();
+    const retryable = status === 429 || status === 500 || status === 503
+      || /overload|high demand|unavailable|try again|rate/i.test(msg);
+    if (!retryable || attempt === 2) break;
+    await new Promise((res) => setTimeout(res, 1200 * (attempt + 1)));
+  }
+  const em = (data.error?.message || '').toLowerCase();
+  if (status === 429 || status === 503 || /overload|high demand|unavailable/i.test(em)) {
+    throw new Error('الخدمة مزحومة دلوقتي — جرّب تاني بعد شوية.');
+  }
+  throw new Error(data.error?.message || `فشل الاتصال بالذكاء الاصطناعي (${status})`);
 }
 
 function parseJSON(text) {
@@ -46,11 +60,14 @@ export async function aiText(prompt, opts = {}) {
   return callGemini([{ role: 'user', parts: [{ text: prompt }] }], opts);
 }
 
-// JSON من برومبت + صور اختيارية (data URLs) — للرؤية والاستخراج المنظّم
-export async function aiJSON(prompt, images = [], opts = {}) {
+// JSON من برومبت + مرفقات اختيارية (data URLs لصور أو PDF) + نص إضافي اختياري
+// (مثلاً محتوى ملف Excel/CSV اتحوّل لنص) — للرؤية والاستخراج المنظّم.
+export async function aiJSON(prompt, media = [], opts = {}) {
+  const { extraText, ...gen } = opts;
   const parts = [{ text: prompt }];
-  for (const u of images) { const inl = dataUrlToInline(u); if (inl) parts.push(inl); }
-  const text = await callGemini([{ role: 'user', parts }], { json: true, temperature: 0, ...opts });
+  for (const u of media) { const inl = dataUrlToInline(u); if (inl) parts.push(inl); }
+  if (extraText) parts.push({ text: String(extraText).slice(0, 100000) });
+  const text = await callGemini([{ role: 'user', parts }], { json: true, temperature: 0, ...gen });
   return parseJSON(text);
 }
 
