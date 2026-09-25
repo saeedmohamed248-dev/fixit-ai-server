@@ -14,8 +14,18 @@ window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
 function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
 // 🇦🇪 فرع الجملة يبيع قطع مستعملة (وارد) فقط — مفيش جديد
+// 🏬 هل المنتج متسجّل في فرع الإمارات (فرع الجملة)؟ بنطابق اسم/مكان الفرع
+//    (والفرع الافتراضي للشحن) بالكلمات المضبوطة في config (wholesale.branchMatch).
+function wsInUaeBranch(p) {
+  const pat = (wsConf().branchMatch) || 'إمارات|امارات|uae|dubai|دبي|الشارقة|sharjah';
+  let re; try { re = new RegExp(pat, 'i'); } catch { re = /إمارات|uae|dubai/i; }
+  const parts = [p.originBranch, p.originLocation];
+  for (const b of (p.branches || [])) { parts.push(b.name, b.location); }
+  return re.test(parts.filter(Boolean).join(' | '));
+}
+// موقع الجملة (Trade) يعرض فقط منتجات فرع الإمارات — القطاعي يعرض الكل.
 function wsCatalogFilter(list) {
-  return isWholesale() ? (list || []).filter((p) => p.condition === 'used') : (list || []);
+  return isWholesale() ? (list || []).filter(wsInUaeBranch) : (list || []);
 }
 // 🆕 وصل حديثاً — القطع المضافة خلال آخر 21 يوم
 const NEW_ARRIVAL_DAYS = 21;
