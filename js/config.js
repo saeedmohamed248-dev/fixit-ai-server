@@ -31,6 +31,9 @@ window.SITE = {
   wholesale: {
     brandAr: 'فيكس إت تريد',
     brandEn: 'FixIt Trade',
+    // 🏬 موقع الجملة يعرض فقط منتجات فرع الإمارات في موس تك.
+    //    بنطابق اسم/مكان الفرع بالكلمات دي (عدّلها لو اسم الفرع مختلف عندك).
+    branchMatch: 'إمارات|امارات|uae|u\\.a\\.e|dubai|دبي|الشارقة|شارقة|sharjah|أبوظبي|ابوظبي|abu ?dhabi|trade',
     taglineAr: 'جملة قطع غيار BMW & MINI مستعملة (وارد) — تصدير للعالم',
     taglineEn: 'Wholesale Used BMW & MINI Parts — Global Export',
     whatsapp: '971558803171',      // ← رقم واتساب فرع الجملة (كود الدولة من غير + أو مسافات)
