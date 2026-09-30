@@ -817,6 +817,7 @@ function renderLayout(active = '') {
         <div>
           <h4>${t('footer_contact')}</h4>
           <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
+          ${SITE.email ? `<a href="mailto:${esc(SITE.email)}" dir="ltr" style="text-align:start;">✉️ ${esc(SITE.email)}</a>` : ''}
           <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
         </div>
       </div>`}

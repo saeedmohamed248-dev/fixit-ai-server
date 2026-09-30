@@ -73,7 +73,7 @@
         <h2>📍 ${t('about_contact_t')}</h2>
         <div class="about-contact">
           <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
-          ${wsConf().email ? `<a href="mailto:${esc(wsConf().email)}" dir="ltr" style="text-align:start;">✉️ ${esc(wsConf().email)}</a>` : ''}
+          ${(() => { const em = (isWholesale() ? wsConf().email : SITE.email) || wsConf().email || SITE.email; return em ? `<a href="mailto:${esc(em)}" dir="ltr" style="text-align:start;">✉️ ${esc(em)}</a>` : ''; })()}
           <span>📍 ${L(esc(wsConf().addressAr), esc(wsConf().addressEn))}</span>
           <span>♻️ ${L(esc(tr.conditionAr), esc(tr.conditionEn))}</span>
           <span>🚢 ${L(esc(tr.shippingAr), esc(tr.shippingEn))}</span>

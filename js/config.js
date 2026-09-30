@@ -9,6 +9,8 @@ window.SITE = {
   phoneDisplay: '01125157767',
   address: 'القاهرة، مصر',
   addressEn: 'Cairo, Egypt',
+  // 📧 إيميل التواصل الرسمي (يظهر للعملاء في الفوتر) — بيتحوّل على بريدك الشخصي
+  email: 'info@fixitauto.parts',
   currency: 'ج.م',
   currencyEn: 'EGP',
   // طرق الدفع بالتحويل — الأرقام اللي العميل هيحوّل عليها
