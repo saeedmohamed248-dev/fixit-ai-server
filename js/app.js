@@ -14,18 +14,34 @@ window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
 function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
 // 🇦🇪 فرع الجملة يبيع قطع مستعملة (وارد) فقط — مفيش جديد
-// 🏬 هل المنتج متسجّل في فرع الإمارات (فرع الجملة)؟ بنطابق اسم/مكان الفرع
-//    (والفرع الافتراضي للشحن) بالكلمات المضبوطة في config (wholesale.branchMatch).
-function wsInUaeBranch(p) {
+// 🏬 فرع القطعة: الإمارات (جملة) ولا مصر (قطاعي)؟ بنطابق اسم/مكان الفرع بالكلمات المضبوطة
+//    في config (wholesale.branchMatch).
+// 🐛 [FIX]: قبل كده أي فرع مكتوب على القطعة كان بيحسب — حتى لو رصيده فيه صفر — فقطعة مصر
+//    اللي ليها سطر فاضي في فرع الإمارات كانت بتظهر للتجار، والمتجر القطاعي كان بيعرض قطع
+//    الإمارات لعملاء مصر. دلوقتي العبرة بالفرع اللي فيه رصيد فعلاً.
+function wsUaeRe() {
   const pat = (wsConf().branchMatch) || 'إمارات|امارات|uae|dubai|دبي|الشارقة|sharjah';
-  let re; try { re = new RegExp(pat, 'i'); } catch { re = /إمارات|uae|dubai/i; }
+  try { return new RegExp(pat, 'i'); } catch { return /إمارات|امارات|uae|dubai/i; }
+}
+function wsIsUaeBranch(b) { return wsUaeRe().test([b && b.name, b && b.location].filter(Boolean).join(' | ')); }
+function wsStockedBranches(p) { return (p.branches || []).filter((b) => Number(b.stock) > 0); }
+function wsInUaeBranch(p) {
+  const stocked = wsStockedBranches(p);
+  if (stocked.length) return stocked.some(wsIsUaeBranch);
+  // مفيش رصيد في أي فرع (أو قطعة متضافة يدوي من اللوحة): بالفرع المكتوب عليها
   const parts = [p.originBranch, p.originLocation];
   for (const b of (p.branches || [])) { parts.push(b.name, b.location); }
-  return re.test(parts.filter(Boolean).join(' | '));
+  return wsUaeRe().test(parts.filter(Boolean).join(' | '));
 }
-// موقع الجملة (Trade) يعرض فقط منتجات فرع الإمارات — القطاعي يعرض الكل.
+function wsInEgyptBranch(p) {
+  const stocked = wsStockedBranches(p);
+  if (stocked.length) return stocked.some((b) => !wsIsUaeBranch(b));
+  return !wsInUaeBranch(p);
+}
+// مكتب التجارة (جملة) يعرض قطع فرع الإمارات بس، والمتجر القطاعي يعرض قطع مصر بس.
+// قطعة ليها رصيد في الفرعين بتظهر في الاتنين.
 function wsCatalogFilter(list) {
-  return isWholesale() ? (list || []).filter(wsInUaeBranch) : (list || []);
+  return (list || []).filter(isWholesale() ? wsInUaeBranch : wsInEgyptBranch);
 }
 // 🆕 وصل حديثاً — القطع المضافة خلال آخر 21 يوم
 const NEW_ARRIVAL_DAYS = 21;

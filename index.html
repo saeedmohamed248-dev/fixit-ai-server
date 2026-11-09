@@ -238,6 +238,8 @@
       </a>`).join('');
 
     api('/products').then((products) => {
+      // 🐛 [FIX]: الرئيسية كانت بتعرض قطع الفرعين — دلوقتي قطع فرع العرض الحالي بس (قطاعي مصر / جملة الإمارات)
+      products = wsCatalogFilter(products);
       // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
       const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       document.getElementById('featured-grid').innerHTML =
