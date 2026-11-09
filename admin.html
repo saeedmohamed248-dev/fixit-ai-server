@@ -841,8 +841,8 @@
       box.innerHTML = `
       <div style="margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items:center;">
         <button class="btn btn-sm" id="add-product">+ إضافة منتج</button>
-        <input id="pr-search" placeholder="🔍 اسم / SKU / OEM / موديل..." style="max-width:260px;">
-        <select id="pr-filter" style="width:auto;">
+        <input id="pr-search" autocomplete="off" placeholder="🔍 اسم / SKU / OEM / موديل..." style="max-width:260px;">
+        <select id="pr-filter" style="width:auto;" autocomplete="off">
           <option value="">كل المنتجات (${products.length})</option>
           <option value="out">🔴 خلصت (${outN})</option>
           <option value="low">🟠 قربت تخلص (${lowN})</option>
@@ -855,19 +855,19 @@
       </div>
       <div class="table-wrap"><table class="table">
         <tr><th>المنتج</th><th>SKU</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
-        ${products.map((p) => `<tr data-prow="${esc(p.id)}">
+        ${products.map((p, idx) => `<tr data-prow="${idx}">
           <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'} • ${wsInUaeBranch(p) ? '🇦🇪 الإمارات' : '🇪🇬 مصر'}</small></td>
           <td dir="ltr">${esc(p.sku)}</td>
           <td>${money(p.price)}</td>
           <td style="white-space: nowrap;">
-            <button class="stock-btn" data-stock="${esc(p.id)}" data-delta="-1">−</button>
-            <b data-stock-val="${esc(p.id)}" style="display: inline-block; min-width: 30px; text-align: center; ${p.stock <= 0 ? 'color: var(--red);' : p.stock <= 2 ? 'color: var(--amber);' : ''}">${p.stock}</b>
-            <button class="stock-btn" data-stock="${esc(p.id)}" data-delta="1">+</button>
+            <button class="stock-btn" data-stock="${idx}" data-delta="-1">−</button>
+            <b data-stock-val style="display: inline-block; min-width: 30px; text-align: center; ${p.stock <= 0 ? 'color: var(--red);' : p.stock <= 2 ? 'color: var(--amber);' : ''}">${p.stock}</b>
+            <button class="stock-btn" data-stock="${idx}" data-delta="1">+</button>
           </td>
           <td>${p.sold || 0}</td>
           <td>${p.ratingCount ? `${p.ratingAvg} ⭐` : '—'}</td>
           <td style="white-space: nowrap;">
-            <button class="btn btn-sm btn-outline" data-edit="${esc(p.id)}">تعديل</button>
+            <button class="btn btn-sm btn-outline" data-edit="${idx}">تعديل</button>
             <button class="btn btn-sm btn-danger" data-del="${esc(p.id)}">حذف</button>
           </td>
         </tr>`).join('')}
@@ -876,20 +876,23 @@
       const applyProdFilter = () => {
         const term = document.getElementById('pr-search').value.trim().toLowerCase();
         const f = document.getElementById('pr-filter').value;
-        products.forEach((p) => {
+        // بنطابق كل صف بترتيبه — مش بالـ id (لو فيه منتجين بنفس الـ id أو من غير id، الصف التاني كان بيفضل ظاهر)
+        const rows = box.querySelectorAll('[data-prow]');
+        products.forEach((p, idx) => {
           const hay = [p.name, p.nameEn, p.sku, p.oem, ...(p.models || [])].join(' ').toLowerCase();
           const ok = (!term || hay.includes(term)) && (!f
             || (f === 'out' && p.stock <= 0) || (f === 'low' && p.stock > 0 && p.stock <= 2)
             || (f === 'noimg' && !p.image) || (f === 'nodesc' && !p.description)
             || (f === 'uae' && wsInUaeBranch(p)) || (f === 'eg' && !wsInUaeBranch(p)));
-          const row = box.querySelector(`[data-prow="${CSS.escape(p.id)}"]`);
+          const row = rows[idx];
           if (row) row.style.display = ok ? '' : 'none';
         });
       };
       document.getElementById('pr-search').addEventListener('input', applyProdFilter);
       document.getElementById('pr-filter').addEventListener('change', applyProdFilter);
+      applyProdFilter(); // لو المتصفح رجّع قيمة الفلتر لوحده بعد التحديث، نطبّقها فعلاً
       box.querySelectorAll('[data-edit]').forEach((b) =>
-        b.addEventListener('click', () => openModal(products.find((p) => p.id === b.dataset.edit))));
+        b.addEventListener('click', () => openModal(products[Number(b.dataset.edit)])));
       box.querySelectorAll('[data-del]').forEach((b) =>
         b.addEventListener('click', async () => {
           if (!confirm('متأكد من حذف المنتج؟')) return;
@@ -901,7 +904,7 @@
         }));
       box.querySelectorAll('[data-stock]').forEach((b) =>
         b.addEventListener('click', async () => {
-          const p = products.find((x) => x.id === b.dataset.stock);
+          const p = products[Number(b.dataset.stock)];
           const newStock = Math.max(0, p.stock + Number(b.dataset.delta));
           if (newStock === p.stock) return;
           b.disabled = true;
@@ -911,7 +914,7 @@
               body: JSON.stringify({ id: p.id, stock: newStock }),
             });
             p.stock = newStock; // تحديث فوري من غير إعادة تحميل الجدول كله
-            const v = box.querySelector(`[data-stock-val="${CSS.escape(p.id)}"]`);
+            const v = b.closest('tr').querySelector('[data-stock-val]');
             if (v) { v.textContent = newStock; v.style.color = newStock <= 0 ? 'var(--red)' : newStock <= 2 ? 'var(--amber)' : ''; }
           } catch (e) { toast('⚠️ ' + e.message); }
           b.disabled = false;

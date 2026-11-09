@@ -78,7 +78,7 @@
           </div>
           <div style="font-size: 14px; margin-bottom: 8px;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
           <div style="display: flex; justify-content: space-between;">
-            <b>${money(o.total)}</b>
+            <b>${moneyEGP(o.total)}</b>
             <span style="color: var(--muted); font-size: 13px;">${payLabel}</span>
           </div>
         </div>
