@@ -849,14 +849,14 @@
           <option value="noimg">🖼️ من غير صورة</option>
           <option value="nodesc">📝 من غير وصف</option>
           <option value="uae">🇦🇪 فرع الإمارات (${products.filter(wsInUaeBranch).length})</option>
-          <option value="eg">🇪🇬 فرع مصر (${products.filter((p) => !wsInUaeBranch(p)).length})</option>
+          <option value="eg">🇪🇬 فرع مصر (${products.filter(wsInEgyptBranch).length})</option>
         </select>
         <span style="color: var(--muted); font-size: 13px; align-self: center;">💡 عدّل المخزون مباشرة بأزرار + و −</span>
       </div>
       <div class="table-wrap"><table class="table">
         <tr><th>المنتج</th><th>SKU</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
         ${products.map((p) => `<tr data-prow="${esc(p.id)}">
-          <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'} • ${wsInUaeBranch(p) ? '🇦🇪 الإمارات' : '🇪🇬 مصر'}</small></td>
+          <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'} • ${wsInUaeBranch(p) && wsInEgyptBranch(p) ? '🇦🇪🇪🇬 الفرعين' : wsInUaeBranch(p) ? '🇦🇪 الإمارات' : '🇪🇬 مصر'}</small></td>
           <td dir="ltr">${esc(p.sku)}</td>
           <td>${money(p.price)}</td>
           <td style="white-space: nowrap;">
@@ -881,7 +881,7 @@
           const ok = (!term || hay.includes(term)) && (!f
             || (f === 'out' && p.stock <= 0) || (f === 'low' && p.stock > 0 && p.stock <= 2)
             || (f === 'noimg' && !p.image) || (f === 'nodesc' && !p.description)
-            || (f === 'uae' && wsInUaeBranch(p)) || (f === 'eg' && !wsInUaeBranch(p)));
+            || (f === 'uae' && wsInUaeBranch(p)) || (f === 'eg' && wsInEgyptBranch(p)));
           const row = box.querySelector(`[data-prow="${CSS.escape(p.id)}"]`);
           if (row) row.style.display = ok ? '' : 'none';
         });
