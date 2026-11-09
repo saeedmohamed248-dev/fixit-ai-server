@@ -665,7 +665,7 @@ function initHeaderSearch() {
               <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
               <b>${wsLocked() ? '🔒' : (dispPrice(p) === null ? t('price_request') : money(dispPrice(p)))}</b>
             </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
-          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/assistant.html">${t('ask_expert')}</a></div>`;
+          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/shop.html?q=${encodeURIComponent(q)}">${LANG === 'en' ? '🔔 Notify me when available' : '🔔 بلّغني لما تتوفر'}</a> · <a href="/assistant.html">${t('ask_expert')}</a></div>`;
         box.classList.add('open');
       } catch {}
     }, 300);

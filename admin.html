@@ -569,7 +569,7 @@
           ${requests.map((r) => `<tr>
             <td><b>${esc(r.number)}</b></td>
             <td>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-            <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
+            <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${r.source === 'search' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;">🔎 من البحث</span><br>' : ''}${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
             <td>${r.type === 'rfq'
               ? (r.company || r.country ? `${esc(r.company) || '—'}${r.country ? `<br><small style="color: var(--muted);">🌍 ${esc(r.country)}</small>` : ''}` : '—')
               : `${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}`}</td>
@@ -1367,7 +1367,7 @@
             ${a.products.map(([id, n, c]) => `<tr><td><a href="/product.html?id=${encodeURIComponent(id)}" target="_blank">${esc(n)}</a></td><td><b>${nf(c)}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
         </div>
         <div class="admin-card"><h3 style="margin-bottom:12px;">🔎 كلمات البحث</h3>${anBars(a.searches.slice(0, 10))}
-          <h3 style="margin:18px 0 6px;">🚫 بحث بدون نتائج <small class="muted">(قطع مطلوبة مش عندك)</small></h3>${anBars(a.searchesZero.slice(0, 10))}</div>
+          <h3 style="margin:18px 0 6px;">🚫 بحث بدون نتائج <small class="muted">(قطع مطلوبة مش عندك)</small></h3>${anBars(a.searchesZero.slice(0, 10))}<p class="muted" style="font-size:12px;margin-top:8px;">🔒 البحث بيتسجّل من غير أرقام. اللي بيسيب رقمه من صفحة "مفيش نتائج" بيظهر في <a href="#requests" data-goto-req style="color:var(--accent);">طلبات القطع</a> ومعاه زرار واتساب.</p></div>
       </div>
 
       <div class="admin-card">
@@ -1380,6 +1380,7 @@
 
       box.querySelectorAll('[data-an-days]').forEach((b) => b.addEventListener('click', () => { anDays = Number(b.dataset.anDays); loadAnalytics(); }));
       document.getElementById('an-csv').addEventListener('click', () => anCSV(a));
+      box.querySelector('[data-goto-req]')?.addEventListener('click', (e) => { e.preventDefault(); container.querySelector('.sh-nav-item[data-tab="requests"]')?.click(); });
       document.getElementById('an-reset').addEventListener('click', async () => {
         if (!confirm('متأكد تصفّر كل بيانات الزيارات؟ مش هترجع.')) return;
         try { await api('/track', { method: 'DELETE', headers: authHeaders() }); toast('تم التصفير ✓'); loadAnalytics(); }
