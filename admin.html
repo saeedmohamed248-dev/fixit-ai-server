@@ -109,6 +109,7 @@
       { sep: true },
       { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
       { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
+      { tab: 'ctreqs', ic: '🧩', label: 'طلبات الحاويات' },
       { tab: 'questions', ic: '❓', label: 'الأسئلة' },
       { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
       { tab: 'maintenance', ic: '🛠️', label: 'الصيانة' },
@@ -161,7 +162,7 @@
     /* ---------- أدوات مشتركة ---------- */
     // تاريخ اليوم بالتوقيت المحلي (بدل UTC اللي كان بيخلي طلبات بعد نص الليل تتحسب في اليوم الغلط)
     const localDay = (d) => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
-    const badgeCounts = { requests: 0, questions: 0, maintenance: 0 };
+    const badgeCounts = { requests: 0, questions: 0, maintenance: 0, ctreqs: 0 };
     async function refreshBadgeCounts() {
       const today = localDay(new Date());
       const [rq, qs, mt] = await Promise.all([
@@ -169,7 +170,8 @@
         api('/questions', { headers: authHeaders() }).catch(() => []),
         api('/maintenance', { headers: authHeaders() }).catch(() => []),
       ]);
-      badgeCounts.requests = rq.filter((r) => (r.status || 'open') === 'open').length;
+      badgeCounts.requests = rq.filter((r) => r.type !== 'container' && (r.status || 'open') === 'open').length;
+      badgeCounts.ctreqs = rq.filter((r) => r.type === 'container' && (r.status || 'open') === 'open').length;
       badgeCounts.questions = qs.filter((q) => !q.answer).length;
       badgeCounts.maintenance = mt.filter((m) => !m.done && m.dueDate && m.dueDate < today).length;
     }
@@ -268,7 +270,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -308,6 +310,7 @@
           [returnsPending, '↩️ طلبات إرجاع مستنية قرارك', 'orders'],
           [newLeads, '🧾 طلبات حاسبة التوفير جديدة', 'leads'],
           [badgeCounts.requests, '🔎 طلبات قطع مفتوحة', 'requests'],
+          [badgeCounts.ctreqs, '🧩 طلبات حاويات جديدة', 'ctreqs'],
           [badgeCounts.questions, '❓ أسئلة من غير رد', 'questions'],
           [badgeCounts.maintenance, '🔧 مواعيد صيانة فات ميعادها', 'maintenance'],
           [outOfStock, '📦 منتجات خلصت من المخزون', 'products'],
@@ -541,10 +544,11 @@
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try {
-        const [requests, notifyList] = await Promise.all([
+        const [allReqs, notifyList] = await Promise.all([
           api('/requests', { headers: authHeaders() }),
           api('/notify', { headers: authHeaders() }).catch(() => []),
         ]);
+        const requests = allReqs.filter((r) => r.type !== 'container'); // طلبات الحاويات ليها قسم لوحدها
         // 🔔 المستنيين توفر قطع خالصة
         const notifyHtml = notifyList.length ? `
         <h3 style="margin: 24px 0 10px;">🔔 مستنيين التوفر (${notifyList.length})</h3>
@@ -619,6 +623,74 @@
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }
+    }
+
+    /* ==================== 🧩 طلبات الحاويات (من التجار) ==================== */
+    const CT_STATUS = { open: '🟠 جديد', quoted: '🔵 اتبعتله عرض', confirmed: '🟢 أكّد ودفع المقدم', done: '✅ اتقفل' };
+    async function loadCtReqs() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      let list;
+      try { list = (await api('/requests', { headers: authHeaders() })).filter((r) => r.type === 'container'); }
+      catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+      setNavBadge('ctreqs', badgeCounts.ctreqs = list.filter((r) => (r.status || 'open') === 'open').length);
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><span class="icon">🧩</span>مفيش طلبات حاويات لسه — التجار بيبعتوها من زرار "اعمل أو شارك في حاوية" الموجود في كل صفحات الموقع</div>';
+        return;
+      }
+      const totalQty = (r) => (r.items || []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
+      const condAr = { new: 'جديد', used: 'مستعمل', any: 'أي حالة' };
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <p class="muted" style="margin:0;font-size:14px;">تجار عايزين نجمّعلهم بضاعة في حاوية — راجع الأصناف وابعتلهم عرض على الواتساب</p>
+          <select id="ct-filter" style="width:auto;" autocomplete="off">
+            <option value="">الكل (${list.length})</option>
+            ${Object.entries(CT_STATUS).map(([k, v]) => `<option value="${k}">${v} (${list.filter((r) => (r.status || 'open') === k).length})</option>`).join('')}
+          </select>
+        </div>
+        ${list.map((r) => {
+          const waMsg = `أهلاً ${r.name} 👋\nبخصوص طلب الحاوية ${r.number} من ${wsConf().brandAr || 'FixIt Trade'} (${(r.items || []).length} صنف):\n${r.partName}\n\n`;
+          return `<div class="order-card" data-ct-row data-status="${esc(r.status || 'open')}" style="margin-bottom:14px;${(r.status || 'open') === 'open' ? 'border-inline-start:4px solid #f59e0b;' : ''}">
+            <div class="head" style="flex-wrap:wrap;gap:8px;">
+              <div><b>${esc(r.number)}</b> · ${esc(r.company || r.name)} <small class="muted">${new Date(r.createdAt).toLocaleString('ar-EG')}</small></div>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                <select data-ct-st="${esc(r.id)}" style="width:auto;">${Object.entries(CT_STATUS).map(([k, v]) => `<option value="${k}" ${(r.status || 'open') === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+                <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${esc(String(r.phone).replace(/[^\d]/g, ''))}?text=${encodeURIComponent(waMsg)}">💬 رد واتساب</a>
+                <button class="btn btn-sm btn-danger" data-ct-del="${esc(r.id)}">🗑️</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;margin:8px 0;">
+              <span>👤 ${esc(r.name)} · <span dir="ltr">${esc(r.phone)}</span>${r.email ? ` · <a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : ''}</span>
+              <span>🌍 ${esc(r.country || '—')}${r.port ? ' / ' + esc(r.port) : ''}</span>
+              <span>📦 ${esc(r.containerPref || '—')} · ${r.shipMode === 'air' ? '✈️ جوي' : '🚢 بحري'}</span>
+              <span style="color:#067647;font-weight:800;">💵 مقدم ${Number(r.depositPct) || 0}%</span>
+              ${r.budget ? `<span>💰 ميزانية: ${esc(r.budget)}</span>` : ''}
+              ${r.targetDate ? `<span>📅 محتاجها: ${esc(r.targetDate)}</span>` : ''}
+              <span>${r.openToShare ? '🤝 موافق يشارك' : '🔒 حاوية لوحده'}</span>
+            </div>
+            ${(r.sectors || []).length ? `<div style="margin-bottom:8px;">${r.sectors.map((x) => `<span class="badge" style="background:#eef2ff;color:#3730a3;margin-inline-end:4px;">${esc(x)}</span>`).join('')}</div>` : ''}
+            <div class="table-wrap"><table class="table" style="min-width:auto;">
+              <tr><th>العدد</th><th>الصنف</th><th>الماركة</th><th>الموديل</th><th>السنة</th><th>الحالة</th></tr>
+              ${(r.items || []).map((i) => `<tr><td><b>${Number(i.qty)}</b></td><td>${esc(i.item)}</td><td>${esc(i.make) || '—'}</td><td>${esc(i.model) || '—'}</td><td dir="ltr">${esc(i.year) || '—'}</td><td>${condAr[i.condition] || '—'}</td></tr>`).join('')}
+              <tr><td colspan="6" class="muted" style="font-size:12px;">الإجمالي: ${totalQty(r)} قطعة</td></tr>
+            </table></div>
+            ${r.notes ? `<div class="muted" style="font-size:13px;margin-top:6px;">📝 ${esc(r.notes)}</div>` : ''}
+          </div>`;
+        }).join('')}`;
+      box.querySelectorAll('[data-ct-st]').forEach((sel) => sel.addEventListener('change', async () => {
+        try {
+          await api('/requests', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ id: sel.dataset.ctSt, status: sel.value }) });
+          toast('تم التحديث ✓');
+          const r = list.find((x) => x.id === sel.dataset.ctSt); if (r) r.status = sel.value;
+          sel.closest('[data-ct-row]').dataset.status = sel.value;
+          setNavBadge('ctreqs', badgeCounts.ctreqs = list.filter((x) => (x.status || 'open') === 'open').length);
+        } catch (e) { toast('⚠️ ' + e.message); }
+      }));
+      box.querySelectorAll('[data-ct-del]').forEach((b) => b.addEventListener('click', () =>
+        delWithConfirm('حذف طلب الحاوية نهائياً؟', '/requests?id=' + encodeURIComponent(b.dataset.ctDel), loadCtReqs)));
+      document.getElementById('ct-filter').addEventListener('change', (e) => {
+        box.querySelectorAll('[data-ct-row]').forEach((el) => { el.style.display = !e.target.value || el.dataset.status === e.target.value ? '' : 'none'; });
+      });
     }
 
     function bindNotifyDelete(scope) {
