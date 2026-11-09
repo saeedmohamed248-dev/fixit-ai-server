@@ -566,12 +566,19 @@ const CATEGORY_ICONS = {
 };
 function categoryIcon(cat) { return CATEGORY_ICONS[cat] || '🔧'; }
 
+function imgFallback(img, icon) {
+  const d = document.createElement('div');
+  d.className = img.className + ' img-placeholder';
+  d.innerHTML = '<span>' + (icon || '🔧') + '</span>';
+  img.replaceWith(d);
+}
 function firstImage(p) {
   return p.image || (Array.isArray(p.images) && p.images[0]) || '';
 }
 function productImage(p, cssClass = 'card-img') {
   const src = firstImage(p);
-  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy">`;
+  // لو رابط الصورة بايظ/انتهى، نعرض أيقونة الفئة بدل مربع فاضي
+  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
   return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
 }
 

@@ -97,6 +97,8 @@
     // لوحة التحكم دايماً بالثيم الفاتح النظيف (مش سكين الجملة الداكن)
     document.documentElement.dataset.mode = 'retail';
     const container = document.getElementById('admin-container');
+    // 🇪🇬 لوحة التحكم بتعرض الأسعار بالجنيه دايماً — حتى لو المتصفح كان على وضع الجملة (درهم) من زيارة مكتب التجارة
+    money = moneyEGP;
 
     // 🛍️ خريطة الأقسام: المفتاح ← الأيقونة + الاسم (على طراز Shopify)
     const NAV = [
