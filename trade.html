@@ -89,6 +89,7 @@
         go.disabled = true; go.textContent = t('sending');
         try {
           await api('/alerts', { method: 'POST', body: JSON.stringify({ name, phone, interest }) });
+          trackEvent('trade_alert');
           msg.style.color = '#4ade80'; msg.textContent = t('alert_done');
           go.textContent = '✓';
         } catch (e) { msg.style.color = 'var(--red)'; msg.textContent = e.message; go.disabled = false; go.textContent = t('alert_subscribe'); }
@@ -336,6 +337,7 @@
               action: 'book', shipmentId: id, cbm,
               dealer: { name: u.name, phone: u.phone, company: u.company || '', country: u.country || '' },
             }) });
+            trackEvent('container_book');
             const idx = SHIPMENTS.findIndex((x) => x.id === id);
             if (idx >= 0) SHIPMENTS[idx] = { ...SHIPMENTS[idx], ...r.shipment };
             toast(t('share_booked'));
@@ -442,6 +444,7 @@
         send.disabled = true; send.textContent = t('sending');
         try {
           const r = await api('/requests', { method: 'POST', body: JSON.stringify(body) });
+          trackEvent('rfq');
           msg.style.color = '#4ade80';
           msg.textContent = t('rfq_sent', { n: r.number });
           trackEvent('rfq');

@@ -305,20 +305,37 @@ async function api(path, options = {}) {
 }
 
 /* ---------- 📈 تتبّع (تحليلات مجمّعة — بدون أي بيانات شخصية) ---------- */
+function anonId() {
+  try {
+    let v = localStorage.getItem('an_vid');
+    if (!v) { v = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12)); localStorage.setItem('an_vid', v); }
+    return v;
+  } catch { return 'nostore-' + Math.random().toString(36).slice(2, 12); }
+}
 function track(type, data = {}) {
+  try {
+    if (localStorage.getItem('admin_token')) return; // زيارات صاحب المتجر مش بتتحسب
+  } catch {}
   try {
     fetch(API + '/track', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ t: type, ...data }), keepalive: true,
+      body: JSON.stringify({ t: type, vid: anonId(), ...data }), keepalive: true,
     }).catch(() => {});
   } catch {}
 }
 function trackPageview(extra = {}) {
-  let nv = false;
+  let nv = false, ns = false;
   try { if (!localStorage.getItem('visited')) { localStorage.setItem('visited', '1'); nv = true; } } catch {}
-  track('view', { path: location.pathname, nv, ...extra });
+  // جلسة جديدة لو أول صفحة في التاب أو بعد 30 دقيقة خمول
+  try {
+    const last = Number(sessionStorage.getItem('an_last') || 0);
+    if (!last || Date.now() - last > 30 * 60 * 1000) ns = true;
+    sessionStorage.setItem('an_last', String(Date.now()));
+  } catch { ns = true; }
+  const utm = new URLSearchParams(location.search).get('utm_source') || '';
+  track('view', { path: location.pathname, nv, ns, ref: ns ? document.referrer : '', utm: ns ? utm : '', ...extra });
 }
-function trackEvent(ev) { track('event', { ev }); }
+function trackEvent(ev, extra = {}) { track('event', { ev, ...extra }); }
 // زيارة الصفحة تلقائياً (ما عدا لوحة التحكم، أو الصفحات اللي بتسجّل بنفسها زي المنتج)
 document.addEventListener('DOMContentLoaded', () => {
   if (window.SKIP_AUTOVIEW || /admin/.test(location.pathname)) return;
@@ -633,6 +650,7 @@ function initHeaderSearch() {
     timer = setTimeout(async () => {
       try {
         const results = wsCatalogFilter(await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
+        if (q.length >= 3 && q !== input.dataset.tracked) { input.dataset.tracked = q; trackEvent('search', { q, n: results.length }); }
         box.innerHTML = results.length
           ? results.map((p) => `
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
