@@ -136,6 +136,7 @@
         if (document.getElementById('f-sort').value === 'newest') lastResults = [...lastResults].sort(byNewest);
         currentPage = 1;
         document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
+        if (qs.get('q')) trackSearch(qs.get('q'), lastResults.length); // 📈 يظهر في "بحث بدون نتائج" لو مفيش
         renderPage();
       } catch (e) {
         grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;

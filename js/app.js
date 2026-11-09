@@ -336,6 +336,13 @@ function trackPageview(extra = {}) {
   track('view', { path: location.pathname, nv, ns, ref: ns ? document.referrer : '', utm: ns ? utm : '', ...extra });
 }
 function trackEvent(ev, extra = {}) { track('event', { ev, ...extra }); }
+// 🔎 تسجيل البحث (مرة واحدة لكل كلمة في الجلسة) — n=0 يعني مالقاش حاجة متاحة في المخزون
+function trackSearch(q, n) {
+  q = String(q || '').trim().toLowerCase();
+  if (q.length < 3) return;
+  try { if (sessionStorage.getItem('an_lastq') === q) return; sessionStorage.setItem('an_lastq', q); } catch {}
+  trackEvent('search', { q, n });
+}
 // زيارة الصفحة تلقائياً (ما عدا لوحة التحكم، أو الصفحات اللي بتسجّل بنفسها زي المنتج)
 document.addEventListener('DOMContentLoaded', () => {
   if (window.SKIP_AUTOVIEW || /admin/.test(location.pathname)) return;
@@ -650,7 +657,7 @@ function initHeaderSearch() {
     timer = setTimeout(async () => {
       try {
         const results = wsCatalogFilter(await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
-        if (q.length >= 3 && q !== input.dataset.tracked) { input.dataset.tracked = q; trackEvent('search', { q, n: results.length }); }
+        trackSearch(q, results.length);
         box.innerHTML = results.length
           ? results.map((p) => `
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
