@@ -69,7 +69,7 @@
     let product = null;
 
     function galleryHtml(p) {
-      const images = [p.image, ...(p.images || [])].filter(Boolean);
+      const images = [p.image, ...(p.images || [])].filter(Boolean).map(fixMediaUrl);
       if (images.length === 0) return `<div class="product-img-box">${productImage(p)}</div>`;
       return `
       <div>

@@ -572,8 +572,15 @@ function imgFallback(img, icon) {
   d.innerHTML = '<span>' + (icon || '🔧') + '</span>';
   img.replaceWith(d);
 }
+// 🖼️ الصور المحفوظة قبل كده بدومين الموقع/مسار نسبي (/media/...) — مكانها الحقيقي سيرفر موس تك
+const MEDIA_BASE = (SITE.mediaBase || 'https://fixit-02e0.mousstec.com').replace(/\/+$/, '');
+function fixMediaUrl(u) {
+  u = String(u || '').trim();
+  if (/^\/media\//i.test(u)) return MEDIA_BASE + u;
+  return u.replace(/^https?:\/\/(www\.)?fixitauto\.parts(?=\/media\/)/i, MEDIA_BASE);
+}
 function firstImage(p) {
-  return p.image || (Array.isArray(p.images) && p.images[0]) || '';
+  return fixMediaUrl(p.image || (Array.isArray(p.images) && p.images[0]) || '');
 }
 function productImage(p, cssClass = 'card-img') {
   const src = firstImage(p);
