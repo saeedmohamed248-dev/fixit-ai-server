@@ -260,7 +260,8 @@ function deliveryBadge(p, cls = '') {
 function wsLocked() { return isWholesale() && !currentUser(); }
 // كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
 function priceBlock(p) {
-  if (wsLocked()) return `<a class="price price-lock" href="/account.html">🔒 ${t('ws_login_price')}</a>`;
+  // ⚠️ span مش <a>: الكارت نفسه لينك، واللينك جوه لينك بيخلّي المتصفح يقسم الكارت لقطع متفرقة
+  if (wsLocked()) return `<span class="price price-lock" data-login role="link">🔒 ${t('ws_login_price')}</span>`;
   const d = dispPrice(p);
   if (d === null) return `<span class="price price-req">${t('price_request')}</span>`;
   const old = dispOld(p);
@@ -369,6 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.SKIP_AUTOVIEW || /admin/.test(location.pathname)) return;
   trackPageview();
 });
+// 🔒 "سجّل دخول لرؤية السعر" جوه الكارت: يودّي لصفحة الحساب بدل صفحة المنتج
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-login]');
+  if (!el) return;
+  e.preventDefault(); e.stopPropagation();
+  location.href = '/account.html';
+}, true);
 // تتبّع نقرات واتساب
 document.addEventListener('click', (e) => {
   if (e.target.closest('a[href^="https://wa.me"]')) trackEvent('whatsapp');
@@ -874,6 +882,7 @@ function renderLayout(active = '') {
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
+    ${active !== 'container' ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
 
     const topBtn = document.getElementById('scroll-top');

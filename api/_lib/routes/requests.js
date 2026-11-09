@@ -14,6 +14,46 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { name, phone, email, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
       if (!rateLimit(req, res, 'requests', 5)) return;
+
+      // 🧩 طلب حاوية (التاجر يجمّع طلبه ونشحنهوله في حاوية — لوحده أو مشاركة مع تجار تانيين)
+      if (req.body && req.body.kind === 'container') {
+        const b = req.body;
+        const clean = (v, n) => String(v || '').trim().slice(0, n);
+        if (!clean(b.name, 80) || !clean(b.phone, 20)) return res.status(400).json({ error: 'الاسم ورقم الواتساب مطلوبين' });
+        if (!validIntlPhone(b.phone)) return res.status(400).json({ error: 'رقم واتساب غير صحيح (اكتبه بكود الدولة، مثال: 2010xxxxxxxx)' });
+        const items = (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((i) => ({
+          qty: Math.min(100000, Math.max(1, Math.floor(Number(i.qty)) || 1)),
+          item: clean(i.item, 120), make: clean(i.make, 40), model: clean(i.model, 60), year: clean(i.year, 20),
+          condition: ['new', 'used', 'any'].includes(i.condition) ? i.condition : 'any',
+        })).filter((i) => i.item);
+        if (!items.length) return res.status(400).json({ error: 'اكتب صنف واحد على الأقل' });
+        const deposit = Math.min(100, Math.max(0, Math.round(Number(b.depositPct) || 0)));
+        const requests = await getRequests();
+        const request = {
+          id: 'q' + Date.now(),
+          number: 'CTR-' + String(Date.now()).slice(-6),
+          createdAt: new Date().toISOString(),
+          status: 'open',
+          type: 'container',
+          name: clean(b.name, 80), phone: clean(b.phone, 20), email: clean(b.email, 120),
+          company: clean(b.company, 120), country: clean(b.country, 60), city: clean(b.city, 60), port: clean(b.port, 60),
+          sectors: (Array.isArray(b.sectors) ? b.sectors : []).slice(0, 12).map((x) => clean(x, 40)).filter(Boolean),
+          items,
+          containerPref: clean(b.containerPref, 30),
+          shipMode: b.shipMode === 'air' ? 'air' : 'sea',
+          depositPct: deposit,
+          budget: clean(b.budget, 40),
+          targetDate: clean(b.targetDate, 20),
+          openToShare: b.openToShare !== false,
+          notes: clean(b.notes, 800),
+          partName: items.map((i) => `${i.qty} × ${i.item}${i.make ? ' ' + i.make : ''}${i.model ? ' ' + i.model : ''}${i.year ? ' ' + i.year : ''}`).join('\n'),
+          source: 'container',
+        };
+        requests.unshift(request);
+        await saveRequests(requests);
+        await logActivity('request', `🧩 طلب حاوية ${request.number} من ${request.company || request.name} (${request.country || '—'}) — ${items.length} صنف، مقدم ${deposit}%`);
+        return res.status(201).json(request);
+      }
       // طلب عرض سعر الجملة (RFQ) بيقبل أرقام دولية، وطلب التوفير العادي بيقبل المصري
       const isRfq = wholesale === true;
       if (!name?.trim() || !phone?.trim() || !partName?.trim()) {
@@ -73,7 +113,7 @@ export default async function handler(req, res) {
       const { id, status } = req.body || {};
       const request = requests.find((r) => r.id === id);
       if (!request) return res.status(404).json({ error: 'الطلب غير موجود' });
-      if (!['open', 'sourced', 'done'].includes(status)) {
+      if (!['open', 'sourced', 'done', 'quoted', 'confirmed'].includes(status)) {
         return res.status(400).json({ error: 'حالة غير صحيحة' });
       }
       request.status = status;

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اعمل حاوية أو شارك في حاوية | FixIt Trade</title>
+  <meta name="description" content="مش لاقي اللي محتاجه؟ اكتب طلبك (الكميات والموديلات والسنين) ونجمّعهولك في حاوية لوحدك أو مشاركة مع تجار تانيين — FixIt Trade الإمارات.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090c">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .ct-wrap { max-width: 860px; }
+    .ct-step { margin-bottom: 18px; }
+    .ct-step h3 { margin: 0 0 4px; }
+    .ct-step .hint { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .ct-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ct-chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 14px; user-select: none; background: transparent; color: inherit; font-family: inherit; }
+    .ct-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+    .ct-items { display: grid; gap: 8px; }
+    .ct-row { display: grid; grid-template-columns: 80px 2fr 1fr 1fr 90px 110px 34px; gap: 6px; align-items: center; }
+    .ct-row input, .ct-row select { margin: 0; }
+    .ct-head { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .ct-del { background: none; border: 0; color: var(--red); font-size: 18px; cursor: pointer; }
+    .ct-dep { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ct-dep input[type=range] { flex: 1; min-width: 180px; }
+    .ct-dep b { font-size: 22px; min-width: 64px; text-align: center; color: var(--accent); }
+    .ct-ok { text-align: center; }
+    @media (max-width: 720px) {
+      .ct-head { display: none; }
+      .ct-row { grid-template-columns: 70px 1fr 34px; border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+      .ct-row .c-make, .ct-row .c-model, .ct-row .c-year, .ct-row .c-cond { grid-column: span 1; }
+      .ct-row .c-item { grid-column: 2 / 4; }
+      .ct-row .c-make { grid-column: 1 / 2; } .ct-row .c-model { grid-column: 2 / 4; }
+      .ct-row .c-year { grid-column: 1 / 2; } .ct-row .c-cond { grid-column: 2 / 3; }
+    }
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="section">
+    <div class="container ct-wrap" id="ct-root"><div class="spinner" data-i18n="loading"></div></div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    renderLayout('container');
+    const EN = LANG === 'en';
+    const L = (ar, en) => (EN ? en : ar);
+    document.title = L('اعمل حاوية أو شارك في حاوية', 'Build or share a container') + ' | ' + (wsConf().brandEn || 'FixIt Trade');
+    const root = document.getElementById('ct-root');
+
+    const SECTORS = [
+      ['parts', L('قطع غيار ملاكي', 'Passenger car parts')], ['engines', L('محركات وفتيس', 'Engines & gearboxes')],
+      ['body', L('بودي وصاج وفوانيس', 'Body, panels & lights')], ['electric', L('كهرباء وإلكترونيات', 'Electrical & electronics')],
+      ['suspension', L('عفشة وفرامل', 'Suspension & brakes')], ['tyres', L('كاوتش وجنوط', 'Tyres & wheels')],
+      ['oils', L('زيوت وفلاتر', 'Oils & filters')], ['trucks', L('نقل ثقيل ومعدات', 'Trucks & heavy equipment')],
+      ['halfcut', L('نص عربية (هاف كت)', 'Half-cuts')], ['other', L('حاجات تانية', 'Other')],
+    ];
+    const CONTAINERS = [
+      ['share', L('🧩 مشاركة مع تجار (حسب حجمي)', '🧩 Share with other traders (pay by CBM)')],
+      ['20ft', L('📦 حاوية 20 قدم لوحدي', '📦 Full 20ft')], ['40ft', L('📦 حاوية 40 قدم لوحدي', '📦 Full 40ft')],
+      ['40hc', L('📦 40 هاي كيوب لوحدي', '📦 Full 40ft High Cube')], ['unsure', L('🤷 مش عارف — اقترحوا عليّا', "🤷 Not sure — advise me")],
+    ];
+    const u = currentUser() || {};
+    let rows = [{ qty: 10, item: '', make: '', model: '', year: '', condition: 'any' }];
+    let sectors = new Set();
+    let pref = 'share';
+    let ship = 'sea';
+
+    function rowHtml(r, i) {
+      return `<div class="ct-row" data-i="${i}">
+        <input class="c-qty" type="number" min="1" value="${esc(r.qty)}" placeholder="${L('العدد', 'Qty')}">
+        <input class="c-item" value="${esc(r.item)}" placeholder="${L('الصنف — مثلاً: موتور / ماسك أمامي', 'Item — e.g. engine / front bumper')}">
+        <input class="c-make" value="${esc(r.make)}" placeholder="${L('الماركة: تويوتا', 'Make: Toyota')}">
+        <input class="c-model" value="${esc(r.model)}" placeholder="${L('الموديل: كامري', 'Model: Camry')}">
+        <input class="c-year" value="${esc(r.year)}" placeholder="${L('السنة', 'Year')}" dir="ltr">
+        <select class="c-cond">
+          <option value="any" ${r.condition === 'any' ? 'selected' : ''}>${L('أي حالة', 'Any')}</option>
+          <option value="used" ${r.condition === 'used' ? 'selected' : ''}>${L('مستعمل', 'Used')}</option>
+          <option value="new" ${r.condition === 'new' ? 'selected' : ''}>${L('جديد', 'New')}</option>
+        </select>
+        <button type="button" class="ct-del" data-del="${i}" title="${L('حذف', 'Remove')}">✕</button>
+      </div>`;
+    }
+    function readRows() {
+      rows = [...root.querySelectorAll('.ct-row:not(.ct-head)')].map((el) => ({
+        qty: el.querySelector('.c-qty').value, item: el.querySelector('.c-item').value.trim(),
+        make: el.querySelector('.c-make').value.trim(), model: el.querySelector('.c-model').value.trim(),
+        year: el.querySelector('.c-year').value.trim(), condition: el.querySelector('.c-cond').value,
+      }));
+    }
+    function drawRows() {
+      document.getElementById('ct-items').innerHTML = `
+        <div class="ct-row ct-head"><span>${L('العدد', 'Qty')}</span><span>${L('الصنف', 'Item')}</span><span>${L('الماركة', 'Make')}</span><span>${L('الموديل', 'Model')}</span><span>${L('السنة', 'Year')}</span><span>${L('الحالة', 'Condition')}</span><span></span></div>
+        ${rows.map(rowHtml).join('')}`;
+      root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => {
+        readRows(); rows.splice(Number(b.dataset.del), 1); if (!rows.length) rows.push({ qty: 1, item: '', make: '', model: '', year: '', condition: 'any' }); drawRows();
+      }));
+    }
+    function chips(list, isOn, attr) {
+      return list.map(([k, label]) => `<button type="button" class="ct-chip ${isOn(k) ? 'on' : ''}" data-${attr}="${k}">${label}</button>`).join('');
+    }
+
+    function render() {
+      root.innerHTML = `
+      <div style="text-align:center;margin-bottom:22px;">
+        <h1>🧩 ${L('اعمل حاوية أو شارك في حاوية', 'Build or share a container')}</h1>
+        <p style="color:var(--muted);">${L('مش لاقي اللي محتاجه في الكتالوج؟ اكتب طلبك بالكميات والموديلات، وإحنا نجمّعهولك من الإمارات ونشحنه — في حاوية لوحدك أو مشاركة مع تجار تانيين وتدفع على قد حجمك.', "Can't find it in the catalog? List what you need and we'll source it in the UAE and ship it — in your own container or shared with other traders, paying only for your space.")}</p>
+        <a href="/trade.html#share" style="color:var(--accent);font-weight:700;">${L('🚢 شوف الحاويات المفتوحة دلوقتي', '🚢 See containers open now')} →</a>
+      </div>
+
+      <div class="summary ct-step">
+        <h3>1️⃣ ${L('مجال شغلك', 'Your trade')}</h3>
+        <div class="hint">${L('اختار واحد أو أكتر', 'Pick one or more')}</div>
+        <div class="ct-chips" id="ct-sectors">${chips(SECTORS, (k) => sectors.has(k), 'sector')}</div>
+      </div>
+
+      <div class="summary ct-step">
+        <h3>2️⃣ ${L('محتاج إيه؟', 'What do you need?')}</h3>
+        <div class="hint">${L('سطر لكل صنف — مثلاً: 10 موتور تويوتا كامري 2015، 12 ماسك نيسان صني 2007', 'One line per item — e.g. 10 × engine Toyota Camry 2015, 12 × bumper Nissan Sunny 2007')}</div>
+        <div class="ct-items" id="ct-items"></div>
+        <button type="button" class="btn btn-outline btn-sm" id="ct-add" style="margin-top:10px;">＋ ${L('ضيف صنف', 'Add item')}</button>
+      </div>
+
+      <div class="summary ct-step">
+        <h3>3️⃣ ${L('الحاوية والشحن', 'Container & shipping')}</h3>
+        <div class="ct-chips" id="ct-pref" style="margin-bottom:12px;">${chips(CONTAINERS, (k) => k === pref, 'pref')}</div>
+        <div class="ct-chips" id="ct-ship" style="margin-bottom:12px;">${chips([['sea', L('🚢 بحري', '🚢 Sea')], ['air', L('✈️ جوي', '✈️ Air')]], (k) => k === ship, 'ship')}</div>
+        <div class="form-grid">
+          <div><label>${L('الدولة', 'Country')}</label><input id="ct-country" value="${esc(u.country || '')}" placeholder="${L('مصر، العراق، ليبيا...', 'Egypt, Iraq, Libya...')}"></div>
+          <div><label>${L('المدينة / ميناء الوصول', 'City / arrival port')}</label><input id="ct-port" placeholder="${L('الإسكندرية، أم قصر...', 'Alexandria, Umm Qasr...')}"></div>
+          <div><label>${L('محتاجها تيجي إمتى تقريباً؟', 'Needed by (approx.)')}</label><input id="ct-date" type="month"></div>
+          <div><label>${L('الميزانية التقريبية (اختياري)', 'Approx. budget (optional)')}</label><input id="ct-budget" placeholder="${L('مثلاً 15,000 دولار', 'e.g. $15,000')}"></div>
+        </div>
+        <label class="pay-option" style="margin-top:8px;"><input type="checkbox" id="ct-share" checked> ${L('موافق نشارك طلبي مع تجار تانيين في نفس الحاوية عشان التكلفة تقل', "OK to combine my order with other traders' to cut the cost")}</label>
+      </div>
+
+      <div class="summary ct-step">
+        <h3>4️⃣ ${L('هتدفع كام في المية مقدم؟', 'How much will you pay upfront?')}</h3>
+        <div class="hint">${L('النسبة اللي هتدفعها دلوقتي، والباقي لما البضاعة توصلك', 'The share you pay now — the rest on arrival')}</div>
+        <div class="ct-dep">
+          <input type="range" id="ct-dep" min="0" max="100" step="5" value="30">
+          <b id="ct-dep-val">30%</b>
+        </div>
+        <div class="ct-chips" style="margin-top:8px;">${[20, 30, 50, 70, 100].map((n) => `<button type="button" class="ct-chip" data-dep="${n}">${n}%</button>`).join('')}</div>
+        <div class="hint" id="ct-dep-hint" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="summary ct-step">
+        <h3>5️⃣ ${L('بياناتك', 'Your details')}</h3>
+        <div class="form-grid">
+          <div><label>${L('الاسم', 'Name')} *</label><input id="ct-name" value="${esc(u.name || '')}"></div>
+          <div><label>${L('الشركة / المحل', 'Company / shop')}</label><input id="ct-company" value="${esc(u.company || '')}"></div>
+          <div><label>${L('رقم الواتساب بكود الدولة', 'WhatsApp with country code')} *</label><input id="ct-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="2010xxxxxxxx" value="${esc(u.phone || '')}"></div>
+          <div><label>${L('الإيميل (اختياري)', 'Email (optional)')}</label><input id="ct-email" type="email" dir="ltr" value="${esc(u.email || '')}"></div>
+        </div>
+        <div><label>${L('ملاحظات', 'Notes')}</label><textarea id="ct-notes" rows="2" placeholder="${L('أي تفاصيل تانية: أرقام قطع، صور هتبعتها واتساب...', 'Anything else: part numbers, photos you will send on WhatsApp...')}"></textarea></div>
+        <button class="btn" id="ct-send" style="width:100%;margin-top:6px;">📨 ${L('ابعت طلب الحاوية', 'Send container request')}</button>
+        <div id="ct-msg" style="font-size:14px;margin-top:8px;"></div>
+      </div>`;
+      drawRows();
+
+      document.getElementById('ct-add').addEventListener('click', () => { readRows(); rows.push({ qty: 1, item: '', make: '', model: '', year: '', condition: 'any' }); drawRows(); root.querySelector('.ct-row:last-child .c-item')?.focus(); });
+      root.querySelectorAll('[data-sector]').forEach((b) => b.addEventListener('click', () => {
+        const k = b.dataset.sector; sectors.has(k) ? sectors.delete(k) : sectors.add(k); b.classList.toggle('on');
+      }));
+      root.querySelectorAll('[data-pref]').forEach((b) => b.addEventListener('click', () => {
+        pref = b.dataset.pref; root.querySelectorAll('[data-pref]').forEach((x) => x.classList.toggle('on', x === b));
+      }));
+      root.querySelectorAll('[data-ship]').forEach((b) => b.addEventListener('click', () => {
+        ship = b.dataset.ship; root.querySelectorAll('[data-ship]').forEach((x) => x.classList.toggle('on', x === b));
+      }));
+      const dep = document.getElementById('ct-dep');
+      const depHint = () => {
+        const v = Number(dep.value);
+        document.getElementById('ct-dep-val').textContent = v + '%';
+        document.getElementById('ct-dep-hint').textContent = v === 100
+          ? L('💯 دفع كامل مقدماً — بنقدّم طلبك في الأولوية', '💯 Full prepayment — your order gets priority')
+          : L(`هتدفع ${v}% دلوقتي و${100 - v}% لما البضاعة توصل`, `${v}% now, ${100 - v}% on arrival`);
+      };
+      dep.addEventListener('input', depHint);
+      root.querySelectorAll('[data-dep]').forEach((b) => b.addEventListener('click', () => { dep.value = b.dataset.dep; depHint(); }));
+      depHint();
+
+      document.getElementById('ct-send').addEventListener('click', send);
+    }
+
+    async function send() {
+      readRows();
+      const msg = document.getElementById('ct-msg'), btn = document.getElementById('ct-send');
+      const items = rows.filter((r) => r.item);
+      const body = {
+        kind: 'container',
+        name: document.getElementById('ct-name').value.trim(),
+        phone: document.getElementById('ct-phone').value.trim(),
+        email: document.getElementById('ct-email').value.trim(),
+        company: document.getElementById('ct-company').value.trim(),
+        country: document.getElementById('ct-country').value.trim(),
+        port: document.getElementById('ct-port').value.trim(),
+        targetDate: document.getElementById('ct-date').value,
+        budget: document.getElementById('ct-budget').value.trim(),
+        openToShare: document.getElementById('ct-share').checked,
+        notes: document.getElementById('ct-notes').value.trim(),
+        depositPct: Number(document.getElementById('ct-dep').value),
+        sectors: [...sectors].map((k) => (SECTORS.find((s) => s[0] === k) || [k, k])[1]),
+        containerPref: (CONTAINERS.find((c) => c[0] === pref) || [pref, pref])[1],
+        shipMode: ship, items,
+      };
+      msg.style.color = 'var(--red)';
+      if (!items.length) { msg.textContent = L('اكتب صنف واحد على الأقل', 'Add at least one item'); return; }
+      if (!body.name || !body.phone) { msg.textContent = L('الاسم ورقم الواتساب مطلوبين', 'Name and WhatsApp are required'); return; }
+      btn.disabled = true; btn.textContent = t('sending');
+      try {
+        const r = await api('/requests', { method: 'POST', body: JSON.stringify(body) });
+        trackEvent('container_request');
+        const lines = items.map((i) => `• ${i.qty} × ${i.item}${i.make ? ' ' + i.make : ''}${i.model ? ' ' + i.model : ''}${i.year ? ' ' + i.year : ''}`).join('\n');
+        const wa = [
+          `🧩 ${L('طلب حاوية', 'Container request')} ${r.number}`,
+          `${body.name}${body.company ? ' — ' + body.company : ''}`,
+          body.country && `${L('الوجهة', 'Destination')}: ${body.country}${body.port ? ' / ' + body.port : ''}`,
+          body.sectors.length && `${L('المجال', 'Trade')}: ${body.sectors.join('، ')}`,
+          `${body.containerPref} · ${ship === 'air' ? L('جوي', 'Air') : L('بحري', 'Sea')}`,
+          `${L('المقدم', 'Upfront')}: ${body.depositPct}%`,
+          '', lines,
+        ].filter((x) => x !== false && x !== undefined && x !== '').join('\n');
+        const waNum = wsConf().whatsapp || SITE.whatsapp;
+        root.innerHTML = `
+        <div class="success-box ct-ok">
+          <span class="icon">✅</span>
+          <h2>${L('طلب الحاوية وصلنا!', 'Container request received!')}</h2>
+          <div class="order-number">${esc(r.number)}</div>
+          <p style="color:var(--muted);margin:12px 0;">${L('هنراجع الأصناف والأسعار ونكلمك على الواتساب بعرض كامل (تكلفة البضاعة + الشحن + مدة الوصول).', "We'll review the items and prices and reply on WhatsApp with a full offer (goods + freight + lead time).")}</p>
+          <a class="btn btn-green" target="_blank" rel="noopener" href="https://wa.me/${waNum}?text=${encodeURIComponent(wa)}">💬 ${L('ابعته كمان على واتساب الإمارات', 'Also send it on our UAE WhatsApp')}</a>
+          <br><br><a href="/trade.html#share" style="color:var(--accent);">${L('🚢 شوف الحاويات المفتوحة', '🚢 See open containers')}</a>
+        </div>`;
+        window.scrollTo(0, 0);
+      } catch (e) {
+        msg.textContent = e.message;
+        btn.disabled = false; btn.textContent = '📨 ' + L('ابعت طلب الحاوية', 'Send container request');
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
