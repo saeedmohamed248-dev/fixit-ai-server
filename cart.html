@@ -229,7 +229,7 @@
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
-          c[input.dataset.qty] = Math.max(1, Number(input.value) || 1);
+          c[input.dataset.qty] = Math.max(1, Math.min(Number(input.max) || Infinity, Math.floor(Number(input.value)) || 1)); // مايزيدش عن المخزون
           setCart(c);
           renderWholesale();
         });
@@ -399,7 +399,7 @@
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
-          c[input.dataset.qty] = Math.max(1, Number(input.value) || 1);
+          c[input.dataset.qty] = Math.max(1, Math.min(Number(input.max) || Infinity, Math.floor(Number(input.value)) || 1)); // مايزيدش عن المخزون
           setCart(c);
           appliedCoupon = null;
           render();
