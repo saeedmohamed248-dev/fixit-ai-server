@@ -89,7 +89,7 @@
         const p = product = await api('/products?id=' + encodeURIComponent(id));
         document.title = pname(p) + ' | FixIt';
         pushRecent(p.id);
-        trackPageview({ pid: p.id, pname: pname(p) }); // 📈 زيارة منتج
+        trackPageview({ pid: p.id, pname: pname(p), oos: p.stock <= 0 ? 1 : 0, noprice: dispPrice(p) === null ? 1 : 0 }); // 📈 زيارة منتج
         const out = p.stock <= 0;
         const wished = inWishlist(p.id);
         container.innerHTML = `

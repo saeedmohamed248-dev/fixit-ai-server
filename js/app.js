@@ -334,14 +334,39 @@ function anonId() {
     return v;
   } catch { return 'nostore-' + Math.random().toString(36).slice(2, 12); }
 }
+// 🧭 معرّف الزيارة (الجلسة): بيتجدد بعد 30 دقيقة خمول — عشان نشوف رحلة كل زائر صفحة بصفحة
+function sessId() {
+  try {
+    const now = Date.now(), last = Number(sessionStorage.getItem('an_last') || 0);
+    let s = sessionStorage.getItem('an_sid');
+    if (!s || !last || now - last > 30 * 60 * 1000) { s = 's' + now.toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem('an_sid', s); }
+    return s;
+  } catch { return 'nos'; }
+}
+// ⏱️ الوقت الفعلي على الصفحة (بنحسب بس وهي ظاهرة قدامه) — بيتبعت لما يقفل/يسيب الصفحة
+let _pgStart = Date.now(), _pgVisible = 0, _pgSent = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { _pgVisible += Date.now() - _pgStart; sendLeave(); }
+  else { _pgStart = Date.now(); _pgSent = false; }
+});
+window.addEventListener('pagehide', () => { if (document.visibilityState !== 'hidden') _pgVisible += Date.now() - _pgStart; sendLeave(); });
+function sendLeave() {
+  if (_pgSent || /admin/.test(location.pathname)) return;
+  _pgSent = true;
+  track('leave', { path: location.pathname, dur: Math.min(3600, Math.round(_pgVisible / 1000)), scroll: Math.round(Math.min(1, (scrollY + innerHeight) / Math.max(1, document.documentElement.scrollHeight)) * 100) });
+}
 function track(type, data = {}) {
   try {
     if (localStorage.getItem('admin_token')) return; // زيارات صاحب المتجر مش بتتحسب
   } catch {}
+  // الخروج من الصفحة: sendBeacon بيوصل حتى والصفحة بتتقفل
+  if (type === 'leave' && navigator.sendBeacon) {
+    try { navigator.sendBeacon(API + '/track', new Blob([JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...data })], { type: 'application/json' })); return; } catch {}
+  }
   try {
     fetch(API + '/track', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ t: type, vid: anonId(), ...data }), keepalive: true,
+      body: JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...data }), keepalive: true,
     }).catch(() => {});
   } catch {}
 }
@@ -355,7 +380,7 @@ function trackPageview(extra = {}) {
     sessionStorage.setItem('an_last', String(Date.now()));
   } catch { ns = true; }
   const utm = new URLSearchParams(location.search).get('utm_source') || '';
-  track('view', { path: location.pathname, nv, ns, ref: ns ? document.referrer : '', utm: ns ? utm : '', ...extra });
+  track('view', { path: location.pathname, q: location.search.slice(0, 80), nv, ns, ref: ns ? document.referrer : '', utm: ns ? utm : '', locked: wsLocked() ? 1 : 0, cart: Object.keys(getCart()).length, ...extra });
 }
 function trackEvent(ev, extra = {}) { track('event', { ev, ...extra }); }
 // 🔎 تسجيل البحث (مرة واحدة لكل كلمة في الجلسة) — n=0 يعني مالقاش حاجة متاحة في المخزون

@@ -561,6 +561,7 @@
     }
 
     function showSuccess(order) {
+      trackEvent('order_placed', { ord: order.number, val: order.total });
       const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
       const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[order.payment];
       const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${LANG === 'en' ? 'EGP' : 'جنيه'}`;
