@@ -1365,7 +1365,10 @@ html { background: var(--accent-dark); }
 .an-hours span{font-size:11px;color:#fff;font-weight:700}
 .an-insights ul{margin:0;padding-inline-start:18px;line-height:1.9}
 /* 🧩 زرار "اعمل أو شارك في حاوية" العائم */
-.ct-float{position:fixed;left:50%;transform:translateX(-50%);white-space:nowrap;bottom:calc(22px + var(--safe-bottom,0px));z-index:60;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);text-decoration:none;transition:transform .2s}
-.ct-float:hover{transform:translateX(-50%) translateY(-2px)}
+.ct-float{position:fixed;left:124px;white-space:nowrap;bottom:calc(22px + var(--safe-bottom,0px));z-index:60;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);text-decoration:none;transition:transform .2s}
+.ct-float:hover{transform:translateY(-2px)}
 .price-lock{cursor:pointer}
-@media(max-width:600px){.ct-float{font-size:12.5px;padding:9px 13px;bottom:calc(18px + var(--safe-bottom,0px))}}
+@media(max-width:600px){.ct-float{font-size:12.5px;padding:9px 13px;left:50%;transform:translateX(-50%);bottom:calc(18px + var(--safe-bottom,0px))}.ct-float:hover{transform:translateX(-50%)}}
+/* 🖼️ صورة المنتج تظهر كاملة (من غير قص) — في صفحة المنتج والكروت */
+.product-img-box .card-img:not(.img-placeholder){object-fit:contain;background:#fff}
+.card-img-wrap .card-img:not(.img-placeholder){object-fit:contain;background:#fff}

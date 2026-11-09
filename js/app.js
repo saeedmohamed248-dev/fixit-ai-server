@@ -896,7 +896,7 @@ function renderLayout(active = '') {
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
-    ${active !== 'container' ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
+    ${!['container', 'product', 'cart'].includes(active) && !/\/(product|cart)\.html/.test(location.pathname) ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
 
     const topBtn = document.getElementById('scroll-top');
