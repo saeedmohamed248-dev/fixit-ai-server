@@ -40,6 +40,24 @@
     let wsIncoterm = null; // 🚢 شرط التسليم المختار في الجملة
     let wsShipMode = 'sea'; // وسيلة الشحن: بحري/جوي
     let wsLeadText = ''; // آخر مدة توريد محسوبة (للواتساب)
+    let cartNotice = ''; // تنبيه لو شلنا قطع مبقتش متاحة
+
+    // ✍️ نحفظ اللي العميل كتبه في الفورم قبل أي إعادة رسم (تغيير كمية/كوبون/نقاط كان بيمسح الاسم والعنوان)
+    const FORM_IDS = ['c-name', 'c-phone', 'c-city', 'c-email', 'c-address', 'c-notes', 'w-name', 'w-phone', 'w-city', 'w-notes'];
+    let formDraft = {};
+    try { formDraft = JSON.parse(localStorage.getItem('checkout_draft') || '{}'); } catch {}
+    function saveDraft() {
+      FORM_IDS.forEach((id) => { const el = document.getElementById(id); if (el) formDraft[id] = el.value; });
+      const pay = document.querySelector('input[name="pay"]:checked'); if (pay) formDraft.pay = pay.value;
+      // نفتكر العنوان والمدينة للمرة الجاية (مش الملاحظات)
+      try { localStorage.setItem('checkout_draft', JSON.stringify({ ...formDraft, 'c-notes': '', 'w-notes': '' })); } catch {}
+    }
+    function restoreDraft() {
+      FORM_IDS.forEach((id) => { const el = document.getElementById(id); if (el && formDraft[id]) el.value = formDraft[id]; });
+      if (formDraft.pay) { const r = document.querySelector(`input[name="pay"][value="${formDraft.pay}"]`); if (r) r.checked = true; }
+      FORM_IDS.forEach((id) => document.getElementById(id)?.addEventListener('input', saveDraft));
+      document.querySelectorAll('input[name="pay"]').forEach((r) => r.addEventListener('change', saveDraft));
+    }
 
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
@@ -61,7 +79,28 @@
       }
       try {
         allProducts = await api('/products');
-        products = allProducts.filter((p) => ids.includes(p.id));
+        // 🧹 نشيل من السلة اللي خلص أو اتشال أو سعره عند الطلب، ونظبط الكميات على المخزون —
+        //    غير كده السلة كانت بتلف في حلقة تحميل لا نهائية، والطلب بيترفض من غير ما العميل يعرف ليه
+        const removed = [];
+        const c = getCart();
+        ids.forEach((id) => {
+          const p = allProducts.find((x) => x.id === id);
+          if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0))) {
+            removed.push(p ? pname(p) : null); delete c[id];
+          } else if (c[id] > p.stock) c[id] = p.stock;
+        });
+        setCart(c);
+        cartNotice = removed.length
+          ? (LANG === 'en'
+            ? `⚠️ ${removed.length} item(s) were removed from your cart because they're no longer available${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">Request them</a>`
+            : `⚠️ شلنا ${removed.length} قطعة من السلة لأنها مبقتش متاحة${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">اطلبها نوفّرهالك</a>`)
+          : '';
+        products = allProducts.filter((p) => c[p.id]);
+        if (!products.length) {
+          container.innerHTML = `${cartNotice ? `<div class="note">${cartNotice}</div>` : ''}<div class="empty-state"><span class="icon">🛒</span>
+            ${t('cart_empty')}<br><br><a class="btn" href="/shop.html">${t('browse')}</a></div>`;
+          return;
+        }
         render();
       } catch (e) {
         container.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
@@ -109,6 +148,7 @@
 
     // 🇦🇪 وضع الجملة: عرض بأسعار الجملة + إتمام الطلب عبر واتساب فرع الإمارات
     function renderWholesale() {
+      saveDraft();
       const cart = getCart();
       const items = products.filter((p) => cart[p.id]);
       if (items.length === 0) return load();
@@ -133,6 +173,7 @@
       const q = freightQuote(qitems, wsIncoterm, cc);
       const incName = (c) => LANG === 'en' ? incotermDef(c).nameEn : incotermDef(c).nameAr;
       container.innerHTML = `
+      ${cartNotice ? `<div class="note" style="margin-bottom:14px;">${cartNotice}</div>` : ''}
       <h1 style="margin-bottom: 8px;">${t('cart')} (${items.length}) — 🇦🇪 ${t('branch_wholesale')}</h1>
       <div class="note" style="margin-bottom: 18px;">${t('ws_cart_note')}</div>
       <div class="cart-layout">
@@ -226,6 +267,7 @@
         </div>
       </div>`;
 
+      restoreDraft();
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
@@ -298,10 +340,19 @@
         const msg = [head, who, '', lines, '', totalTxt, '', ship, payTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
         trackEvent('ws_order');
         window.open(waLink(msg), '_blank');
+        // 📥 نسجّل الطلب كمان في لوحة التحكم (طلبات القطع → جملة RFQ) عشان مايضيعش لو الرسالة ماتبعتتش
+        api('/requests', { method: 'POST', body: JSON.stringify({
+          wholesale: true, name: name || currentUser().name, phone: phone || currentUser().phone,
+          company: currentUser().company || '', country: currentUser().country || '', email: currentUser().email || '',
+          partName: lines + '\n\n' + totalTxt + ' — ' + t('ship_grand') + ': ' + usdMoney(q.total),
+          notes: [city && `${t('city')}: ${city}`, `${incName(wsIncoterm)} · ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`, notes].filter(Boolean).join(' | '),
+          source: 'cart',
+        }) }).catch(() => {});
       });
     }
 
     function render() {
+      saveDraft();
       if (isWholesale()) return renderWholesale();
       const cart = getCart();
       const items = products.filter((p) => cart[p.id]);
@@ -318,6 +369,7 @@
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
 
       container.innerHTML = `
+      ${cartNotice ? `<div class="note" style="margin-bottom:14px;">${cartNotice}</div>` : ''}
       <h1 style="margin-bottom: 20px;">${t('cart')} (${items.length})</h1>
       <div class="cart-layout">
         <div>
@@ -396,6 +448,7 @@
         </div>
       </div>`;
 
+      restoreDraft();
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
@@ -483,6 +536,7 @@
             }),
           });
           setCart({});
+          formDraft['c-notes'] = '';
           // 💳 الدفع بالبطاقة: تحويل مباشر لصفحة Paymob الآمنة
           if (order.payment === 'card') {
             btn.textContent = t('pay_redirect');

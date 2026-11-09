@@ -42,7 +42,7 @@ export default async function handler(req, res) {
         vin: (vin || '').trim().slice(0, 30),
         partName: partName.trim().slice(0, 1000),
         notes: (notes || '').trim().slice(0, 500),
-        source: source === 'search' ? 'search' : 'form',
+        source: ['search', 'cart'].includes(source) ? source : 'form',
       };
       requests.unshift(request);
       await saveRequests(requests);
