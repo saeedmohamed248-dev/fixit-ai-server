@@ -231,6 +231,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mode, customer, images }),
         });
+        trackEvent('savings_lead');
         renderResult(data);
       } catch (e) {
         $('sav-result').innerHTML = `<div class="sav-err">${esc(e.message) || t('sav_err')}</div>` + backBtn();

@@ -223,6 +223,7 @@
               method: 'POST',
               body: JSON.stringify({ productId: id, phone: document.getElementById('nt-phone').value.trim(), name: currentUser()?.name || '' }),
             });
+            trackEvent('notify_stock');
             msg.style.color = 'var(--green)';
             msg.textContent = t('notify_done');
           } catch (ex) {
@@ -303,6 +304,7 @@
             question: document.getElementById('qa-question').value.trim(),
           }),
         });
+        trackEvent('question');
         toast(t('qa_thanks'));
         document.getElementById('qa-question').value = '';
         loadQA();

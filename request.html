@@ -72,6 +72,7 @@
       e.target.disabled = true;
       try {
         const request = await api('/requests', { method: 'POST', body: JSON.stringify(body) });
+        trackEvent('part_request');
         const waText = (LANG === 'en' ? 'Part request ' : 'طلب توفير قطعة ') + request.number + '\n' +
           body.partName + (body.car ? '\n' + body.car : '') + (body.vin ? '\nVIN: ' + body.vin : '');
         document.getElementById('req-container').innerHTML = `

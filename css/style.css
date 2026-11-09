@@ -1345,3 +1345,22 @@ html { background: var(--accent-dark); }
 .wa-float { bottom: calc(22px + var(--safe-bottom)); }
 .scroll-top { bottom: calc(90px + var(--safe-bottom)); }
 .footer-bottom { padding-bottom: calc(16px + var(--safe-bottom)); }
+/* 📈 التحليلات v2 */
+.an-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.an-ranges{display:flex;flex-wrap:wrap;gap:6px}
+.an-live{display:flex;align-items:center;gap:6px;font-size:14px}
+.an-dot{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 0 rgba(22,163,74,.6);animation:anPulse 1.8s infinite}
+@keyframes anPulse{70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+.an-kpis{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.an-delta{display:inline-block;font-size:12px;font-weight:700;margin-top:4px;padding:1px 7px;border-radius:999px}
+.an-delta.up{color:#15803d;background:#dcfce7}.an-delta.down{color:#b91c1c;background:#fee2e2}
+.an-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.an-bar{position:relative;display:flex;align-items:flex-end;overflow:hidden}
+.an-bar-u{width:100%;background:#f59e0b;opacity:.9}
+.an-key{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle}.an-key.v{background:var(--accent)}.an-key.u{background:#f59e0b}
+.an-row{margin-bottom:10px}.an-row-top{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:4px}
+.an-track{height:7px;background:rgba(127,127,127,.15);border-radius:99px;overflow:hidden}.an-track>div{height:100%;background:linear-gradient(90deg,var(--accent-dark),var(--accent));border-radius:99px}
+.an-hours{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;direction:ltr}
+.an-hours>div{background:var(--accent);border-radius:6px;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.an-hours span{font-size:11px;color:#fff;font-weight:700}
+.an-insights ul{margin:0;padding-inline-start:18px;line-height:1.9}

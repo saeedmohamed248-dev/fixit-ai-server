@@ -147,3 +147,15 @@ export async function saveAnalytics(a) {
   if (hasPersistence) await kvSet('analytics', a);
   else memory.analytics = a;
 }
+
+// ⚡ أوامر Redis ذرّية دفعة واحدة (pipeline) — للتحليلات الحقيقية بدون فقد عدّات
+export async function kvPipeline(cmds) {
+  if (!hasPersistence || !cmds.length) return [];
+  const r = await fetch(`${KV_URL}/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+    body: JSON.stringify(cmds),
+  });
+  if (!r.ok) throw new Error(`KV pipeline failed: ${r.status}`);
+  return (await r.json()).map((x) => x.result);
+}

@@ -450,6 +450,7 @@
       });
 
       document.getElementById('submit-order').addEventListener('click', async (e) => {
+        trackEvent('checkout');
         const btn = e.target;
         const errBox = document.getElementById('order-error');
         errBox.textContent = '';

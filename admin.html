@@ -1158,76 +1158,140 @@
     }
 
     /* ==================== 📈 التحليلات والزيارات ==================== */
-    const EV_LABELS = { add_cart: '🛒 إضافة للسلة', whatsapp: '💬 نقرة واتساب', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة' };
-    const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير' };
+    const EV_LABELS = { add_cart: '🛒 إضافة للسلة', checkout: '💳 بدء إتمام الطلب', whatsapp: '💬 نقرة واتساب', search: '🔎 بحث', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة', trade_alert: '🔔 تنبيه وصول (تجارة)', part_request: '🔍 طلب توفير قطعة', notify_stock: '📦 بلّغني لما يتوفر', question: '❓ سؤال على منتج', savings_lead: '🧾 حاسبة التوفير' };
+    const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير', '/request.html': '🔍 طلب قطعة', '/savings.html': '🧾 حاسبة التوفير', '/wishlist.html': '❤️ المفضلة' };
+    const SRC_LABELS = { direct: '🔗 مباشر / بدون مصدر', google: '🔍 جوجل', facebook: '📘 فيسبوك', instagram: '📸 إنستجرام', whatsapp: '💬 واتساب', tiktok: '🎵 تيك توك', youtube: '▶️ يوتيوب', bing: '🔍 Bing', x: '✖️ X / تويتر' };
+    const DEV_LABELS = { mobile: '📱 موبايل', desktop: '💻 كمبيوتر', tablet: '📟 تابلت' };
+    const flag = (cc) => cc.replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+    const nf = (n) => Number(n || 0).toLocaleString('ar-EG');
+    let anDays = 14, anLiveTimer = null;
+
+    function anDelta(cur, prev) {
+      if (!prev) return cur ? '<span class="an-delta up">جديد</span>' : '';
+      const p = Math.round((cur - prev) / prev * 100);
+      return `<span class="an-delta ${p >= 0 ? 'up' : 'down'}" title="مقارنة بالفترة السابقة (${nf(prev)})">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)}%</span>`;
+    }
+    function anBars(list, labels = {}, fmt = (k) => esc(k)) {
+      if (!list.length) return '<p class="muted">لا يوجد بيانات بعد</p>';
+      const total = list.reduce((s, x) => s + x[1], 0) || 1, max = list[0][1] || 1;
+      return list.map(([k, c]) => `<div class="an-row"><div class="an-row-top"><span>${labels[k] || fmt(k)}</span><b>${nf(c)} <small class="muted">${Math.round(c / total * 100)}%</small></b></div>
+        <div class="an-track"><div style="width:${Math.max(2, c / max * 100)}%"></div></div></div>`).join('');
+    }
+    function anInsights(a) {
+      const t = a.totals, out = [];
+      if (a.funnel.productViews && a.funnel.addCart / a.funnel.productViews < 0.03) out.push('🛒 أقل من 3% من مشاهدات المنتجات بتتحوّل لإضافة للسلة — راجع الأسعار والصور ووضوح التوافق مع الموديلات.');
+      if (a.funnel.checkout && t.orders < a.funnel.checkout * 0.5) out.push(`💳 ${nf(a.funnel.checkout - t.orders)} محاولة إتمام طلب ما كمّلتش — راجع خطوات الدفع واتصل بالعملاء من السلة المتروكة.`);
+      if (a.searchesZero.length) out.push(`🔎 العملاء دوّروا على "${esc(a.searchesZero[0][0])}" ومالقوش نتيجة — فرصة تضيف القطعة دي للمخزون.`);
+      const mob = (a.devices.find((d) => d[0] === 'mobile') || [0, 0])[1], allDev = a.devices.reduce((s, d) => s + d[1], 0);
+      if (allDev && mob / allDev > 0.7) out.push(`📱 ${Math.round(mob / allDev * 100)}% من الزوار على الموبايل — اختبر الموقع من الموبايل الأول دايماً.`);
+      const peak = a.hours.indexOf(Math.max(...a.hours));
+      if (Math.max(...a.hours) > 0) out.push(`⏰ وقت الذروة الساعة ${peak}:00 بتوقيت القاهرة — أنسب وقت لنشر البوستات والإعلانات.`);
+      if (a.prev.visitors && t.visitors < a.prev.visitors * 0.8) out.push('📉 الزوار قلّوا أكتر من 20% عن الفترة اللي فاتت — راجع الإعلانات والمنشورات.');
+      return out;
+    }
+    function anCSV(a) {
+      const rows = [['date', 'views', 'unique_visitors', 'sessions', 'orders', 'revenue'], ...a.daily.map((d) => [d.date, d.views, d.visitors, d.sessions, d.orders, d.revenue])];
+      const blob = new Blob(['﻿' + rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob), l = document.createElement('a');
+      l.href = url; l.download = `analytics-${a.range.from}_${a.range.to}.csv`; l.click(); URL.revokeObjectURL(url);
+    }
+
     async function loadAnalytics() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      clearInterval(anLiveTimer);
       let a;
-      try { a = await api('/track', { headers: authHeaders() }); }
+      try { a = await api('/track?days=' + anDays, { headers: authHeaders() }); }
       catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
-
-      const today = new Date().toISOString().slice(0, 10);
-      const todayViews = (a.days && a.days[today] && a.days[today].views) || 0;
-      // آخر 14 يوم للرسم البياني
-      const days = [];
-      for (let i = 13; i >= 0; i--) {
-        const dt = new Date(); dt.setDate(dt.getDate() - i);
-        const key = dt.toISOString().slice(0, 10);
-        days.push({ key, label: key.slice(5), views: (a.days && a.days[key] && a.days[key].views) || 0 });
-      }
-      const maxV = Math.max(1, ...days.map((d) => d.views));
-      const topPages = Object.entries(a.pages || {}).sort((x, y) => y[1] - x[1]).slice(0, 10);
-      const topProducts = Object.entries(a.products || {}).sort((x, y) => (y[1].views || 0) - (x[1].views || 0)).slice(0, 10);
-      const events = Object.entries(a.events || {}).sort((x, y) => y[1] - x[1]);
-      const empty = !a.totalViews;
+      const t = a.totals, p = a.prev;
+      const maxV = Math.max(1, ...a.daily.map((d) => d.views));
+      const maxH = Math.max(1, ...a.hours);
+      const f = a.funnel, fSteps = [['جلسات', f.sessions], ['شافوا منتج', f.productViews], ['أضافوا للسلة', f.addCart], ['بدأوا الطلب', f.checkout], ['طلبات فعلية', f.orders]];
+      const fMax = Math.max(1, ...fSteps.map((s) => s[1]));
+      const insights = anInsights(a);
+      const ranges = [[1, 'النهارده'], [7, '7 أيام'], [14, '14 يوم'], [30, '30 يوم'], [90, '90 يوم']];
 
       box.innerHTML = `
-      ${empty ? '<div class="note" style="margin-bottom:16px;">📊 لسه مفيش زيارات مسجّلة — الأرقام هتظهر أول ما الناس تدخل الموقع.</div>' : ''}
-      <div class="stats-grid" style="margin-bottom:22px;">
-        <div class="stat-card"><div class="label">👁️ إجمالي الزيارات</div><div class="value">${(a.totalViews || 0).toLocaleString('ar-EG')}</div></div>
-        <div class="stat-card"><div class="label">👥 زوّار (تقريبي)</div><div class="value">${(a.totalVisitors || 0).toLocaleString('ar-EG')}</div></div>
-        <div class="stat-card"><div class="label">📅 زيارات النهارده</div><div class="value" style="color: var(--amber);">${todayViews.toLocaleString('ar-EG')}</div></div>
-        <div class="stat-card"><div class="label">💬 نقرات واتساب</div><div class="value" style="color:#16a34a;">${((a.events && a.events.whatsapp) || 0).toLocaleString('ar-EG')}</div></div>
+      <div class="an-toolbar">
+        <div class="an-ranges">${ranges.map(([d, l]) => `<button class="btn btn-sm ${d === anDays ? 'btn-primary' : 'btn-outline'}" data-an-days="${d}">${l}</button>`).join('')}</div>
+        <div class="an-live"><span class="an-dot"></span> متصلين الآن: <b id="an-online">${nf(a.online)}</b></div>
+        <button class="btn btn-sm btn-outline" id="an-csv">⬇️ تصدير CSV</button>
+      </div>
+      ${!a.persistent ? '<div class="note" style="margin-bottom:14px;">⚠️ مفيش قاعدة بيانات Redis متوصّلة — الأرقام بتتصفّر مع كل نشر.</div>' : ''}
+      ${!t.views ? '<div class="note" style="margin-bottom:14px;">📊 نظام التتبّع الجديد بدأ يسجّل — الأرقام الحقيقية هتظهر أول ما الناس تدخل الموقع (زياراتك إنت كأدمن مش بتتحسب).</div>' : ''}
+      <p class="muted" style="margin:-4px 0 14px;font-size:13px;">الفترة: ${a.range.from} ← ${a.range.to} (توقيت القاهرة) • مقارنة بنفس المدة اللي قبلها • البوتات وزيارات الأدمن مستبعدة</p>
+
+      <div class="stats-grid an-kpis" style="margin-bottom:22px;">
+        <div class="stat-card"><div class="label">👥 زوار فريدين (فعلي)</div><div class="value">${nf(t.visitors)}</div>${anDelta(t.visitors, p.visitors)}</div>
+        <div class="stat-card"><div class="label">🔁 جلسات</div><div class="value">${nf(t.sessions)}</div>${anDelta(t.sessions, p.sessions)}</div>
+        <div class="stat-card"><div class="label">👁️ مشاهدات صفحات</div><div class="value">${nf(t.views)}</div>${anDelta(t.views, p.views)}<div class="an-sub">${t.pagesPerSession} صفحة/جلسة</div></div>
+        <div class="stat-card"><div class="label">🆕 زوار جدد</div><div class="value">${nf(t.newVisitors)}</div><div class="an-sub">${t.visitors ? Math.round(Math.min(t.newVisitors, t.visitors) / t.visitors * 100) : 0}% من الزوار</div></div>
+        <div class="stat-card"><div class="label">🛒 طلبات</div><div class="value" style="color:var(--amber);">${nf(t.orders)}</div>${anDelta(t.orders, p.orders)}</div>
+        <div class="stat-card"><div class="label">💰 المبيعات</div><div class="value" style="color:#16a34a;">${nf(t.revenue)} <small>ج.م</small></div>${anDelta(t.revenue, p.revenue)}<div class="an-sub">متوسط الطلب ${nf(t.aov)} ج.م</div></div>
+        <div class="stat-card"><div class="label">🎯 معدل التحويل</div><div class="value">${t.conversion}%</div>${anDelta(t.conversion, p.conversion)}<div class="an-sub">طلبات ÷ جلسات</div></div>
+        <div class="stat-card"><div class="label">💬 نقرات واتساب</div><div class="value" style="color:#16a34a;">${nf(a.events.whatsapp)}</div></div>
       </div>
 
+      ${insights.length ? `<div class="admin-card an-insights"><h3 style="margin-bottom:10px;">💡 ملاحظات ذكية</h3><ul>${insights.map((x) => `<li>${x}</li>`).join('')}</ul></div>` : ''}
+
       <div class="admin-card">
-        <h3 style="margin-bottom:14px;">📈 الزيارات — آخر 14 يوم</h3>
-        <div class="an-chart">
-          ${days.map((d) => `<div class="an-bar-wrap" title="${d.key}: ${d.views}">
-            <div class="an-bar" style="height:${Math.round(d.views / maxV * 100)}%;"></div>
-            <div class="an-bar-val">${d.views || ''}</div>
-            <div class="an-bar-lbl">${d.label}</div>
+        <h3 style="margin-bottom:6px;">📈 الحركة اليومية</h3>
+        <p class="muted" style="font-size:12px;margin-bottom:8px;"><span class="an-key v"></span> مشاهدات &nbsp; <span class="an-key u"></span> زوار فريدين &nbsp; 🛒 = طلبات اليوم</p>
+        <div class="an-chart" style="${a.daily.length > 31 ? 'gap:2px;' : ''}">
+          ${a.daily.map((d) => `<div class="an-bar-wrap" title="${d.date}\nمشاهدات: ${d.views}\nزوار: ${d.visitors}\nجلسات: ${d.sessions}\nطلبات: ${d.orders} (${d.revenue} ج.م)">
+            <div class="an-bar-val">${a.daily.length <= 31 ? (d.orders ? '🛒' + d.orders : '') : ''}</div>
+            <div class="an-bar" style="height:${Math.round(d.views / maxV * 100)}%;"><div class="an-bar-u" style="height:${d.views ? Math.round(d.visitors / d.views * 100) : 0}%;"></div></div>
+            <div class="an-bar-val">${a.daily.length <= 31 ? (d.views || '') : ''}</div>
+            ${a.daily.length <= 31 || d.date.endsWith('01') ? `<div class="an-bar-lbl">${d.date.slice(5)}</div>` : '<div class="an-bar-lbl">&nbsp;</div>'}
           </div>`).join('')}
         </div>
       </div>
 
       <div class="an-grid">
-        <div class="admin-card">
-          <h3 style="margin-bottom:12px;">🔥 أكثر الصفحات زيارة</h3>
-          ${topPages.length ? `<table class="table"><tr><th>الصفحة</th><th>الزيارات</th></tr>
-            ${topPages.map(([p, c]) => `<tr><td>${PAGE_LABELS[p] || esc(p)}</td><td><b>${c.toLocaleString('ar-EG')}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
+        <div class="admin-card"><h3 style="margin-bottom:12px;">🧭 قمع التحويل</h3>
+          ${fSteps.map(([l, c], i) => `<div class="an-row"><div class="an-row-top"><span>${l}</span><b>${nf(c)}${i ? ` <small class="muted">${fSteps[i - 1][1] ? Math.round(c / fSteps[i - 1][1] * 100) : 0}% من اللي قبلها</small>` : ''}</b></div>
+            <div class="an-track"><div style="width:${Math.max(2, c / fMax * 100)}%"></div></div></div>`).join('')}
         </div>
-        <div class="admin-card">
-          <h3 style="margin-bottom:12px;">⭐ أكثر المنتجات مشاهدة</h3>
-          ${topProducts.length ? `<table class="table"><tr><th>المنتج</th><th>مشاهدات</th></tr>
-            ${topProducts.map(([id, p]) => `<tr><td>${esc(p.name || id)}</td><td><b>${(p.views || 0).toLocaleString('ar-EG')}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
+        <div class="admin-card"><h3 style="margin-bottom:12px;">🌍 مصادر الزيارات</h3>${anBars(a.sources, SRC_LABELS)}</div>
+        <div class="admin-card"><h3 style="margin-bottom:12px;">📱 الأجهزة</h3>${anBars(a.devices, DEV_LABELS)}
+          <h3 style="margin:18px 0 12px;">🗺️ الدول</h3>${anBars(a.countries.slice(0, 8), {}, (c) => flag(c) + ' ' + esc(c))}</div>
+        <div class="admin-card"><h3 style="margin-bottom:12px;">⏰ الزيارات حسب الساعة (القاهرة)</h3>
+          <div class="an-hours">${a.hours.map((h, i) => `<div title="${i}:00 — ${h} مشاهدة" style="opacity:${0.12 + h / maxH * 0.88}"><span>${i}</span></div>`).join('')}</div>
         </div>
+      </div>
+
+      <div class="an-grid">
+        <div class="admin-card"><h3 style="margin-bottom:12px;">🔥 أكثر الصفحات زيارة</h3>${anBars(a.pages.slice(0, 10), PAGE_LABELS)}</div>
+        <div class="admin-card"><h3 style="margin-bottom:12px;">🚪 صفحات الدخول</h3>${anBars(a.landing, PAGE_LABELS)}</div>
+        <div class="admin-card"><h3 style="margin-bottom:12px;">⭐ أكثر المنتجات مشاهدة</h3>
+          ${a.products.length ? `<table class="table"><tr><th>المنتج</th><th>مشاهدات</th></tr>
+            ${a.products.map(([id, n, c]) => `<tr><td><a href="/product.html?id=${encodeURIComponent(id)}" target="_blank">${esc(n)}</a></td><td><b>${nf(c)}</b></td></tr>`).join('')}</table>` : '<p class="muted">لا يوجد</p>'}
+        </div>
+        <div class="admin-card"><h3 style="margin-bottom:12px;">🔎 كلمات البحث</h3>${anBars(a.searches.slice(0, 10))}
+          <h3 style="margin:18px 0 6px;">🚫 بحث بدون نتائج <small class="muted">(قطع مطلوبة مش عندك)</small></h3>${anBars(a.searchesZero.slice(0, 10))}</div>
       </div>
 
       <div class="admin-card">
-        <h3 style="margin-bottom:12px;">🎯 التفاعلات (النقرات المهمة)</h3>
-        ${events.length ? `<div class="an-events">${events.map(([ev, c]) => `
-          <div class="an-event"><span>${EV_LABELS[ev] || esc(ev)}</span><b>${c.toLocaleString('ar-EG')}</b></div>`).join('')}</div>` : '<p class="muted">لا يوجد تفاعلات مسجّلة بعد</p>'}
+        <h3 style="margin-bottom:12px;">🎯 التفاعلات المهمة</h3>
+        ${Object.keys(a.events).length ? `<div class="an-events">${Object.entries(a.events).map(([ev, c]) => `
+          <div class="an-event"><span>${EV_LABELS[ev] || esc(ev)}</span><b>${nf(c)}</b></div>`).join('')}</div>` : '<p class="muted">لا يوجد تفاعلات مسجّلة بعد</p>'}
       </div>
-
+      ${a.legacy ? `<p class="muted" style="font-size:12px;">📦 أرقام النظام القديم (تقديرية، مش بتتحدّث): ${nf(a.legacy.totalViews)} زيارة • ${nf(a.legacy.totalVisitors)} زائر</p>` : ''}
       <button class="btn btn-sm btn-danger" id="an-reset" style="margin-top:16px;">🗑️ تصفير كل الإحصائيات</button>`;
 
+      box.querySelectorAll('[data-an-days]').forEach((b) => b.addEventListener('click', () => { anDays = Number(b.dataset.anDays); loadAnalytics(); }));
+      document.getElementById('an-csv').addEventListener('click', () => anCSV(a));
       document.getElementById('an-reset').addEventListener('click', async () => {
         if (!confirm('متأكد تصفّر كل بيانات الزيارات؟ مش هترجع.')) return;
         try { await api('/track', { method: 'DELETE', headers: authHeaders() }); toast('تم التصفير ✓'); loadAnalytics(); }
         catch (e) { toast('⚠️ ' + e.message); }
       });
+      // تحديث "متصلين الآن" كل 30 ثانية طول ما القسم مفتوح
+      anLiveTimer = setInterval(async () => {
+        const el = document.getElementById('an-online');
+        if (!el) { clearInterval(anLiveTimer); return; }
+        try { const r = await api('/track?days=1', { headers: authHeaders() }); el.textContent = nf(r.online); } catch {}
+      }, 30000);
     }
 
     /* ==================== 🧩 حاويات الشحن (Share a Container) ==================== */
