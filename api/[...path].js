@@ -50,5 +50,9 @@ export default async function handler(req, res) {
     res.status(404).json({ error: 'المسار غير موجود: ' + name });
     return;
   }
+  // 🛡️ لو الطلب وصل من غير Content-Type: application/json، الجسم بيوصل نص — نحوّله JSON
+  if (typeof req.body === 'string' && req.body.trim().startsWith('{')) {
+    try { req.body = JSON.parse(req.body); } catch {}
+  }
   return route(req, res);
 }

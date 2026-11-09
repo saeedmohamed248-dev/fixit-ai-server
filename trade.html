@@ -254,11 +254,16 @@
     function downloadPriceList() {
       const cols = ['SKU', 'الصنف', 'Item (EN)', 'Brand', 'Models', 'Condition', 'Wholesale AED', 'Wholesale USD', 'CBM', 'Weight kg', 'Stock'];
       const esc2 = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
-      const rows = CATALOG.map((p) => [
-        p.sku || '', p.name || '', p.nameEn || '', p.brand || '', (p.models || []).join(' / '),
-        'Used', Number(p.wholesalePrice) || 0, wsUnitAED(p, 1) ? (Number(p.wholesalePrice) / usdRate()).toFixed(2) : '',
-        p.cbm || '', p.weightKg || '', p.stock || 0,
-      ].map(esc2).join(','));
+      const cbmOf = (p) => (p.lengthCm && p.widthCm && p.heightCm) ? (p.lengthCm * p.widthCm * p.heightCm / 1e6).toFixed(4) : (p.cbm || '');
+      const rows = CATALOG.filter((p) => Number(p.stock) > 0).map((p) => {
+        const aed = Number(p.wholesalePrice) || 0;
+        return [
+          p.sku || '', p.name || '', p.nameEn || '', p.brand || '', (p.models || []).join(' / '),
+          p.condition === 'new' ? 'New' : 'Used',
+          aed > 0 ? aed : 'On request', aed > 0 ? (aed / usdRate()).toFixed(2) : 'On request',
+          cbmOf(p), p.weightKg || '', p.stock || 0,
+        ].map(esc2).join(',');
+      });
       const csv = '﻿' + [cols.map(esc2).join(','), ...rows].join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -333,15 +338,13 @@
           if (cbm <= 0) { msg.style.color = 'var(--red)'; msg.textContent = t('cbm_unit'); return; }
           btn.disabled = true; btn.textContent = t('sending');
           try {
-            const r = await api('/containers', { method: 'POST', body: JSON.stringify({
+            const r = await api('/containers', { method: 'POST', headers: userHeaders(), body: JSON.stringify({
               action: 'book', shipmentId: id, cbm,
-              dealer: { name: u.name, phone: u.phone, company: u.company || '', country: u.country || '' },
             }) });
             trackEvent('container_book');
             const idx = SHIPMENTS.findIndex((x) => x.id === id);
             if (idx >= 0) SHIPMENTS[idx] = { ...SHIPMENTS[idx], ...r.shipment };
             toast(t('share_booked'));
-            trackEvent('container_book');
             render();
           } catch (e) {
             msg.style.color = 'var(--red)'; msg.textContent = e.message;
@@ -397,7 +400,7 @@
         const matched = [], missing = [];
         lines.forEach((l) => {
           const p = findBySku(l.sku);
-          if (p) matched.push({ p, qty: Math.max(wsMOQ(), l.qty) }); else missing.push(l);
+          if (p) { const want = Math.max(wsMOQ(), l.qty); matched.push({ p, qty: Math.min(want, Number(p.stock) || 0), want }); } else missing.push(l);
         });
         box.innerHTML = `
           ${matched.length ? `<h4 style="margin:6px 0;">${t('op_matched')} (${matched.length})</h4>` : ''}
@@ -405,14 +408,14 @@
             const unit = tierUnit(m.p, m.qty);
             return `<div class="op-line">
               <span><span class="op-sku">${esc(m.p.sku)}</span> — ${esc(pname(m.p))}</span>
-              <span>${unit === null ? t('price_request') : money(unit)} × ${m.qty}</span>
+              <span>${unit === null ? t('price_request') : money(unit)} × ${m.qty}${m.qty < m.want ? ` <small style="color:var(--amber);">(${LANG === 'en' ? `only ${m.qty} in stock of ${m.want}` : `المتاح ${m.qty} بس من ${m.want}`})</small>` : ''}</span>
             </div>`;
           }).join('')}
           ${missing.map((l) => `<div class="op-line bad"><span class="op-sku">${esc(l.sku)}</span><span>${t('op_notfound')}</span></div>`).join('')}
           ${matched.length ? `<div style="margin-top:14px;"><button class="btn" id="op-add">${t('op_addall')}</button></div>` : ''}`;
         const add = document.getElementById('op-add');
         if (add) add.addEventListener('click', () => {
-          matched.forEach((m) => addToCart(m.p.id, m.qty));
+          matched.filter((m) => m.qty > 0).forEach((m) => addToCart(m.p.id, m.qty));
           toast(t('op_added'));
         });
       });
@@ -447,7 +450,6 @@
           trackEvent('rfq');
           msg.style.color = '#4ade80';
           msg.textContent = t('rfq_sent', { n: r.number });
-          trackEvent('rfq');
           ['rfq-items'].forEach((id) => document.getElementById(id).value = '');
         } catch (e) {
           msg.style.color = 'var(--red)';

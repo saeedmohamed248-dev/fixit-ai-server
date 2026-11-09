@@ -563,22 +563,29 @@
           return;
         }
         box.innerHTML = notifyHtml + `
-        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">طلبات العملاء لقطع مش موجودة في المتجر — وفّرها وكسبت عميل 💪</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <p style="color: var(--muted); font-size: 14px; margin:0;">طلبات العملاء لقطع مش موجودة في المتجر — وفّرها وكسبت عميل 💪</p>
+          <select id="rq-filter" style="width:auto;">
+            <option value="">الكل (${requests.length})</option>
+            ${Object.entries(REQ_STATUS).map(([k, v]) => `<option value="${k}" ${k === 'open' ? '' : ''}>${v} (${requests.filter((r) => (r.status || 'open') === k).length})</option>`).join('')}
+          </select>
+        </div>
         <div class="table-wrap"><table class="table">
-          <tr><th>الرقم</th><th>التاريخ</th><th>المطلوب</th><th>العربية / الشركة</th><th>العميل</th><th>الحالة</th><th></th></tr>
-          ${requests.map((r) => `<tr>
+          <tr><th>الرقم</th><th>التاريخ</th><th>المطلوب</th><th>العربية / الشركة</th><th>العميل</th><th>الحالة</th><th>تواصل</th></tr>
+          ${requests.map((r) => `<tr data-rq-row="${esc(r.id)}" data-rq-status="${esc(r.status || 'open')}">
             <td><b>${esc(r.number)}</b></td>
             <td>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
             <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${r.source === 'search' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;">🔎 من البحث</span><br>' : ''}${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
             <td>${r.type === 'rfq'
               ? (r.company || r.country ? `${esc(r.company) || '—'}${r.country ? `<br><small style="color: var(--muted);">🌍 ${esc(r.country)}</small>` : ''}` : '—')
               : `${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}`}</td>
-            <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small></td>
+            <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small>${r.email ? `<br><small dir="ltr"><a href="mailto:${esc(r.email)}" style="color:var(--accent);">${esc(r.email)}</a></small>` : ''}</td>
             <td><select data-req="${esc(r.id)}">
               ${Object.entries(REQ_STATUS).map(([k, v]) => `<option value="${k}" ${r.status === k ? 'selected' : ''}>${v}</option>`).join('')}
             </select></td>
             <td><a class="btn btn-sm btn-green" target="_blank" rel="noopener"
-              href="https://wa.me/${r.type === 'rfq' ? esc(String(r.phone).replace(/[^\d]/g, '')) : '2' + esc(r.phone)}?text=${encodeURIComponent('أهلاً ' + r.name + '، بخصوص طلبك ' + r.number + ' لـ "' + r.partName + '" من ' + SITE.name)}">💬 رد</a></td>
+              href="https://wa.me/${r.type === 'rfq' ? esc(String(r.phone).replace(/[^\d]/g, '')) : '2' + esc(r.phone)}?text=${encodeURIComponent('أهلاً ' + r.name + '، بخصوص طلبك ' + r.number + ' لـ "' + r.partName + '" من ' + SITE.name)}">💬 رد</a>
+              <button class="btn btn-sm btn-danger" data-rq-del="${esc(r.id)}" title="حذف">🗑️</button></td>
           </tr>`).join('')}
         </table></div>`;
         box.querySelectorAll('[data-req]').forEach((sel) =>
@@ -590,10 +597,16 @@
               });
               toast('تم التحديث ✓');
               const r = requests.find((x) => x.id === sel.dataset.req); if (r) r.status = sel.value;
+              sel.closest('tr').dataset.rqStatus = sel.value;
               setNavBadge('requests', badgeCounts.requests = requests.filter((x) => (x.status || 'open') === 'open').length);
             } catch (e) { toast('⚠️ ' + e.message); }
           }));
         bindNotifyDelete(box);
+        box.querySelectorAll('[data-rq-del]').forEach((b) => b.addEventListener('click', () =>
+          delWithConfirm('حذف الطلب نهائياً؟', '/requests?id=' + encodeURIComponent(b.dataset.rqDel), async () => { await refreshBadgeCounts(); setNavBadge('requests', badgeCounts.requests); loadRequests(); })));
+        document.getElementById('rq-filter')?.addEventListener('change', (e) => {
+          box.querySelectorAll('[data-rq-row]').forEach((tr) => { tr.style.display = !e.target.value || tr.dataset.rqStatus === e.target.value ? '' : 'none'; });
+        });
       } catch (e) {
         box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
       }

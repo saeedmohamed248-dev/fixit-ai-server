@@ -2,6 +2,7 @@
 // POST /api/requests → طلب جديد (عام)
 // GET  /api/requests → القائمة (إدارة)
 // PUT  /api/requests → تغيير الحالة (إدارة) { id, status: open|sourced|done }
+// DELETE /api/requests?id=.. → حذف (إدارة)
 import { getRequests, saveRequests, logActivity, getUsers } from '../db.js';
 import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
 import { getUser } from '../auth.js';
@@ -11,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'POST') {
-      const { name, phone, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
+      const { name, phone, email, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
       if (!rateLimit(req, res, 'requests', 5)) return;
       // طلب عرض سعر الجملة (RFQ) بيقبل أرقام دولية، وطلب التوفير العادي بيقبل المصري
       const isRfq = wholesale === true;
@@ -36,6 +37,7 @@ export default async function handler(req, res) {
         phone: phone.trim().slice(0, 20),
         company: (company || '').trim().slice(0, 120),
         country: (country || '').trim().slice(0, 60),
+        email: String(email || '').trim().slice(0, 120),
         car: (car || '').trim().slice(0, 120),
         vin: (vin || '').trim().slice(0, 30),
         partName: partName.trim().slice(0, 1000),
@@ -77,6 +79,14 @@ export default async function handler(req, res) {
       request.status = status;
       await saveRequests(requests);
       return res.status(200).json(request);
+    }
+
+    if (req.method === 'DELETE') {
+      const id = String(req.query.id || '');
+      const left = requests.filter((r) => r.id !== id);
+      if (left.length === requests.length) return res.status(404).json({ error: 'الطلب غير موجود' });
+      await saveRequests(left);
+      return res.status(200).json({ ok: true });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
