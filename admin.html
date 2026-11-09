@@ -29,8 +29,15 @@
           <select id="m-brand"><option>BMW</option><option>MINI</option></select></div>
         <div><label>الحالة</label>
           <select id="m-condition"><option value="new">جديد</option><option value="used">مستعمل وارد</option></select></div>
+        <div><label>🏬 الفرع (بيتشحن منين)</label>
+          <select id="m-originBranch">
+            <option value="">🇪🇬 مصر — المتجر القطاعي</option>
+            <option value="الإمارات">🇦🇪 الإمارات — يظهر في مكتب التجارة (جملة)</option>
+          </select>
+          <small style="color:var(--muted);font-size:12px;">قطع فرع الإمارات بس هي اللي بتظهر للتجار في كتالوج الجملة</small></div>
         <div><label>الفئة</label>
           <select id="m-category">
+            <option value="">🤖 تلقائي من اسم القطعة</option>
             <option>فرامل</option><option>عفشة وتعليق</option><option>محرك</option>
             <option>كهرباء وإشعال</option><option>تبريد</option><option>وقود</option>
             <option>فلاتر وصيانة</option><option>هيكل وإكسسوارات</option><option>أخرى</option>
@@ -841,13 +848,15 @@
           <option value="low">🟠 قربت تخلص (${lowN})</option>
           <option value="noimg">🖼️ من غير صورة</option>
           <option value="nodesc">📝 من غير وصف</option>
+          <option value="uae">🇦🇪 فرع الإمارات (${products.filter(wsInUaeBranch).length})</option>
+          <option value="eg">🇪🇬 فرع مصر (${products.filter((p) => !wsInUaeBranch(p)).length})</option>
         </select>
         <span style="color: var(--muted); font-size: 13px; align-self: center;">💡 عدّل المخزون مباشرة بأزرار + و −</span>
       </div>
       <div class="table-wrap"><table class="table">
         <tr><th>المنتج</th><th>SKU</th><th>السعر</th><th>المخزون</th><th>مبيعات</th><th>تقييم</th><th></th></tr>
         ${products.map((p) => `<tr data-prow="${esc(p.id)}">
-          <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'}</small></td>
+          <td>${esc(p.name)}<br><small style="color: var(--muted);">${esc(p.brand)} • ${p.condition === 'used' ? 'مستعمل' : 'جديد'} • ${wsInUaeBranch(p) ? '🇦🇪 الإمارات' : '🇪🇬 مصر'}</small></td>
           <td dir="ltr">${esc(p.sku)}</td>
           <td>${money(p.price)}</td>
           <td style="white-space: nowrap;">
@@ -871,7 +880,8 @@
           const hay = [p.name, p.nameEn, p.sku, p.oem, ...(p.models || [])].join(' ').toLowerCase();
           const ok = (!term || hay.includes(term)) && (!f
             || (f === 'out' && p.stock <= 0) || (f === 'low' && p.stock > 0 && p.stock <= 2)
-            || (f === 'noimg' && !p.image) || (f === 'nodesc' && !p.description));
+            || (f === 'noimg' && !p.image) || (f === 'nodesc' && !p.description)
+            || (f === 'uae' && wsInUaeBranch(p)) || (f === 'eg' && !wsInUaeBranch(p)));
           const row = box.querySelector(`[data-prow="${CSS.escape(p.id)}"]`);
           if (row) row.style.display = ok ? '' : 'none';
         });
@@ -908,7 +918,7 @@
         }));
     }
 
-    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'customsPct', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'deliveryNote', 'deliveryNoteEn', 'stock', 'image', 'images', 'description', 'descriptionEn'];
+    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'originBranch', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'customsPct', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'deliveryNote', 'deliveryNoteEn', 'stock', 'image', 'images', 'description', 'descriptionEn'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';
@@ -919,6 +929,19 @@
         else el.value = p ? (p[f] ?? '') : (f === 'stock' ? 1 : '');
       });
       if (!p) { document.getElementById('m-brand').value = 'BMW'; document.getElementById('m-condition').value = 'new'; }
+      // الفرع: لو جاي من موس تك باسم فرع مختلف، نضيفه كاختيار عشان مايتمسحش عند الحفظ
+      const brSel = document.getElementById('m-originBranch');
+      brSel.querySelectorAll('[data-extra]').forEach((o) => o.remove());
+      const br = (p && p.originBranch) || '';
+      if (br && ![...brSel.options].some((o) => o.value === br)) {
+        const o = document.createElement('option'); o.value = br; o.textContent = '🏬 ' + br + (p.originLocation ? ' — ' + p.originLocation : ''); o.dataset.extra = '1'; brSel.appendChild(o);
+      }
+      brSel.value = br;
+      // الفئة: لو قيمتها مش في القائمة، نضيفها
+      const catSel = document.getElementById('m-category');
+      if (p && p.category && ![...catSel.options].some((o) => (o.value || o.textContent) === p.category)) {
+        const o = document.createElement('option'); o.textContent = p.category; catSel.appendChild(o); catSel.value = p.category;
+      }
       renderImgPreview('m-image', 'm-image-preview');
       renderImgPreview('m-images', 'm-images-preview');
       document.getElementById('product-modal').classList.add('open');
