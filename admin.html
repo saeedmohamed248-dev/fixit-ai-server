@@ -573,7 +573,7 @@
             <td>${r.type === 'rfq'
               ? (r.company || r.country ? `${esc(r.company) || '—'}${r.country ? `<br><small style="color: var(--muted);">🌍 ${esc(r.country)}</small>` : ''}` : '—')
               : `${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}`}</td>
-            <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small></td>
+            <td>${esc(r.name)}<br><small dir="ltr" style="color: var(--muted);">${esc(r.phone)}</small>${r.email ? `<br><small dir="ltr"><a href="mailto:${esc(r.email)}" style="color:var(--accent);">${esc(r.email)}</a></small>` : ''}</td>
             <td><select data-req="${esc(r.id)}">
               ${Object.entries(REQ_STATUS).map(([k, v]) => `<option value="${k}" ${r.status === k ? 'selected' : ''}>${v}</option>`).join('')}
             </select></td>

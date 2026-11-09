@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'POST') {
-      const { name, phone, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
+      const { name, phone, email, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
       if (!rateLimit(req, res, 'requests', 5)) return;
       // طلب عرض سعر الجملة (RFQ) بيقبل أرقام دولية، وطلب التوفير العادي بيقبل المصري
       const isRfq = wholesale === true;
@@ -36,6 +36,7 @@ export default async function handler(req, res) {
         phone: phone.trim().slice(0, 20),
         company: (company || '').trim().slice(0, 120),
         country: (country || '').trim().slice(0, 60),
+        email: String(email || '').trim().slice(0, 120),
         car: (car || '').trim().slice(0, 120),
         vin: (vin || '').trim().slice(0, 30),
         partName: partName.trim().slice(0, 1000),

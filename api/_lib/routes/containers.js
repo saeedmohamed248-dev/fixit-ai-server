@@ -56,7 +56,12 @@ export default async function handler(req, res) {
       if (body.action === 'book') {
         if (!rateLimit(req, res, 'container_book', 6)) return;
         const { shipmentId, cbm } = body;
-        const d = body.dealer || {};
+        // لازم تاجر مسجّل — والبيانات من حسابه مش من المتصفح (عشان محدش يحجز الحاوية كلها بأرقام وهمية)
+        const session = getUser(req);
+        if (!session) return res.status(401).json({ error: 'سجّل دخول بحساب تاجر الأول' });
+        const me = (await getUsers()).find((u) => u.id === session.uid);
+        if (!me) return res.status(401).json({ error: 'الحساب غير موجود' });
+        const d = { name: me.name || '', phone: me.phone || '', company: me.company || '', country: me.country || '' };
         const wantCbm = Number(cbm) || 0;
         if (!d.name?.trim() || !d.phone?.trim()) {
           return res.status(400).json({ error: 'الاسم ورقم الموبايل مطلوبين' });

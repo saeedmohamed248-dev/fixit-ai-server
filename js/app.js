@@ -295,9 +295,10 @@ fetch(API + '/settings')
 
 /* ---------- API ---------- */
 async function api(path, options = {}) {
+  // ⚠️ الـ headers لازم تتدمج بعد ...options — غير كده أي طلب فيه توكن كان بيفقد Content-Type: application/json
   const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || (LANG === 'en' ? 'Something went wrong, try again' : 'حصل خطأ، حاول تاني'));
