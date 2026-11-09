@@ -62,6 +62,11 @@ function memExec(cmds) {
       case 'ZREMRANGEBYSCORE': { const z = mem.get(key); if (z) for (const [m, s] of z) if (s <= Number(a[1])) z.delete(m); return 1; }
       case 'ZCARD': return (mem.get(key) || new Map()).size;
       case 'DEL': [key, ...a].forEach((k) => mem.delete(k)); return 1;
+      case 'RPUSH': { const l = mem.get(key) || []; mem.set(key, l); l.push(...a); return l.length; }
+      case 'LRANGE': { const l = mem.get(key) || []; const e = Number(a[1]); return l.slice(Number(a[0]), e < 0 ? l.length + e + 1 : e + 1); }
+      case 'LTRIM': { const l = mem.get(key) || []; mem.set(key, l.slice(Number(a[0]))); return 'OK'; }
+      case 'HSETNX': { const h = mem.get(key) || new Map(); mem.set(key, h); if (h.has(a[0])) return 0; h.set(a[0], a[1]); return 1; }
+      case 'ZREVRANGE': { const z = mem.get(key) || new Map(); return [...z].sort((x, y) => y[1] - x[1]).slice(Number(a[0]), Number(a[1]) + 1).map((x) => x[0]); }
       default: return null; // EXPIRE وغيرها
     }
   });
@@ -88,7 +93,7 @@ async function record(req, b) {
       const q = clean(b.q, 50).toLowerCase();
       if (q.length >= 2) { inc('q:' + q); if (Number(b.n) === 0) inc('q0:' + q); }
     }
-  } else {
+  } else if (b.t !== 'leave') {
     inc('views');
     inc('h:' + hour);
     const path = (clean(b.path, 80).split('?')[0] || '/').replace(/\/index\.html$/, '/');
@@ -109,9 +114,90 @@ async function record(req, b) {
     if (b.nv) inc('new');
     cmds.push(['PFADD', uk, vid]);
   }
+  // ⏱️ الوقت على الصفحة (بيتبعت لما الزائر يسيبها)
+  if (b.t === 'leave') {
+    const path = (clean(b.path, 80).split('?')[0] || '/').replace(/\/index\.html$/, '/');
+    const dur = Math.min(3600, Math.max(0, Math.round(Number(b.dur) || 0)));
+    if (dur > 0) { inc('dur:' + path, dur); inc('durn:' + path); }
+  }
+
+  // 🧭 رحلة الزائر (الجلسة) — كل خطوة بوقتها: صفحة/حدث/مغادرة
+  const sid = clean(b.sid, 24);
+  if (/^s[a-z0-9]{6,23}$/i.test(sid)) {
+    const now = Date.now();
+    const sk = `an:s:${sid}`, mk = `an:sm:${sid}`;
+    const step = { t: b.t === 'event' ? 'e' : b.t === 'leave' ? 'l' : 'v', at: now };
+    if (step.t === 'v') {
+      step.p = (clean(b.path, 80).split('?')[0] || '/'); if (b.q) step.q = clean(b.q, 80);
+      if (b.pid) { step.pid = clean(b.pid, 40); step.pn = clean(b.pname, 80); }
+      if (Number(b.oos)) step.oos = 1; if (Number(b.noprice)) step.np = 1; if (Number(b.locked)) step.lk = 1;
+    } else if (step.t === 'e') {
+      step.ev = clean(b.ev, 30); if (b.q) step.q = clean(b.q, 50); if (b.n !== undefined) step.n = Number(b.n) || 0;
+      if (b.ord) step.ord = clean(b.ord, 20); if (b.val) step.val = Number(b.val) || 0;
+    } else { step.p = clean(b.path, 80); step.d = Math.min(3600, Math.round(Number(b.dur) || 0)); step.sc = Math.min(100, Number(b.scroll) || 0); }
+    const SESS_TTL = 45 * 86400;
+    cmds.push(['RPUSH', sk, JSON.stringify(step)], ['LTRIM', sk, -300, -1], ['EXPIRE', sk, SESS_TTL]);
+    cmds.push(['HSETNX', mk, 'start', now], ['HSETNX', mk, 'vid', vid], ['HSET', mk, 'last', now]);
+    if (b.br === 'ae' || b.br === 'eg') cmds.push(['HSET', mk, 'br', b.br]);
+    if (step.t === 'v') {
+      cmds.push(['HINCRBY', mk, 'pages', 1], ['HSET', mk, 'exit', step.p]);
+      cmds.push(['HSETNX', mk, 'land', step.p], ['HSETNX', mk, 'dev', deviceOf(ua)]);
+      if (b.ns) cmds.push(['HSETNX', mk, 'src', sourceOf(b.ref, b.utm, req.headers.host)]);
+      const cc = clean(req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'], 2).toUpperCase();
+      if (/^[A-Z]{2}$/.test(cc)) cmds.push(['HSETNX', mk, 'cty', cc]);
+      if (step.pid) cmds.push(['HINCRBY', mk, 'prods', 1]);
+      if (step.oos) cmds.push(['HSET', mk, 'oos', 1]);
+      if (step.lk) cmds.push(['HSET', mk, 'locked', 1]);
+      if (Number(b.nv)) cmds.push(['HSET', mk, 'new', 1]);
+    } else if (step.t === 'e') {
+      const flag = { add_cart: 'cart', checkout: 'checkout', order_placed: 'order', whatsapp: 'wa', search: 'search', ws_order: 'wsorder', rfq: 'rfq', container_request: 'ctreq', part_request: 'preq' }[step.ev];
+      if (flag) cmds.push(['HINCRBY', mk, flag, 1]);
+      if (step.ev === 'search' && step.n === 0) cmds.push(['HINCRBY', mk, 'search0', 1]);
+      if (step.ord) cmds.push(['HSET', mk, 'ord', step.ord]);
+    } else if (step.d) cmds.push(['HINCRBY', mk, 'dur', step.d]);
+    cmds.push(['EXPIRE', mk, SESS_TTL], ['ZADD', `an:ss:${date}`, now, sid], ['EXPIRE', `an:ss:${date}`, SESS_TTL]);
+  }
+
+  if (!cmds.length) return;
   cmds.push(['ZADD', 'an:live', Date.now(), vid]);
   cmds.push(['EXPIRE', dk, DAY_TTL], ['EXPIRE', uk, DAY_TTL]);
   await exec(cmds);
+}
+
+/* ---------- 🧭 رحلات الزوار ---------- */
+// تصنيف نهاية الزيارة: اشترى؟ ولو لأ، وقف فين وليه (تخمين من سلوكه)
+function outcomeOf(m) {
+  const n = (k) => Number(m[k]) || 0;
+  if (n('order') || n('wsorder')) return ['bought', '✅ اشترى'];
+  if (n('ctreq') || n('rfq') || n('preq')) return ['lead', '📝 ساب طلب'];
+  if (n('checkout')) return ['checkout_drop', '💳 بدأ الطلب ومكمّلش'];
+  if (n('cart')) return ['cart_drop', '🛒 حط في السلة ومشتراش'];
+  if (n('locked')) return ['locked', '🔒 وقف عند تسجيل الدخول (جملة)'];
+  if (n('search0')) return ['no_result', '🔎 دوّر ومالقاش'];
+  if (n('oos')) return ['oos', '📦 شاف قطعة خلصانة'];
+  if (n('wa')) return ['whatsapp', '💬 راح واتساب'];
+  if (n('prods')) return ['viewed', '👀 شاف منتجات ومحطش في السلة'];
+  if (n('pages') <= 1 && n('dur') < 15) return ['bounce', '🚪 دخل وخرج على طول'];
+  return ['browsed', '🧭 اتفرّج ومشي'];
+}
+async function sessionsReport(days) {
+  const dates = lastDays(days);
+  const ids = (await exec(dates.map((d) => ['ZREVRANGE', `an:ss:${d}`, 0, 299]))).flat().filter(Boolean);
+  const uniq = [...new Set(ids)].slice(0, 400);
+  if (!uniq.length) return { sessions: [], why: {}, exits: [], branches: {} };
+  const metas = (await exec(uniq.map((sid) => ['HGETALL', `an:sm:${sid}`]))).map(toObj);
+  const sessions = uniq.map((sid, i) => ({ sid, ...metas[i] })).filter((m) => m.start)
+    .map((m) => { const [k, label] = outcomeOf(m); return { ...m, outcome: k, outcomeLabel: label, span: Math.round(((Number(m.last) || 0) - (Number(m.start) || 0)) / 1000) }; })
+    .sort((a, b) => b.last - a.last);
+  const why = {}, exits = {}, branches = {};
+  sessions.forEach((s) => {
+    why[s.outcome] = why[s.outcome] || { label: s.outcomeLabel, n: 0 }; why[s.outcome].n++;
+    if (s.outcome !== 'bought') exits[s.exit || '/'] = (exits[s.exit || '/'] || 0) + 1;
+    const br = s.br || 'eg'; branches[br] = branches[br] || { sessions: 0, bought: 0, cart: 0, pages: 0, dur: 0 };
+    const B = branches[br]; B.sessions++; B.pages += Number(s.pages) || 0; B.dur += Number(s.dur) || s.span || 0;
+    if (s.outcome === 'bought') B.bought++; if (Number(s.cart)) B.cart++;
+  });
+  return { sessions, why, exits: Object.entries(exits).sort((a, b) => b[1] - a[1]).slice(0, 10), branches };
 }
 
 /* ---------- تقرير ---------- */
@@ -181,6 +267,7 @@ async function report(n) {
     persistent: hasPersistence, tz: TZ, range: { from: cur[0], to: cur[cur.length - 1], days: n },
     online, totals, prev: prevTotals, daily, hours,
     pages: group(rows, 'pg:'), landing: group(rows, 'land:', 10),
+    pageTime: group(rows, 'durn:', 15).map(([p, n]) => [p, Math.round(sumField(rows, 'dur:' + p) / Math.max(1, n)), n]),
     products: group(rows, 'pr:', 15).map(([id, c]) => [id, names[id] || id, c]),
     sources: group(rows, 'src:'), devices: group(rows, 'dev:'), countries: group(rows, 'cty:'),
     events, searches: group(rows, 'q:', 20), searchesZero: group(rows, 'q0:', 20),
@@ -199,6 +286,17 @@ export default async function handler(req, res) {
     }
     if (req.method === 'GET') {
       if (!requireAdmin(req, res)) return;
+      if (req.query && req.query.session) {
+        const sid = clean(req.query.session, 24);
+        const [steps, meta] = await exec([['LRANGE', `an:s:${sid}`, 0, -1], ['HGETALL', `an:sm:${sid}`]]);
+        const names = toObj((await exec([['HGETALL', 'an:pn']]))[0]);
+        return res.status(200).json({ meta: toObj(meta), steps: (steps || []).map((x) => { try { const o = JSON.parse(x); if (o.pid && !o.pn) o.pn = names[o.pid]; return o; } catch { return null; } }).filter(Boolean) });
+      }
+      if (req.query && req.query.sessions) {
+        const d = Math.min(30, Math.max(1, parseInt(req.query.days || '1', 10) || 1));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json(await sessionsReport(d));
+      }
       const n = Math.min(90, Math.max(1, parseInt((req.query && req.query.days) || '14', 10) || 14));
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json(await report(n));

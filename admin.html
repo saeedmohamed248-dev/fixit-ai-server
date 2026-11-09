@@ -1463,6 +1463,88 @@
       l.href = url; l.download = `analytics-${a.range.from}_${a.range.to}.csv`; l.click(); URL.revokeObjectURL(url);
     }
 
+    /* ---------- 🧭 رحلات الزوار: كل زائر دخل فين وقعد قد إيه وخرج ليه ---------- */
+    const BR_LBL = { eg: '🇪🇬 مصر (قطاعي)', ae: '🇦🇪 الإمارات (جملة)' };
+    const fmtDur = (sec) => { sec = Number(sec) || 0; return sec < 60 ? sec + ' ث' : Math.floor(sec / 60) + ' د ' + (sec % 60) + ' ث'; };
+    const pageLbl = (p) => PAGE_LABELS[p] || esc(p || '—');
+    async function loadJourneys(days) {
+      const box = document.getElementById('an-journeys');
+      if (!box) return;
+      let r;
+      try { r = await api('/track?sessions=1&days=' + days, { headers: authHeaders() }); }
+      catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+      if (!r.sessions.length) { box.innerHTML = '<div class="admin-card"><h3>🧭 رحلات الزوار</h3><p class="muted">لسه مفيش زيارات متسجّلة بالنظام الجديد — هتظهر هنا أول ما الناس تدخل.</p></div>'; return; }
+      const brCard = (k) => {
+        const b = r.branches[k]; if (!b) return '';
+        return `<div class="stat-card"><div class="label">${BR_LBL[k]}</div><div class="value">${nf(b.sessions)} <small style="font-size:14px;">زيارة</small></div>
+          <div class="an-sub">🛒 حطوا في السلة: <b>${b.sessions ? Math.round(b.cart / b.sessions * 100) : 0}%</b> · ✅ اشتروا: <b>${b.sessions ? Math.round(b.bought / b.sessions * 100) : 0}%</b></div>
+          <div class="an-sub">📄 ${(b.pages / b.sessions).toFixed(1)} صفحة/زيارة · ⏱️ ${fmtDur(Math.round(b.dur / b.sessions))} في المتوسط</div></div>`;
+      };
+      const whyList = Object.entries(r.why).sort((a, b) => b[1].n - a[1].n);
+      const total = r.sessions.length;
+      box.innerHTML = `
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">🧭 رحلات الزوار — آخر ${days === 1 ? 'يوم' : days + ' يوم'} (${nf(total)} زيارة)</h3>
+          <div class="stats-grid" style="margin-bottom:16px;">${brCard('eg')}${brCard('ae')}</div>
+          <div class="an-grid">
+            <div><h4 style="margin-bottom:10px;">❓ الزيارة خلصت إزاي؟ (ليه مشتروش)</h4>
+              ${whyList.map(([k, w]) => `<div class="an-row" style="cursor:pointer;" data-why="${k}"><div class="an-row-top"><span>${w.label}</span><b>${nf(w.n)} <small class="muted">${Math.round(w.n / total * 100)}%</small></b></div>
+                <div class="an-track"><div style="width:${Math.max(2, w.n / whyList[0][1].n * 100)}%"></div></div></div>`).join('')}
+              <p class="muted" style="font-size:12px;">اضغط على أي سبب يفلتر الزيارات تحت</p></div>
+            <div><h4 style="margin-bottom:10px;">🚪 آخر صفحة قبل ما يمشوا (من غير شرا)</h4>${anBars(r.exits, PAGE_LABELS)}</div>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <h3 style="margin:0;">👣 كل زيارة بالتفصيل</h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <select id="jr-br" style="width:auto;"><option value="">كل الفروع</option><option value="eg">🇪🇬 مصر</option><option value="ae">🇦🇪 الإمارات</option></select>
+              <select id="jr-out" style="width:auto;"><option value="">كل النتايج</option>${whyList.map(([k, w]) => `<option value="${k}">${w.label} (${w.n})</option>`).join('')}</select>
+            </div>
+          </div>
+          <div class="table-wrap"><table class="table">
+            <tr><th>الوقت</th><th>الفرع</th><th>الزائر</th><th>دخل من ← خرج من</th><th>صفحات</th><th>الوقت</th><th>النتيجة</th><th></th></tr>
+            ${r.sessions.map((x) => `<tr data-jr data-br="${esc(x.br || 'eg')}" data-out="${esc(x.outcome)}">
+              <td style="white-space:nowrap;">${new Date(Number(x.start)).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+              <td>${x.br === 'ae' ? '🇦🇪' : '🇪🇬'}</td>
+              <td style="font-size:13px;">${x.dev === 'mobile' ? '📱' : x.dev === 'tablet' ? '📟' : '💻'} ${x.cty ? flag(x.cty) : ''} ${esc(SRC_LABELS[x.src] || x.src || '')}${Number(x.new) ? ' <span class="badge" style="background:#dcfce7;color:#166534;">جديد</span>' : ' <span class="badge" style="background:#eef2ff;color:#3730a3;">راجع</span>'}</td>
+              <td style="font-size:13px;">${pageLbl(x.land)} ← ${pageLbl(x.exit)}</td>
+              <td>${nf(x.pages || 0)}</td>
+              <td>${fmtDur(x.dur || x.span)}</td>
+              <td style="font-size:13px;">${esc(x.outcomeLabel)}${x.ord ? `<br><b>${esc(x.ord)}</b>` : ''}</td>
+              <td><button class="btn btn-sm btn-outline" data-jr-open="${esc(x.sid)}">👣 الرحلة</button></td>
+            </tr>`).join('')}
+          </table></div>
+        </div>`;
+      const filt = () => {
+        const br = document.getElementById('jr-br').value, out = document.getElementById('jr-out').value;
+        box.querySelectorAll('[data-jr]').forEach((tr) => { tr.style.display = (!br || tr.dataset.br === br) && (!out || tr.dataset.out === out) ? '' : 'none'; });
+      };
+      document.getElementById('jr-br').addEventListener('change', filt);
+      document.getElementById('jr-out').addEventListener('change', filt);
+      box.querySelectorAll('[data-why]').forEach((el) => el.addEventListener('click', () => { document.getElementById('jr-out').value = el.dataset.why; filt(); document.getElementById('jr-out').scrollIntoView({ behavior: 'smooth', block: 'center' }); }));
+      box.querySelectorAll('[data-jr-open]').forEach((b) => b.addEventListener('click', () => openJourney(b.dataset.jrOpen)));
+    }
+    async function openJourney(sid) {
+      const modal = document.getElementById('order-modal'), body = document.getElementById('order-modal-body');
+      body.innerHTML = '<div class="spinner">جاري التحميل...</div>'; modal.classList.add('open');
+      let r; try { r = await api('/track?session=' + encodeURIComponent(sid), { headers: authHeaders() }); } catch (e) { body.innerHTML = esc(e.message); return; }
+      const EVL = { add_cart: '🛒 حط في السلة', checkout: '💳 ضغط "تأكيد الطلب"', order_placed: '✅ الطلب اتعمل', whatsapp: '💬 فتح واتساب', search: '🔎 دوّر على', ws_order: '🇦🇪 بعت طلب جملة', rfq: '📝 طلب عرض سعر', container_request: '🧩 طلب حاوية', part_request: '🔍 طلب قطعة', notify_stock: '🔔 بلّغني لما يتوفر', question: '❓ سأل سؤال', savings_lead: '🧾 استخدم حاسبة التوفير', container_book: '🧩 حجز في حاوية', pricelist_dl: '⬇️ نزّل قائمة الأسعار' };
+      const t0 = r.steps.length ? r.steps[0].at : 0;
+      const rows = r.steps.map((st) => {
+        const at = '+' + fmtDur(Math.round((st.at - t0) / 1000));
+        if (st.t === 'v') return `<div class="jr-step"><span class="jr-at">${at}</span><b>📄 ${pageLbl(st.p)}</b>${st.pn ? ` — ${esc(st.pn)}` : ''}${st.q && !st.pid ? ` <small class="muted" dir="ltr">${esc(decodeURIComponent(st.q))}</small>` : ''}
+          ${st.oos ? ' <span class="badge" style="background:#fee2e2;color:#b91c1c;">خلصانة</span>' : ''}${st.np ? ' <span class="badge" style="background:#fef3c7;color:#92400e;">سعر عند الطلب</span>' : ''}${st.lk ? ' <span class="badge" style="background:#fef3c7;color:#92400e;">🔒 السعر مقفول</span>' : ''}</div>`;
+        if (st.t === 'e') return `<div class="jr-step jr-ev"><span class="jr-at">${at}</span>${EVL[st.ev] || esc(st.ev)}${st.ev === 'search' ? ` "<b>${esc(st.q || '')}</b>" ${st.n === 0 ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">مالقاش</span>' : `(${st.n} نتيجة)`}` : ''}${st.ord ? ` <b>${esc(st.ord)}</b> — ${nf(st.val)} ج.م` : ''}</div>`;
+        return `<div class="jr-step jr-leave"><span class="jr-at">${at}</span>⏱️ قعد ${fmtDur(st.d)} · نزل لحد ${st.sc || 0}% من الصفحة</div>`;
+      }).join('');
+      const m = r.meta;
+      body.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><h3>👣 رحلة الزائر</h3><button class="btn btn-outline btn-sm" onclick="document.getElementById('order-modal').classList.remove('open')">✕</button></div>
+        <p class="muted" style="font-size:13px;">${BR_LBL[m.br || 'eg']} · ${m.dev === 'mobile' ? '📱 موبايل' : '💻 كمبيوتر'} ${m.cty ? '· ' + flag(m.cty) + ' ' + esc(m.cty) : ''} · المصدر: ${esc(SRC_LABELS[m.src] || m.src || '—')} · ${new Date(Number(m.start)).toLocaleString('ar-EG')}</p>
+        <div class="jr-list">${rows || '<p class="muted">مفيش خطوات</p>'}</div>
+        <p class="muted" style="font-size:12px;margin-top:10px;">🔒 بيانات مجهولة — مفيش اسم ولا رقم ولا IP، بس معرّف عشوائي للزيارة.</p>`;
+    }
+
     async function loadAnalytics() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
@@ -1544,7 +1626,11 @@
           <div class="an-event"><span>${EV_LABELS[ev] || esc(ev)}</span><b>${nf(c)}</b></div>`).join('')}</div>` : '<p class="muted">لا يوجد تفاعلات مسجّلة بعد</p>'}
       </div>
       ${a.legacy ? `<p class="muted" style="font-size:12px;">📦 أرقام النظام القديم (تقديرية، مش بتتحدّث): ${nf(a.legacy.totalViews)} زيارة • ${nf(a.legacy.totalVisitors)} زائر</p>` : ''}
+      <div id="an-journeys"><div class="spinner">جاري تحميل رحلات الزوار...</div></div>
+      ${a.pageTime && a.pageTime.length ? `<div class="admin-card"><h3 style="margin-bottom:12px;">⏱️ متوسط الوقت في كل صفحة</h3>
+        ${anBars(a.pageTime.map(([p, sec]) => [p, sec]), PAGE_LABELS)}<p class="muted" style="font-size:12px;">بالثواني — الوقت اللي الصفحة كانت ظاهرة فيه قدام الزائر فعلاً</p></div>` : ''}
       <button class="btn btn-sm btn-danger" id="an-reset" style="margin-top:16px;">🗑️ تصفير كل الإحصائيات</button>`;
+      loadJourneys(Math.min(anDays, 30));
 
       box.querySelectorAll('[data-an-days]').forEach((b) => b.addEventListener('click', () => { anDays = Number(b.dataset.anDays); loadAnalytics(); }));
       document.getElementById('an-csv').addEventListener('click', () => anCSV(a));

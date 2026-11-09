@@ -1372,3 +1372,8 @@ html { background: var(--accent-dark); }
 /* 🖼️ صورة المنتج تظهر كاملة (من غير قص) — في صفحة المنتج والكروت */
 .product-img-box .card-img:not(.img-placeholder){object-fit:contain;background:#fff}
 .card-img-wrap .card-img:not(.img-placeholder){object-fit:contain;background:#fff}
+/* 👣 رحلة الزائر */
+.jr-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto;padding-inline-start:10px;border-inline-start:3px solid var(--line)}
+.jr-step{font-size:14px;padding:6px 10px;border-radius:8px;background:rgba(127,127,127,.06)}
+.jr-ev{background:#eef2ff}.jr-leave{background:transparent;color:var(--muted);font-size:12.5px}
+.jr-at{display:inline-block;min-width:74px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
