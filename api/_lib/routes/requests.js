@@ -2,6 +2,7 @@
 // POST /api/requests → طلب جديد (عام)
 // GET  /api/requests → القائمة (إدارة)
 // PUT  /api/requests → تغيير الحالة (إدارة) { id, status: open|sourced|done }
+// DELETE /api/requests?id=.. → حذف (إدارة)
 import { getRequests, saveRequests, logActivity, getUsers } from '../db.js';
 import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
 import { getUser } from '../auth.js';
@@ -78,6 +79,14 @@ export default async function handler(req, res) {
       request.status = status;
       await saveRequests(requests);
       return res.status(200).json(request);
+    }
+
+    if (req.method === 'DELETE') {
+      const id = String(req.query.id || '');
+      const left = requests.filter((r) => r.id !== id);
+      if (left.length === requests.length) return res.status(404).json({ error: 'الطلب غير موجود' });
+      await saveRequests(left);
+      return res.status(200).json({ ok: true });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
