@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'POST') {
-      const { name, phone, car, vin, partName, notes, wholesale, company, country } = req.body || {};
+      const { name, phone, car, vin, partName, notes, wholesale, company, country, source } = req.body || {};
       if (!rateLimit(req, res, 'requests', 5)) return;
       // طلب عرض سعر الجملة (RFQ) بيقبل أرقام دولية، وطلب التوفير العادي بيقبل المصري
       const isRfq = wholesale === true;
@@ -40,12 +40,13 @@ export default async function handler(req, res) {
         vin: (vin || '').trim().slice(0, 30),
         partName: partName.trim().slice(0, 1000),
         notes: (notes || '').trim().slice(0, 500),
+        source: source === 'search' ? 'search' : 'form',
       };
       requests.unshift(request);
       await saveRequests(requests);
       await logActivity('request', isRfq
         ? `🌐 طلب عرض سعر جملة ${request.number} من ${request.company || request.name} (${request.country || '—'})`
-        : `🔎 طلب توفير قطعة ${request.number}: "${request.partName}" من ${request.name}`);
+        : `🔎 طلب توفير قطعة ${request.number}${request.source === 'search' ? ' (من البحث)' : ''}: "${request.partName}" من ${request.name}`);
       return res.status(201).json(request);
     }
 

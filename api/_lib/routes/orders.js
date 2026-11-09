@@ -57,10 +57,21 @@ export default async function handler(req, res) {
       const orderItems = [];
 
       // السعر يُحسب من قاعدة البيانات وليس من المتصفح
-      for (const item of items) {
+      // نجمع نفس المنتج لو اتكرر في الطلب — عشان التكرار مايتخطّاش فحص المخزون
+      const merged = new Map();
+      for (const item of items.slice(0, 50)) {
+        const id = String(item && item.id || '');
+        const qty = Math.min(999, Math.max(1, Math.floor(Number(item.qty)) || 1));
+        const prev = merged.get(id);
+        merged.set(id, { id, qty: (prev ? prev.qty : 0) + qty, partNumber: (prev && prev.partNumber) || item.partNumber });
+      }
+      for (const item of merged.values()) {
         const product = products.find((p) => p.id === item.id);
         if (!product) return res.status(400).json({ error: 'منتج غير موجود في الطلب' });
-        const qty = Math.max(1, Number(item.qty) || 1);
+        const qty = item.qty;
+        if (!(Number(product.price) > 0)) {
+          return res.status(400).json({ error: `"${product.name}" سعره بيتحدد عند الطلب — كلّمنا واتساب` });
+        }
         if (product.stock < qty) {
           return res.status(400).json({ error: `الكمية المتاحة من "${product.name}" هي ${product.stock} فقط` });
         }
@@ -192,6 +203,7 @@ export default async function handler(req, res) {
 
       // تتبع طلب — عام برقم الطلب + رقم الموبايل
       if (req.query.track) {
+        if (!rateLimit(req, res, 'track_order', 20)) return; // منع تخمين أرقام الطلبات
         const order = orders.find(
           (o) => o.number === req.query.track.trim().toUpperCase() &&
                  o.customer.phone === (req.query.phone || '').trim()
