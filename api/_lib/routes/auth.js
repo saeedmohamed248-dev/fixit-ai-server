@@ -79,6 +79,33 @@ export default async function handler(req, res) {
       return res.status(200).json(publicUser(user));
     }
 
+    // ✏️ تعديل بيانات الحساب / تغيير كلمة السر (العميل نفسه)
+    if (req.method === 'PUT') {
+      if (!rateLimit(req, res, 'auth_update', 10)) return;
+      const session = getUser(req);
+      if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });
+      const users = await getUsers();
+      const user = users.find((u) => u.id === session.uid);
+      if (!user) return res.status(401).json({ error: 'الحساب غير موجود' });
+      const b = req.body || {};
+      if (b.newPassword) {
+        if (!checkPassword(String(b.currentPassword || ''), user.pass)) {
+          return res.status(400).json({ error: 'كلمة السر الحالية غلط' });
+        }
+        if (String(b.newPassword).length < 6) return res.status(400).json({ error: 'كلمة السر لازم تكون 6 حروف على الأقل' });
+        user.pass = hashPassword(String(b.newPassword));
+      }
+      if (typeof b.name === 'string') {
+        if (!b.name.trim()) return res.status(400).json({ error: 'الاسم مطلوب' });
+        user.name = b.name.trim().slice(0, 80);
+      }
+      if (typeof b.email === 'string') user.email = b.email.trim().slice(0, 120);
+      if (typeof b.company === 'string') user.company = b.company.trim().slice(0, 120);
+      if (typeof b.country === 'string') user.country = b.country.trim().slice(0, 60);
+      await saveUsers(users);
+      return res.status(200).json(publicUser(user));
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     return res.status(500).json({ error: error.message });

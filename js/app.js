@@ -317,7 +317,11 @@ async function api(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || (LANG === 'en' ? 'Something went wrong, try again' : 'حصل خطأ، حاول تاني'));
+  if (!res.ok) {
+    const err = new Error(data.error || (LANG === 'en' ? 'Something went wrong, try again' : 'حصل خطأ، حاول تاني'));
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -531,6 +535,11 @@ function money(n) {
     const v = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'ar-EG', { maximumFractionDigits: 2 }).format(n);
     return LANG === 'en' ? 'AED ' + v : v + ' د.إ';
   }
+  if (LANG === 'en') return SITE.currencyEn + ' ' + new Intl.NumberFormat('en-EG').format(n);
+  return new Intl.NumberFormat('ar-EG').format(n) + ' ' + SITE.currency;
+}
+// 🇪🇬 مبالغ الطلبات والنقاط والرصيد محفوظة بالجنيه دايماً — نعرضها بالجنيه حتى لو الموقع في وضع الجملة
+function moneyEGP(n) {
   if (LANG === 'en') return SITE.currencyEn + ' ' + new Intl.NumberFormat('en-EG').format(n);
   return new Intl.NumberFormat('ar-EG').format(n) + ' ' + SITE.currency;
 }
