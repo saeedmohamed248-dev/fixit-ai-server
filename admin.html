@@ -1466,7 +1466,8 @@
     /* ---------- 🧭 رحلات الزوار: كل زائر دخل فين وقعد قد إيه وخرج ليه ---------- */
     const BR_LBL = { eg: '🇪🇬 مصر (قطاعي)', ae: '🇦🇪 الإمارات (جملة)' };
     const fmtDur = (sec) => { sec = Number(sec) || 0; return sec < 60 ? sec + ' ث' : Math.floor(sec / 60) + ' د ' + (sec % 60) + ' ث'; };
-    const pageLbl = (p) => PAGE_LABELS[p] || esc(p || '—');
+    // اسم الصفحة + اسم المنتج لو صفحة منتج (المفتاح ممكن يبقى "path|اسم المنتج")
+    const pageLbl = (p, pn) => { if (p && p.includes('|')) [p, pn] = p.split('|'); return (PAGE_LABELS[p] || esc(p || '—')) + (pn ? `: <b>${esc(pn)}</b>` : ''); };
     async function loadJourneys(days) {
       const box = document.getElementById('an-journeys');
       if (!box) return;
@@ -1491,7 +1492,7 @@
               ${whyList.map(([k, w]) => `<div class="an-row" style="cursor:pointer;" data-why="${k}"><div class="an-row-top"><span>${w.label}</span><b>${nf(w.n)} <small class="muted">${Math.round(w.n / total * 100)}%</small></b></div>
                 <div class="an-track"><div style="width:${Math.max(2, w.n / whyList[0][1].n * 100)}%"></div></div></div>`).join('')}
               <p class="muted" style="font-size:12px;">اضغط على أي سبب يفلتر الزيارات تحت</p></div>
-            <div><h4 style="margin-bottom:10px;">🚪 آخر صفحة قبل ما يمشوا (من غير شرا)</h4>${anBars(r.exits, PAGE_LABELS)}</div>
+            <div><h4 style="margin-bottom:10px;">🚪 آخر صفحة قبل ما يمشوا (من غير شرا)</h4>${anBars(r.exits, {}, (k) => pageLbl(k))}</div>
           </div>
         </div>
         <div class="admin-card">
@@ -1508,7 +1509,7 @@
               <td style="white-space:nowrap;">${new Date(Number(x.start)).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
               <td>${x.br === 'ae' ? '🇦🇪' : '🇪🇬'}</td>
               <td style="font-size:13px;">${x.dev === 'mobile' ? '📱' : x.dev === 'tablet' ? '📟' : '💻'} ${x.cty ? flag(x.cty) : ''} ${esc(SRC_LABELS[x.src] || x.src || '')}${Number(x.new) ? ' <span class="badge" style="background:#dcfce7;color:#166534;">جديد</span>' : ' <span class="badge" style="background:#eef2ff;color:#3730a3;">راجع</span>'}</td>
-              <td style="font-size:13px;">${pageLbl(x.land)} ← ${pageLbl(x.exit)}</td>
+              <td style="font-size:13px;">${pageLbl(x.land, x.landPn)} ← ${pageLbl(x.exit, x.exitPn)}</td>
               <td>${nf(x.pages || 0)}</td>
               <td>${fmtDur(x.dur || x.span)}</td>
               <td style="font-size:13px;">${esc(x.outcomeLabel)}${x.ord ? `<br><b>${esc(x.ord)}</b>` : ''}</td>

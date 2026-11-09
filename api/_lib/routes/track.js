@@ -140,8 +140,8 @@ async function record(req, b) {
     cmds.push(['HSETNX', mk, 'start', now], ['HSETNX', mk, 'vid', vid], ['HSET', mk, 'last', now]);
     if (b.br === 'ae' || b.br === 'eg') cmds.push(['HSET', mk, 'br', b.br]);
     if (step.t === 'v') {
-      cmds.push(['HINCRBY', mk, 'pages', 1], ['HSET', mk, 'exit', step.p]);
-      cmds.push(['HSETNX', mk, 'land', step.p], ['HSETNX', mk, 'dev', deviceOf(ua)]);
+      cmds.push(['HINCRBY', mk, 'pages', 1], ['HSET', mk, 'exit', step.p], ['HSET', mk, 'exitPn', step.pn || '']);
+      cmds.push(['HSETNX', mk, 'land', step.p], ['HSETNX', mk, 'landPn', step.pn || ''], ['HSETNX', mk, 'dev', deviceOf(ua)]);
       if (b.ns) cmds.push(['HSETNX', mk, 'src', sourceOf(b.ref, b.utm, req.headers.host)]);
       const cc = clean(req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'], 2).toUpperCase();
       if (/^[A-Z]{2}$/.test(cc)) cmds.push(['HSETNX', mk, 'cty', cc]);
@@ -192,7 +192,7 @@ async function sessionsReport(days) {
   const why = {}, exits = {}, branches = {};
   sessions.forEach((s) => {
     why[s.outcome] = why[s.outcome] || { label: s.outcomeLabel, n: 0 }; why[s.outcome].n++;
-    if (s.outcome !== 'bought') exits[s.exit || '/'] = (exits[s.exit || '/'] || 0) + 1;
+    if (s.outcome !== 'bought') { const k = (s.exit || '/') + (s.exitPn ? '|' + s.exitPn : ''); exits[k] = (exits[k] || 0) + 1; }
     const br = s.br || 'eg'; branches[br] = branches[br] || { sessions: 0, bought: 0, cart: 0, pages: 0, dur: 0 };
     const B = branches[br]; B.sessions++; B.pages += Number(s.pages) || 0; B.dur += Number(s.dur) || s.span || 0;
     if (s.outcome === 'bought') B.bought++; if (Number(s.cart)) B.cart++;
