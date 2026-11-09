@@ -582,7 +582,7 @@
           ${requests.map((r) => `<tr data-rq-row="${esc(r.id)}" data-rq-status="${esc(r.status || 'open')}">
             <td><b>${esc(r.number)}</b></td>
             <td>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-            <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${r.source === 'search' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;">🔎 من البحث</span><br>' : ''}${esc(r.partName)}${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
+            <td>${r.type === 'rfq' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🌐 جملة RFQ</span><br>' : ''}${r.source === 'search' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;">🔎 من البحث</span><br>' : ''}${r.source === 'cart' ? '<span class="badge" style="background:#dcfce7;color:#166534;">🛒 طلب جملة من السلة</span><br>' : ''}<span style="white-space:pre-line;">${esc(r.partName)}</span>${r.notes ? `<br><small style="color: var(--muted);">${esc(r.notes)}</small>` : ''}</td>
             <td>${r.type === 'rfq'
               ? (r.company || r.country ? `${esc(r.company) || '—'}${r.country ? `<br><small style="color: var(--muted);">🌍 ${esc(r.country)}</small>` : ''}` : '—')
               : `${esc(r.car) || '—'}${r.vin ? `<br><small dir="ltr" style="color: var(--muted);">${esc(r.vin)}</small>` : ''}`}</td>

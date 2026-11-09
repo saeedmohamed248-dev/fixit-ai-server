@@ -19,8 +19,9 @@ function checkSecret(req, res) {
     res.status(503).json({ error: 'المزامنة غير مفعّلة: أضِف متغير SYNC_SECRET في إعدادات Vercel' });
     return false;
   }
-  const provided = req.headers['x-sync-secret'] || req.query.secret;
-  if (provided !== process.env.SYNC_SECRET) {
+  // نتجاهل المسافات/السطر الجديد في الأول والآخر — أشهر سبب لـ 401 إن القيمة اتنسخت بمسافة زيادة
+  const provided = String(req.headers['x-sync-secret'] || req.query.secret || '').trim();
+  if (!provided || provided !== String(process.env.SYNC_SECRET).trim()) {
     res.status(401).json({ error: 'رمز المزامنة غير صحيح' });
     return false;
   }
