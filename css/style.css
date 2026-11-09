@@ -1369,3 +1369,6 @@ html { background: var(--accent-dark); }
 .ct-float:hover{transform:translateY(-2px)}
 .price-lock{cursor:pointer}
 @media(max-width:600px){.ct-float{font-size:12.5px;padding:9px 13px;left:50%;transform:translateX(-50%);bottom:calc(18px + var(--safe-bottom,0px))}.ct-float:hover{transform:translateX(-50%)}}
+/* 🖼️ صورة المنتج تظهر كاملة (من غير قص) — في صفحة المنتج والكروت */
+.product-img-box .card-img:not(.img-placeholder){object-fit:contain;background:#fff}
+.card-img-wrap .card-img:not(.img-placeholder){object-fit:contain;background:#fff}
