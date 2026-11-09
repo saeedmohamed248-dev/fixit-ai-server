@@ -261,7 +261,9 @@
         b.addEventListener('click', () => selectTab(b.dataset.tab));
       });
       // فتح قسم معين من الرابط: /admin.html#orders أو #settings ...
-      const hashTab = location.hash.replace('#', '');
+      // #products:edit=ID → يفتح القسم ويفتح فورم تعديل المنتج ده (للفتح في تاب جديد)
+      const [hashTab, hashArg] = location.hash.replace('#', '').split(':');
+      if (hashTab === 'products' && hashArg && hashArg.startsWith('edit=')) pendingEditId = decodeURIComponent(hashArg.slice(5));
       selectTab(NAV_LABEL[hashTab] ? hashTab : 'dashboard');
     }
 
@@ -832,9 +834,16 @@
     }
 
     /* ==================== 🔧 المنتجات والمخزون ==================== */
+    let pendingEditId = null;
     async function loadProducts() {
       const box = document.getElementById('tab-content');
-      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      // 📌 نحفظ البحث والفلتر ومكان السكرول عشان بعد التعديل/الحذف نرجع لنفس المكان
+      const keep = {
+        q: document.getElementById('pr-search')?.value || '',
+        f: document.getElementById('pr-filter')?.value || '',
+        y: document.getElementById('pr-search') ? window.scrollY : 0,
+      };
+      if (!document.getElementById('pr-search')) box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
       try { products = await api('/products?all=1'); }
       catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
       const outN = products.filter((p) => p.stock <= 0).length, lowN = products.filter((p) => p.stock > 0 && p.stock <= 2).length;
@@ -867,7 +876,7 @@
           <td>${p.sold || 0}</td>
           <td>${p.ratingCount ? `${p.ratingAvg} ⭐` : '—'}</td>
           <td style="white-space: nowrap;">
-            <button class="btn btn-sm btn-outline" data-edit="${idx}">تعديل</button>
+            <a class="btn btn-sm btn-outline" data-edit="${idx}" href="/admin.html#products:edit=${encodeURIComponent(p.id)}">تعديل</a>
             <button class="btn btn-sm btn-danger" data-del="${esc(p.id)}">حذف</button>
           </td>
         </tr>`).join('')}
@@ -890,9 +899,22 @@
       };
       document.getElementById('pr-search').addEventListener('input', applyProdFilter);
       document.getElementById('pr-filter').addEventListener('change', applyProdFilter);
+      if (keep.q) document.getElementById('pr-search').value = keep.q;
+      if (keep.f) document.getElementById('pr-filter').value = keep.f;
       applyProdFilter(); // لو المتصفح رجّع قيمة الفلتر لوحده بعد التحديث، نطبّقها فعلاً
+      if (keep.y) window.scrollTo(0, keep.y);
+      // ✏️ "تعديل" بقى رابط: الضغطة العادية تفتح الفورم هنا، وكليك يمين/Ctrl/⌘ يفتحه في تاب جديد
       box.querySelectorAll('[data-edit]').forEach((b) =>
-        b.addEventListener('click', () => openModal(products[Number(b.dataset.edit)])));
+        b.addEventListener('click', (e) => {
+          if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+          e.preventDefault();
+          openModal(products[Number(b.dataset.edit)]);
+        }));
+      if (pendingEditId) {
+        const p = products.find((x) => x.id === pendingEditId);
+        pendingEditId = null;
+        if (p) openModal(p); else toast('⚠️ المنتج ده مش موجود');
+      }
       box.querySelectorAll('[data-del]').forEach((b) =>
         b.addEventListener('click', async () => {
           if (!confirm('متأكد من حذف المنتج؟')) return;
