@@ -56,7 +56,17 @@ const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || 'gbooxyif';
 const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET || 'fixit_unsigned';
 const _stripQuery = (u) => (u || '').split('?')[0];
 
+// 🖼️ موس تك ساعات بيبعت رابط الصورة على دومين الموقع (fixitauto.parts/media/...) أو مسار نسبي (/media/...)
+//    بدل دومين موس تك نفسه — فالصورة بتطلع 404. نرجّعها لسيرفر موس تك.
+const MEDIA_BASE = (process.env.MOUSSTEC_MEDIA_BASE || 'https://fixit-02e0.mousstec.com').replace(/\/+$/, '');
+export function fixMediaUrl(u) {
+  u = String(u || '').trim();
+  if (!u) return u;
+  if (/^\/media\//i.test(u)) return MEDIA_BASE + u;
+  return u.replace(/^https?:\/\/(www\.)?fixitauto\.parts(?=\/media\/)/i, MEDIA_BASE);
+}
 async function rehostImage(imageUrl) {
+  imageUrl = fixMediaUrl(imageUrl);
   if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) return null;
   if (/res\.cloudinary\.com/i.test(imageUrl)) return imageUrl; // دائم بالفعل
   try {
@@ -107,7 +117,7 @@ export default async function handler(req, res) {
           if (ex?.imageSource && _stripQuery(item.image) === ex.imageSource && ex.image) {
             return ex.image; // نفس الصورة المنسوخة قبل كده
           }
-          return (await rehostImage(item.image)) || ex?.image || item.image;
+          return (await rehostImage(item.image)) || fixMediaUrl(item.image) || ex?.image;
         }));
         for (let i = 0; i < body.items.length; i++) {
           const item = body.items[i];
