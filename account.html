@@ -52,6 +52,7 @@
       </div>`;
       container.querySelectorAll('[data-mode]').forEach((b) =>
         b.addEventListener('click', () => showAuth(b.dataset.mode)));
+      container.querySelectorAll('input').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('a-submit').click(); }));
       document.getElementById('a-submit').addEventListener('click', async () => {
         const err = document.getElementById('a-error');
         err.textContent = '';
@@ -81,6 +82,8 @@
 
     async function showAccount() {
       const user = currentUser();
+      // لوحة التاجر حسب نوع الحساب نفسه — مش حسب وضع الموقع (عميل قطاعي فتح مكتب التجارة كان بيشوف لوحة تاجر فاضية ومش بيلاقي طلباته)
+      const isTrader = user.account === 'wholesale';
       container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
         <h1>${t('welcome')} ${esc(user.name)} 👋</h1>
@@ -91,7 +94,20 @@
         ${user.account === 'wholesale' ? ` &nbsp;|&nbsp; <span class="badge badge-brand">🇦🇪 ${t('ws_account_title')}</span>` : ''}
         ${user.company ? '<br>🏢 ' + esc(user.company) : ''}${user.country ? ' &nbsp;|&nbsp; 🌍 ' + esc(user.country) : ''}
       </div>
-      ${isWholesale() ? `
+      <details class="order-card" id="profile-box" style="margin-bottom:16px;">
+        <summary style="cursor:pointer;font-weight:700;">✏️ ${LANG === 'en' ? 'Edit profile / change password' : 'تعديل بياناتي / تغيير كلمة السر'}</summary>
+        <div class="form-stack" style="margin-top:12px;max-width:440px;">
+          <div><label>${t('name_label')}</label><input id="p-name" value="${esc(user.name)}"></div>
+          <div><label>${t('email_label')}</label><input id="p-email" type="email" dir="ltr" value="${esc(user.email || '')}"></div>
+          ${isTrader ? `<div><label>${t('trader_company')}</label><input id="p-company" value="${esc(user.company || '')}"></div>
+          <div><label>${t('trader_country')}</label><input id="p-country" value="${esc(user.country || '')}"></div>` : ''}
+          <div><label>${LANG === 'en' ? 'Current password (only to change it)' : 'كلمة السر الحالية (لو هتغيّرها بس)'}</label><input id="p-cur" type="password" autocomplete="current-password"></div>
+          <div><label>${LANG === 'en' ? 'New password' : 'كلمة السر الجديدة'}</label><input id="p-new" type="password" autocomplete="new-password"></div>
+          <button class="btn btn-sm" id="p-save">💾 ${LANG === 'en' ? 'Save' : 'حفظ'}</button>
+          <div id="p-msg" style="font-size:14px;"></div>
+        </div>
+      </details>
+      ${isTrader ? `
       <div class="trader-actions">
         <a class="btn btn-sm" href="/shop.html">🛍️ ${t('nav_catalog')}</a>
         <a class="btn btn-sm btn-outline" href="/trade.html#rfq">📝 ${t('nav_rfq')}</a>
@@ -102,6 +118,8 @@
       <div id="my-rfqs"><div class="spinner">${t('loading')}</div></div>
       <h2 style="margin: 24px 0 12px;">🧩 ${t('td_my_bookings')}</h2>
       <div id="my-bookings"><div class="spinner">${t('loading')}</div></div>
+      <h2 style="margin: 24px 0 12px;">${t('my_orders')}</h2>
+      <div id="my-orders"><div class="spinner">${t('loading')}</div></div>
       ` : `
       <div class="note" id="points-box" style="display: none;"></div>
       <div class="note" id="credit-box" style="display: none; background: #ecfdf3; border-color: #a6f4c5; color: #067647;"></div>
@@ -118,26 +136,42 @@
         showAuth();
       });
 
-      // 🇦🇪 لوحة التاجر: عروض الأسعار والحجوزات
-      if (isWholesale()) { loadMyRfqs(); loadMyBookings(); return; }
+      // ✏️ حفظ البيانات / كلمة السر
+      document.getElementById('p-save').addEventListener('click', async () => {
+        const msg = document.getElementById('p-msg');
+        const body = { name: document.getElementById('p-name').value, email: document.getElementById('p-email').value };
+        if (isTrader) { body.company = document.getElementById('p-company').value; body.country = document.getElementById('p-country').value; }
+        const np = document.getElementById('p-new').value;
+        if (np) { body.newPassword = np; body.currentPassword = document.getElementById('p-cur').value; }
+        try {
+          const u = await api('/auth', { method: 'PUT', headers: userHeaders(), body: JSON.stringify(body) });
+          setSession(userToken(), u);
+          toast(LANG === 'en' ? 'Saved ✓' : 'اتحفظ ✓');
+          showAccount(); renderLayout('account');
+        } catch (e) { msg.style.color = 'var(--red)'; msg.textContent = e.message; }
+      });
+
+      // 🇦🇪 لوحة التاجر: عروض الأسعار والحجوزات (+ طلباته تحت)
+      if (isTrader) { loadMyRfqs(); loadMyBookings(); }
 
       // ⭐ رصيد النقاط و💳 رصيد الاستبدال
-      api('/auth', { headers: userHeaders() }).then((me) => {
+      if (!isTrader) api('/auth', { headers: userHeaders() }).then((me) => {
+        setSession(userToken(), me); // نحدّث الاسم/النقاط المحفوظة محلياً
         const pb = document.getElementById('points-box');
         if (pb && me.points > 0) {
           pb.style.display = '';
-          pb.innerHTML = `${t('points_balance', { n: me.points, v: money(me.points) })}<br><small>${t('points_hint')}</small>`;
+          pb.innerHTML = `${t('points_balance', { n: me.points, v: moneyEGP(me.points) })}<br><small>${t('points_hint')}</small>`;
         }
         const cb = document.getElementById('credit-box');
         if (cb && me.credit > 0) {
           cb.style.display = '';
-          cb.innerHTML = `${t('credit_balance', { v: money(me.credit) })}<br><small>${t('credit_hint')}</small>`;
+          cb.innerHTML = `${t('credit_balance', { v: moneyEGP(me.credit) })}<br><small>${t('credit_hint')}</small>`;
         }
       }).catch(() => {});
 
       // 🔧 مواعيد الصيانة
       const maintBox = document.getElementById('my-maint');
-      api('/maintenance?mine=1', { headers: userHeaders() }).then((list) => {
+      if (maintBox) api('/maintenance?mine=1', { headers: userHeaders() }).then((list) => {
         const upcoming = list.filter((m) => !m.done);
         if (!upcoming.length) { maintBox.innerHTML = `<p style="color: var(--muted);">${t('maint_none')}</p>`; return; }
         const today = new Date().toISOString().slice(0, 10);
@@ -166,14 +200,32 @@
             <div style="color: var(--muted); font-size: 13px;">${new Date(o.createdAt).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'long' })}</div>
             <div style="font-size: 14px; margin: 8px 0;">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' • ')}</div>
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <b>${money(o.total)}</b>
+              <b>${moneyEGP(o.total)}</b>
               <span>
                 ${o.returnRequest ? `<span class="status-pill st-cancelled">${t('return_requested')}</span>` : (o.status === 'delivered' || o.status === 'shipped') ? `<button class="btn btn-outline btn-sm" data-return="${esc(o.number)}" data-phone="${esc(o.customer.phone)}">${t('return_btn')}</button>` : ''}
-                <a href="/track.html?number=${esc(o.number)}&phone=${esc(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
+                <button class="btn btn-sm" data-reorder="${esc(o.id)}">🔁 ${LANG === 'en' ? 'Order again' : 'اطلب تاني'}</button>
+                <a href="/track.html?number=${encodeURIComponent(o.number)}&phone=${encodeURIComponent(o.customer.phone)}" style="color: var(--accent-dark); font-size: 14px;">${t('track_link')}</a>
               </span>
             </div>
           </div>`).join('')
           : `<div class="empty-state"><span class="icon">📭</span>${t('no_orders')}<br><br><a class="btn" href="/shop.html">${t('start_shopping')}</a></div>`;
+        // 🔁 اطلب تاني — نضيف القطع المتاحة حالياً للسلة
+        box.querySelectorAll('[data-reorder]').forEach((btn) => btn.addEventListener('click', async () => {
+          const o = orders.find((x) => x.id === btn.dataset.reorder);
+          btn.disabled = true;
+          try {
+            const prods = await api('/products');
+            let added = 0, missing = 0;
+            o.items.forEach((i) => {
+              const p = prods.find((x) => x.id === i.id);
+              if (p && p.stock > 0) { addToCart(p.id, Math.min(i.qty, p.stock)); added++; } else missing++;
+            });
+            if (added) location.href = '/cart.html';
+            else toast(LANG === 'en' ? 'These parts are out of stock now' : 'القطع دي مش متوفرة دلوقتي');
+            if (missing && added) toast(LANG === 'en' ? `${missing} item(s) are out of stock` : `${missing} قطعة مش متوفرة دلوقتي`);
+          } catch (e) { toast('⚠️ ' + e.message); }
+          btn.disabled = false;
+        }));
         // ↩️ طلب إرجاع
         box.querySelectorAll('[data-return]').forEach((btn) =>
           btn.addEventListener('click', async () => {
@@ -189,8 +241,9 @@
             } catch (ex) { toast('⚠️ ' + ex.message); }
           }));
       } catch (e) {
-        clearSession();
-        return showAuth();
+        // نطلّع العميل بس لو الجلسة فعلاً انتهت — مش مع أي خطأ شبكة
+        if (e.status === 401) { clearSession(); renderLayout('account'); return showAuth(); }
+        box.innerHTML = `<div class="note">⚠️ ${esc(e.message)} <button class="btn btn-sm" onclick="showAccount()">${LANG === 'en' ? 'Retry' : 'حاول تاني'}</button></div>`;
       }
     }
 
