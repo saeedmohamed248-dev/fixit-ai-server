@@ -1198,6 +1198,13 @@
               <div><label>قيمة الخصم</label><input id="cp-value" type="number" min="1"></div>
               <div><label>حد أدنى للطلب (اختياري)</label><input id="cp-min" type="number" min="0"></div>
               <div><label>عدد مرات الاستخدام (0 = مفتوح)</label><input id="cp-uses" type="number" min="0" value="0"></div>
+              <div><label>ينطبق على</label>
+                <select id="cp-scope"><option value="all">كل المنتجات</option><option value="some">منتجات معينة بس</option></select></div>
+            </div>
+            <div id="cp-pick" style="display:none;margin-bottom:10px;">
+              <input id="cp-psearch" placeholder="🔍 دوّر باسم المنتج أو SKU وضيفه..." autocomplete="off">
+              <div id="cp-presults" style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:4px;display:none;"></div>
+              <div id="cp-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
             </div>
             <button class="btn btn-sm" id="cp-add">إنشاء الكوبون</button>
           </div>
@@ -1227,7 +1234,7 @@
             <td dir="ltr"><b>${esc(c.code)}</b></td>
             <td>${c.gift ? '🎁 هدية لـ ' + esc(c.giftFor) : '🎟️ عام'}</td>
             <td>${c.type === 'percent' ? c.value + '%' : money(c.value)}</td>
-            <td>${c.minTotal ? money(c.minTotal) : '—'}</td>
+            <td>${c.minTotal ? money(c.minTotal) : '—'}${(c.productIds || []).length ? `<br><small title="${esc((c.productNames || []).join('، '))}" style="color:var(--accent);">🎯 على ${c.productIds.length} منتج</small>` : ''}</td>
             <td>${c.usedCount || 0}${c.maxUses ? ' / ' + c.maxUses : ''}</td>
             <td><button class="btn btn-sm btn-danger" data-cp-del="${esc(c.code)}">حذف</button></td>
           </tr>`).join('')}
@@ -1239,7 +1246,31 @@
           document.getElementById('g-name').value = opt.dataset.name || '';
         });
 
+        // 🎯 اختيار منتجات معينة للكوبون
+        let pickProducts = null; const picked = new Map();
+        const drawChips = () => {
+          document.getElementById('cp-chips').innerHTML = [...picked].map(([id, n]) =>
+            `<span class="badge" style="background:#eef2ff;color:#3730a3;padding:6px 10px;">${esc(n)} <a href="#" data-unpick="${esc(id)}" style="color:#b91c1c;margin-inline-start:4px;">✕</a></span>`).join('')
+            || '<small class="muted">لسه مااخترتش منتجات</small>';
+          document.querySelectorAll('[data-unpick]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); picked.delete(a.dataset.unpick); drawChips(); }));
+        };
+        document.getElementById('cp-scope').addEventListener('change', async (e) => {
+          const on = e.target.value === 'some';
+          document.getElementById('cp-pick').style.display = on ? '' : 'none';
+          if (on && !pickProducts) { try { pickProducts = await api('/products?all=1'); } catch { pickProducts = []; } }
+          drawChips();
+        });
+        document.getElementById('cp-psearch').addEventListener('input', (e) => {
+          const q = e.target.value.trim().toLowerCase(), box = document.getElementById('cp-presults');
+          if (q.length < 2 || !pickProducts) { box.style.display = 'none'; return; }
+          const hits = pickProducts.filter((p) => [p.name, p.sku, p.oem, ...(p.models || [])].join(' ').toLowerCase().includes(q)).slice(0, 15);
+          box.style.display = '';
+          box.innerHTML = hits.map((p) => `<div data-pick="${esc(p.id)}" data-pname="${esc(p.name)}" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--line);font-size:14px;">${picked.has(p.id) ? '✅' : '➕'} ${esc(p.name)} <small class="muted">${esc(p.sku)} · ${money(p.price)}</small></div>`).join('') || '<div class="muted" style="padding:8px;">مفيش نتائج</div>';
+          box.querySelectorAll('[data-pick]').forEach((d) => d.addEventListener('click', () => { picked.set(d.dataset.pick, d.dataset.pname); drawChips(); e.target.dispatchEvent(new Event('input')); }));
+        });
+
         document.getElementById('cp-add').addEventListener('click', async () => {
+          if (document.getElementById('cp-scope').value === 'some' && !picked.size) return toast('⚠️ اختار المنتجات اللي عليها الخصم');
           try {
             await api('/coupons', {
               method: 'POST', headers: authHeaders(),
@@ -1249,6 +1280,8 @@
                 value: Number(document.getElementById('cp-value').value),
                 minTotal: Number(document.getElementById('cp-min').value) || 0,
                 maxUses: Number(document.getElementById('cp-uses').value) || 0,
+                productIds: document.getElementById('cp-scope').value === 'some' ? [...picked.keys()] : [],
+                productNames: document.getElementById('cp-scope').value === 'some' ? [...picked.values()] : [],
               }),
             });
             toast('تم إنشاء الكوبون ✓');

@@ -3,15 +3,23 @@
 // GET    /api/coupons            → قائمة الكوبونات (إدارة)
 // POST   /api/coupons { code, type, value, minTotal } → إنشاء (إدارة)
 // DELETE /api/coupons?code=X     → حذف (إدارة)
-import { getCoupons, saveCoupons, logActivity } from '../db.js';
+import { getCoupons, saveCoupons, logActivity, getProducts } from '../db.js';
 import { cors, requireAdmin } from '../util.js';
 
-export function calcDiscount(coupon, subtotal) {
+// items: [{ id, price, qty }] — لو الكوبون مخصص لمنتجات معينة، الخصم بيتحسب على قيمتها هي بس
+export function eligibleSubtotal(coupon, subtotal, items) {
+  const ids = Array.isArray(coupon.productIds) ? coupon.productIds : [];
+  if (!ids.length) return subtotal;
+  return (items || []).filter((i) => ids.includes(i.id)).reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
+}
+export function calcDiscount(coupon, subtotal, items) {
   if (subtotal < (coupon.minTotal || 0)) return 0;
+  const base = eligibleSubtotal(coupon, subtotal, items);
+  if (base <= 0) return 0;
   const discount = coupon.type === 'percent'
-    ? Math.round(subtotal * coupon.value / 100)
+    ? Math.round(base * coupon.value / 100)
     : coupon.value;
-  return Math.min(discount, subtotal);
+  return Math.min(discount, base);
 }
 
 export async function findCoupon(code) {
@@ -42,8 +50,21 @@ export default async function handler(req, res) {
       const { code, subtotal } = req.body;
       const coupon = await findCoupon(code);
       if (!coupon) return res.status(404).json({ error: 'الكوبون غير صحيح أو منتهي' });
-      const discount = calcDiscount(coupon, Number(subtotal) || 0);
+      // الأسعار من قاعدة البيانات مش من المتصفح
+      let items = [];
+      if (Array.isArray(req.body.items)) {
+        const products = await getProducts();
+        items = req.body.items.map((i) => {
+          const p = products.find((x) => x.id === i.id);
+          return p ? { id: p.id, price: Number(p.price) || 0, qty: Math.max(1, Math.floor(Number(i.qty)) || 1) } : null;
+        }).filter(Boolean);
+      }
+      const sub = items.length ? items.reduce((s, i) => s + i.price * i.qty, 0) : (Number(subtotal) || 0);
+      const discount = calcDiscount(coupon, sub, items);
       if (discount === 0) {
+        if ((coupon.productIds || []).length && eligibleSubtotal(coupon, sub, items) <= 0) {
+          return res.status(400).json({ error: 'الكوبون ده على منتجات معينة مش موجودة في سلتك' });
+        }
         return res.status(400).json({ error: `الكوبون ده للطلبات أكتر من ${coupon.minTotal} ج.م` });
       }
       return res.status(200).json({ code: coupon.code, discount });
@@ -70,6 +91,8 @@ export default async function handler(req, res) {
         gift: Boolean(req.body.gift),
         giftFor: req.body.giftFor || '',
         maxUses: Number(req.body.maxUses) || (req.body.gift ? 1 : 0), // الهدية مرة واحدة افتراضياً
+        productIds: Array.isArray(req.body.productIds) ? req.body.productIds.map(String).slice(0, 500) : [],
+        productNames: Array.isArray(req.body.productNames) ? req.body.productNames.map((x) => String(x).slice(0, 120)).slice(0, 500) : [],
         usedCount: 0,
         active: true,
         createdAt: new Date().toISOString(),

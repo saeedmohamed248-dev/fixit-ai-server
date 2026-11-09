@@ -91,7 +91,7 @@ export default async function handler(req, res) {
       if (body.coupon) {
         const coupon = await findCoupon(body.coupon);
         if (coupon) {
-          discount = calcDiscount(coupon, subtotal);
+          discount = calcDiscount(coupon, subtotal, orderItems);
           if (discount > 0) {
             couponCode = coupon.code;
             await markCouponUsed(coupon.code);

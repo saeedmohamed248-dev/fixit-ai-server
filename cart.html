@@ -494,7 +494,7 @@
         try {
           const data = await api('/coupons', {
             method: 'POST',
-            body: JSON.stringify({ action: 'validate', code, subtotal }),
+            body: JSON.stringify({ action: 'validate', code, subtotal, items: items.map((p) => ({ id: p.id, qty: cart[p.id] })) }),
           });
           appliedCoupon = data;
           toast(t('coupon_ok', { v: money(data.discount) }));
