@@ -178,3 +178,13 @@ export function searchScore(p, q) {
   if (hit === words.length) return 100 + nameHit * 10 + (name.includes(full) ? 50 : 0);
   return 0; // لازم كل الكلمات تطابق — نتايج نص صح بتلخبط العميل أكتر ما بتساعده
 }
+
+// 🚗 أكواد الشاسيه اللي القطعة بتركب عليها (E90/F30/R56/X5...) مستخرجة من
+//    حقل الموديلات + اسم القطعة — موحدة بحروف كبيرة ومن غير تكرار أو "—".
+const CHASSIS_RE = /(?:^|[^a-z0-9])([efgru]\d{2}|x[1-7]|g\d{2})(?![a-z0-9])/gi;
+export function carCodes(p) {
+  const hay = ' ' + [...(Array.isArray(p && p.models) ? p.models : []), p && p.name, p && p.nameEn].join(' ') + ' ';
+  const out = new Set();
+  for (const m of hay.matchAll(CHASSIS_RE)) out.add(m[1].toUpperCase());
+  return [...out];
+}

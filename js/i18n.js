@@ -566,6 +566,10 @@ const I18N = {
   garage_saved: { ar: 'تمام! هنفلترلك القطع المناسبة 🚗', en: 'Done! We will match parts to your car 🚗' },
   compat_ok: { ar: '✓ متوافقة مع عربيتك ({m})', en: '✓ Fits your car ({m})' },
   compat_no: { ar: '⚠️ غير مؤكدة التوافق مع عربيتك ({m}) — اسألنا قبل الشراء', en: '⚠️ May not fit your {m} — ask us before buying' },
+  compat_ask: { ar: 'ℹ️ مش متسجل لها موديلات — ابعتلنا رقم الشاسيه ونتأكدلك إنها بتركب على {m}', en: "ℹ️ Fitment not listed — send us your VIN and we'll confirm it fits your {m}" },
+  fits_yours: { ar: 'بتركب على عربيتك', en: 'Fits your car' },
+  garage_only: { ar: 'قطع عربيتي بس', en: 'My car only' },
+  garage_change: { ar: 'غيّر', en: 'Change' },
   garage_banner: { ar: '🚗 عربيتك {m}', en: '🚗 Your car: {m}' },
   garage_show: { ar: 'اعرض المتوافق معاها بس ←', en: 'Show matching parts only →' },
 

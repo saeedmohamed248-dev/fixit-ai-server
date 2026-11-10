@@ -98,6 +98,7 @@
         }
         document.title = pname(p) + ' | FixIt';
         pushRecent(p.id);
+        px('ViewContent', { content_ids: [p.id], content_type: 'product', content_name: pname(p), currency: pxCurrency(), value: Number(dispPrice ? dispPrice(p) : p.price) || 0 });
         trackPageview({ pid: p.id, pname: pname(p), oos: p.stock <= 0 ? 1 : 0, noprice: dispPrice(p) === null ? 1 : 0 }); // 📈 زيارة منتج
         const out = p.stock <= 0;
         const wished = inWishlist(p.id);

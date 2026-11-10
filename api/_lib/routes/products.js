@@ -5,11 +5,11 @@
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, requireAdmin, productCategory, productBrand, productSupplier, searchScore } from '../util.js';
+import { cors, requireAdmin, productCategory, productBrand, productSupplier, searchScore, carCodes } from '../util.js';
 
 // نضمن حقول العرض المشتقّة (فئة + نوع عربية + مورّد) للمنتجات الجاية من موس تك
 function withDerived(p) {
-  return { ...p, category: productCategory(p), brand: productBrand(p), supplier: productSupplier(p) };
+  return { ...p, category: productCategory(p), brand: productBrand(p), supplier: productSupplier(p), fits: carCodes(p) };
 }
 
 // حساب الحجم بالمتر المكعب من الأبعاد (سم): الطول×العرض×الارتفاع ÷ مليون
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       if (brand) list = list.filter((p) => p.brand === brand);
       if (category) list = list.filter((p) => p.category === category);
       if (condition) list = list.filter((p) => p.condition === condition);
-      if (model) list = list.filter((p) => p.models.includes(model));
+      if (model) { const M = String(model).toUpperCase(); list = list.filter((p) => p.fits.includes(M)); }
       if (q) {
         // 🔎 بحث ذكي: يوحّد الحروف العربي ويفهم الجمع/المرادفات، ويرتّب الأقرب الأول
         const scored = list.map((p) => [p, searchScore(p, q)]).filter(([, sc]) => sc > 0);
