@@ -124,7 +124,7 @@ const EXTRACT_PROMPT = `أنت محلل فواتير ومقايسات قطع غ�
 تجاهل السطور اللي مش قطع (ضرائب/خصم/إجمالي/مصاريف/توقيع). لو مفيش بنود قطع أرجع items: [].`;
 
 async function extractInvoice(images) {
-  const parsed = await aiJSON(EXTRACT_PROMPT, images, { maxTokens: 2048 });
+  const parsed = await aiJSON(EXTRACT_PROMPT, images, { maxTokens: 8192 });
   return { currency: parsed.currency || 'EGP', items: Array.isArray(parsed.items) ? parsed.items : [] };
 }
 
