@@ -73,9 +73,16 @@ function phoneDisplay() {
   return isWholesale() && wsConf().phoneDisplay ? wsConf().phoneDisplay : SITE.phoneDisplay;
 }
 // سعر العرض للمنتج حسب الفرع والعملة — يرجّع رقم، أو null لو مفيش سعر جملة
+// 🇦🇪 سعر الجملة بالدرهم: لو مش متحدد، قطع فرع الإمارات بتستخدم سعرها الأساسي
+//    (موس تك بيبعت سعر فرع الإمارات بالدرهم في خانة السعر، ومش بيملا خانة الجملة)
+function wsBaseAED(p) {
+  const w = Number(p.wholesalePrice) || 0;
+  if (w > 0) return w;
+  return wsInUaeBranch(p) ? (Number(p.price) || 0) : 0;
+}
 function dispPrice(p) {
   if (isWholesale()) {
-    const aed = Number(p.wholesalePrice) || 0;
+    const aed = wsBaseAED(p);
     if (aed <= 0) return null;
     return WCUR === 'usd' ? aed / usdRate() : aed;
   }
@@ -104,7 +111,7 @@ function tierFor(qty) {
 }
 // سعر الوحدة بالدرهم بعد خصم الشريحة
 function wsUnitAED(p, qty = 1) {
-  const base = Number(p.wholesalePrice) || 0;
+  const base = wsBaseAED(p);
   if (base <= 0) return null;
   const off = Number(tierFor(qty).off) || 0;
   return base * (1 - off / 100);
