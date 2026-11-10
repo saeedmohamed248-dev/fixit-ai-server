@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const cats = {};
     list.forEach((p) => { if (p.category) cats[p.category] = (cats[p.category] || 0) + 1; });
     const title = `قطع غيار ${brand} ${code} (${series} ${years}) في مصر | FixIt`;
-    const desc = `${list.length} قطعة غيار متاحة لعربية ${brand} ${code} ${series} موديلات ${years} — جديد ومستعمل وارد بضمان، شحن لكل المحافظات ودفع انستاباي أو محفظة.`;
+    const desc = `${list.length} قطعة غيار متاحة لعربية ${brand} ${code} ${series} موديلات ${years} — جديد ومستعمل وارد بضمان، شحن لكل المحافظات أو استلام من المحل في الحي العاشر.`;
     const others = Object.entries(CARS).flatMap(([b, m]) => Object.keys(m).filter((c) => c !== code).map((c) => `<a href="/${b.toLowerCase()}/${c.toLowerCase()}">${b} ${c}</a>`)).join(' ');
     const ld = {
       '@context': 'https://schema.org', '@type': 'ItemList', name: title,

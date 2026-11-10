@@ -1016,7 +1016,7 @@ function renderLayout(active = '') {
         <div>
           <h4>${t('footer_contact')}</h4>
           <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
-          <span>📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)}</span>
+          <a href="${esc(SITE.mapsUrl || '#')}" target="_blank" rel="noopener" style="color:inherit;">📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)} — ${LANG === 'en' ? 'Open in Maps' : 'افتح على الخريطة'} ↗</a>
         </div>
       </div>`}
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
