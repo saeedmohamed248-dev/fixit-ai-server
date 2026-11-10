@@ -7,8 +7,10 @@ window.SITE = {
   // رقم الواتساب (بكود الدولة من غير + أو مسافات)
   whatsapp: '201125157767',
   phoneDisplay: '01125157767',
-  address: 'القاهرة، مصر',
-  addressEn: 'Cairo, Egypt',
+  address: 'الحي العاشر، مدينة نصر، القاهرة',
+  addressEn: '10th District, Nasr City, Cairo, Egypt',
+  // 📍 المحل على خرائط جوجل (Fixit Spare Parts) — لو عندك رابط المكان المباشر من "مشاركة" حطه هنا
+  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Fixit spare parts الحي العاشر مدينة نصر'),
   currency: 'ج.م',
   currencyEn: 'EGP',
   // طرق الدفع بالتحويل — الأرقام اللي العميل هيحوّل عليها
