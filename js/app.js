@@ -344,9 +344,11 @@ function anonId() {
 // 🧭 معرّف الزيارة (الجلسة): بيتجدد بعد 30 دقيقة خمول — عشان نشوف رحلة كل زائر صفحة بصفحة
 function sessId() {
   try {
-    const now = Date.now(), last = Number(sessionStorage.getItem('an_last') || 0);
+    // ⚠️ ليه توقيت خاص بيه (an_sid_t) بيتحدّث مع كل حدث — قبل كده أي بحث قبل تسجيل الصفحة كان بيعمل "زيارة" جديدة فاضية
+    const now = Date.now(), last = Number(sessionStorage.getItem('an_sid_t') || 0);
     let s = sessionStorage.getItem('an_sid');
-    if (!s || !last || now - last > 30 * 60 * 1000) { s = 's' + now.toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem('an_sid', s); }
+    if (!s || (last && now - last > 30 * 60 * 1000)) { s = 's' + now.toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem('an_sid', s); }
+    sessionStorage.setItem('an_sid_t', String(now));
     return s;
   } catch { return 'nos'; }
 }
@@ -391,12 +393,23 @@ function trackPageview(extra = {}) {
 }
 function trackEvent(ev, extra = {}) { track('event', { ev, ...extra }); }
 // 🔎 تسجيل البحث (مرة واحدة لكل كلمة في الجلسة) — n=0 يعني مالقاش حاجة متاحة في المخزون
+// بنستنى العميل يخلّص كتابة (ثانية ونص من غير كتابة) — عشان مانسجّلش "طقم فوانيس خ" و"خا" و"خلف" كل واحدة لوحدها
+let _searchTimer = null, _searchPending = null;
+function flushSearch() {
+  clearTimeout(_searchTimer);
+  const x = _searchPending; _searchPending = null;
+  if (!x) return;
+  try { if (sessionStorage.getItem('an_lastq') === x.q) return; sessionStorage.setItem('an_lastq', x.q); } catch {}
+  trackEvent('search', x);
+}
 function trackSearch(q, n) {
   q = String(q || '').trim().toLowerCase();
   if (q.length < 3) return;
-  try { if (sessionStorage.getItem('an_lastq') === q) return; sessionStorage.setItem('an_lastq', q); } catch {}
-  trackEvent('search', { q, n });
+  _searchPending = { q, n };
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(flushSearch, 1500);
 }
+window.addEventListener('pagehide', flushSearch);
 // زيارة الصفحة تلقائياً (ما عدا لوحة التحكم، أو الصفحات اللي بتسجّل بنفسها زي المنتج)
 document.addEventListener('DOMContentLoaded', () => {
   if (window.SKIP_AUTOVIEW || /admin/.test(location.pathname)) return;

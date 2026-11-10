@@ -186,7 +186,8 @@ async function sessionsReport(days) {
   const uniq = [...new Set(ids)].slice(0, 400);
   if (!uniq.length) return { sessions: [], why: {}, exits: [], branches: {} };
   const metas = (await exec(uniq.map((sid) => ['HGETALL', `an:sm:${sid}`]))).map(toObj);
-  const sessions = uniq.map((sid, i) => ({ sid, ...metas[i] })).filter((m) => m.start)
+  // زيارة من غير ولا صفحة = حدث يتيم (زي بحث قبل تسجيل الصفحة) — مش زيارة حقيقية
+  const sessions = uniq.map((sid, i) => ({ sid, ...metas[i] })).filter((m) => m.start && Number(m.pages) > 0)
     .map((m) => { const [k, label] = outcomeOf(m); return { ...m, outcome: k, outcomeLabel: label, span: Math.round(((Number(m.last) || 0) - (Number(m.start) || 0)) / 1000) }; })
     .sort((a, b) => b.last - a.last);
   const why = {}, exits = {}, branches = {};
@@ -201,6 +202,10 @@ async function sessionsReport(days) {
 }
 
 /* ---------- تقرير ---------- */
+// "طقم فوانيس خ" و"طقم فوانيس خا" نص كلمة اتسجّلت وهو بيكتب — نشيلها لو فيه كلمة أطول بتبدأ بيها
+function dropPrefixes(list) {
+  return list.filter(([q]) => !list.some(([o]) => o !== q && o.startsWith(q)));
+}
 const sumField = (rows, f) => rows.reduce((s, r) => s + (Number(r[f]) || 0), 0);
 function group(rows, prefix, limit = 15) {
   const m = {};
@@ -270,7 +275,7 @@ async function report(n) {
     pageTime: group(rows, 'durn:', 15).map(([p, n]) => [p, Math.round(sumField(rows, 'dur:' + p) / Math.max(1, n)), n]),
     products: group(rows, 'pr:', 15).map(([id, c]) => [id, names[id] || id, c]),
     sources: group(rows, 'src:'), devices: group(rows, 'dev:'), countries: group(rows, 'cty:'),
-    events, searches: group(rows, 'q:', 20), searchesZero: group(rows, 'q0:', 20),
+    events, searches: dropPrefixes(group(rows, 'q:', 60)).slice(0, 20), searchesZero: dropPrefixes(group(rows, 'q0:', 60)).slice(0, 20),
     funnel: { sessions: totals.sessions, productViews, addCart: events.add_cart || 0, checkout: events.checkout || 0, orders: totals.orders },
     legacy,
   };
