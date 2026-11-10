@@ -59,6 +59,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ choices: [{ message: { role: 'assistant', content: reply } }] });
   } catch (err) {
     console.error('[diagnose]', err);
-    return res.status(502).json({ error: 'المساعد مش متاح دلوقتي — جرّب كمان شوية' });
+    // سبب مختصر من غير المفتاح — عشان نعرف المشكلة من اللوحة/الشبكة
+    const why = String(err && err.message || '').replace(/key=[^&\s]+/g, 'key=***').slice(0, 160);
+    return res.status(502).json({ error: 'المساعد مش متاح دلوقتي — جرّب كمان شوية', reason: why });
   }
 }
