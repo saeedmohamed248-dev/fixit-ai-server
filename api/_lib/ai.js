@@ -5,6 +5,7 @@
 const KEY = () => process.env.GEMINI_API_KEY || process.env.AI_VISION_API_KEY || process.env.GOOGLE_API_KEY;
 const MODEL = () => process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 
 export function aiEnabled() { return Boolean(KEY()); }
 
@@ -26,14 +27,29 @@ async function callGemini(contents, { json = false, temperature = 0.4, system, m
     },
   };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  const r = await fetch(`${BASE}/${MODEL()}:generateContent?key=${encodeURIComponent(key)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error?.message || `فشل الاتصال بالذكاء الاصطناعي (${r.status})`);
-  return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+  // 🔁 لو الموديل مش موجود/اتلغى أو باقته المجانية خلصت، نجرّب اللي بعده تلقائياً
+  const models = [...new Set([MODEL(), ...FALLBACK_MODELS])];
+  let lastErr;
+  for (const model of models) {
+    const r = await fetch(`${BASE}/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+      if (text) return text;
+      lastErr = new Error('رد فاضي من ' + model);
+      continue;
+    }
+    lastErr = new Error(`${model}: ${data.error?.message || r.status}`);
+    console.error('[ai]', lastErr.message);
+    // مفتاح غلط/مرفوض: مفيش فايدة نجرّب موديل تاني
+    if (r.status === 400 && /api key/i.test(data.error?.message || '')) break;
+    if (r.status === 401 || r.status === 403) break;
+  }
+  throw lastErr || new Error('فشل الاتصال بالذكاء الاصطناعي');
 }
 
 function parseJSON(text) {
