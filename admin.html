@@ -1428,7 +1428,7 @@
 
     /* ==================== 📈 التحليلات والزيارات ==================== */
     const EV_LABELS = { add_cart: '🛒 إضافة للسلة', checkout: '💳 بدء إتمام الطلب', whatsapp: '💬 نقرة واتساب', search: '🔎 بحث', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة', trade_alert: '🔔 تنبيه وصول (تجارة)', part_request: '🔍 طلب توفير قطعة', notify_stock: '📦 بلّغني لما يتوفر', question: '❓ سؤال على منتج', savings_lead: '🧾 حاسبة التوفير' };
-    const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير', '/request.html': '🔍 طلب قطعة', '/savings.html': '🧾 حاسبة التوفير', '/wishlist.html': '❤️ المفضلة' };
+    const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير', '/request.html': '🔍 طلب قطعة', '/savings.html': '🧾 حاسبة التوفير', '/wishlist.html': '❤️ المفضلة', '/container.html': '🧩 اعمل حاوية' };
     const SRC_LABELS = { direct: '🔗 مباشر / بدون مصدر', google: '🔍 جوجل', facebook: '📘 فيسبوك', instagram: '📸 إنستجرام', whatsapp: '💬 واتساب', tiktok: '🎵 تيك توك', youtube: '▶️ يوتيوب', bing: '🔍 Bing', x: '✖️ X / تويتر' };
     const DEV_LABELS = { mobile: '📱 موبايل', desktop: '💻 كمبيوتر', tablet: '📟 تابلت' };
     const flag = (cc) => cc.replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
@@ -1469,7 +1469,7 @@
     const BR_LBL = { eg: '🇪🇬 مصر (قطاعي)', ae: '🇦🇪 الإمارات (جملة)' };
     const fmtDur = (sec) => { sec = Number(sec) || 0; return sec < 60 ? sec + ' ث' : Math.floor(sec / 60) + ' د ' + (sec % 60) + ' ث'; };
     // اسم الصفحة + اسم المنتج لو صفحة منتج (المفتاح ممكن يبقى "path|اسم المنتج")
-    const pageLbl = (p, pn) => { if (p && p.includes('|')) [p, pn] = p.split('|'); return (PAGE_LABELS[p] || esc(p || '—')) + (pn ? `: <b>${esc(pn)}</b>` : ''); };
+    const pageLbl = (p, pn) => { if (p && p.includes('|')) [p, pn] = p.split('|'); if (pn) return `🔧 <b title="${esc(pn)}">${esc(pn.length > 32 ? pn.slice(0, 30) + '…' : pn)}</b>`; return PAGE_LABELS[p] || esc(p || '—'); };
     async function loadJourneys(days) {
       const box = document.getElementById('an-journeys');
       if (!box) return;
@@ -1506,25 +1506,35 @@
             </div>
           </div>
           <div class="table-wrap"><table class="table">
-            <tr><th>الوقت</th><th>الفرع</th><th>الزائر</th><th>دخل من ← خرج من</th><th>صفحات</th><th>الوقت</th><th>النتيجة</th><th></th></tr>
-            ${r.sessions.map((x) => `<tr data-jr data-br="${esc(x.br || 'eg')}" data-out="${esc(x.outcome)}">
+            <tr><th>متى</th><th>الزائر</th><th>دخل ← خرج</th><th>صفحات</th><th>المدة</th><th>النتيجة</th><th></th></tr>
+            ${r.sessions.map((x, i) => `<tr data-jr data-i="${i}" data-br="${esc(x.br || 'eg')}" data-out="${esc(x.outcome)}" class="jr-row">
               <td style="white-space:nowrap;">${new Date(Number(x.start)).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-              <td>${x.br === 'ae' ? '🇦🇪' : '🇪🇬'}</td>
-              <td style="font-size:13px;">${x.dev === 'mobile' ? '📱' : x.dev === 'tablet' ? '📟' : '💻'} ${x.cty ? flag(x.cty) : ''} ${esc(SRC_LABELS[x.src] || x.src || '')}${Number(x.new) ? ' <span class="badge" style="background:#dcfce7;color:#166534;">جديد</span>' : ' <span class="badge" style="background:#eef2ff;color:#3730a3;">راجع</span>'}</td>
+              <td style="font-size:13px;white-space:nowrap;">${x.br === 'ae' ? '🇦🇪' : '🇪🇬'} ${x.dev === 'mobile' ? '📱' : x.dev === 'tablet' ? '📟' : '💻'} ${esc((SRC_LABELS[x.src] || x.src || 'مباشر').replace(/ \/ بدون مصدر/, ''))}${Number(x.new) ? ' <small style="color:#166534;">• جديد</small>' : ' <small style="color:#3730a3;">• راجع</small>'}</td>
               <td style="font-size:13px;">${pageLbl(x.land, x.landPn)} ← ${pageLbl(x.exit, x.exitPn)}</td>
               <td>${nf(x.pages || 0)}</td>
               <td>${fmtDur(x.dur || x.span)}</td>
               <td style="font-size:13px;">${esc(x.outcomeLabel)}${x.ord ? `<br><b>${esc(x.ord)}</b>` : ''}</td>
-              <td><button class="btn btn-sm btn-outline" data-jr-open="${esc(x.sid)}">👣 الرحلة</button></td>
+              <td><button class="btn btn-sm btn-outline" data-jr-open="${esc(x.sid)}" style="white-space:nowrap;">👣 الرحلة</button></td>
             </tr>`).join('')}
           </table></div>
+          <div style="text-align:center;margin-top:10px;"><button class="btn btn-sm btn-outline" id="jr-more">عرض المزيد</button> <small class="muted" id="jr-count"></small></div>
         </div>`;
+      let shown = 25;
       const filt = () => {
         const br = document.getElementById('jr-br').value, out = document.getElementById('jr-out').value;
-        box.querySelectorAll('[data-jr]').forEach((tr) => { tr.style.display = (!br || tr.dataset.br === br) && (!out || tr.dataset.out === out) ? '' : 'none'; });
+        let k = 0, total = 0;
+        box.querySelectorAll('[data-jr]').forEach((tr) => {
+          const ok = (!br || tr.dataset.br === br) && (!out || tr.dataset.out === out);
+          if (ok) total++;
+          tr.style.display = ok && k++ < shown ? '' : 'none';
+        });
+        document.getElementById('jr-count').textContent = `معروض ${Math.min(shown, total)} من ${total}`;
+        document.getElementById('jr-more').style.display = total > shown ? '' : 'none';
       };
-      document.getElementById('jr-br').addEventListener('change', filt);
-      document.getElementById('jr-out').addEventListener('change', filt);
+      document.getElementById('jr-more').addEventListener('click', () => { shown += 25; filt(); });
+      filt();
+      document.getElementById('jr-br').addEventListener('change', () => { shown = 25; filt(); });
+      document.getElementById('jr-out').addEventListener('change', () => { shown = 25; filt(); });
       box.querySelectorAll('[data-why]').forEach((el) => el.addEventListener('click', () => { document.getElementById('jr-out').value = el.dataset.why; filt(); document.getElementById('jr-out').scrollIntoView({ behavior: 'smooth', block: 'center' }); }));
       box.querySelectorAll('[data-jr-open]').forEach((b) => b.addEventListener('click', () => openJourney(b.dataset.jrOpen)));
     }
@@ -1631,7 +1641,8 @@
       ${a.legacy ? `<p class="muted" style="font-size:12px;">📦 أرقام النظام القديم (تقديرية، مش بتتحدّث): ${nf(a.legacy.totalViews)} زيارة • ${nf(a.legacy.totalVisitors)} زائر</p>` : ''}
       <div id="an-journeys"><div class="spinner">جاري تحميل رحلات الزوار...</div></div>
       ${a.pageTime && a.pageTime.length ? `<div class="admin-card"><h3 style="margin-bottom:12px;">⏱️ متوسط الوقت في كل صفحة</h3>
-        ${anBars(a.pageTime.map(([p, sec]) => [p, sec]), PAGE_LABELS)}<p class="muted" style="font-size:12px;">بالثواني — الوقت اللي الصفحة كانت ظاهرة فيه قدام الزائر فعلاً</p></div>` : ''}
+        ${(() => { const mx = Math.max(1, ...a.pageTime.map((x) => x[1])); return a.pageTime.map(([p, sec, n]) => `<div class="an-row"><div class="an-row-top"><span>${PAGE_LABELS[p] || esc(p)}</span><b>${fmtDur(sec)} <small class="muted">· ${nf(n)} زيارة</small></b></div><div class="an-track"><div style="width:${Math.max(2, sec / mx * 100)}%"></div></div></div>`).join(''); })()}
+        <p class="muted" style="font-size:12px;">متوسط الوقت اللي الصفحة كانت ظاهرة فيه قدام الزائر فعلاً</p></div>` : ''}
       <button class="btn btn-sm btn-danger" id="an-reset" style="margin-top:16px;">🗑️ تصفير كل الإحصائيات</button>`;
       loadJourneys(Math.min(anDays, 30));
 
