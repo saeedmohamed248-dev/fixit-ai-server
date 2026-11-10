@@ -6,7 +6,7 @@ import { fixMediaUrl } from './sync.js';
 
 const UAE = /إمارات|امارات|uae|dubai|دبي|الشارقة|sharjah/i;
 const isUae = (b) => UAE.test([b && b.name, b && b.location].filter(Boolean).join(' | '));
-function inEgypt(p) {
+export function inEgypt(p) {
   const stocked = (p.branches || []).filter((b) => Number(b.stock) > 0);
   if (stocked.length) return stocked.some((b) => !isUae(b));
   const parts = [p.originBranch, p.originLocation, ...(p.branches || []).flatMap((b) => [b.name, b.location])];

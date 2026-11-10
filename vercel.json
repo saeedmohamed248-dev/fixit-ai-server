@@ -1,8 +1,22 @@
 {
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/bmw/:m",
+      "destination": "/api/car?m=:m"
+    },
+    {
+      "source": "/mini/:m",
+      "destination": "/api/car?m=:m"
+    }
   ],
   "crons": [
-    { "path": "/api/maintenance?cron=1", "schedule": "0 9 * * *" }
+    {
+      "path": "/api/maintenance?cron=1",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
