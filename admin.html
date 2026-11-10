@@ -12,6 +12,13 @@
   <meta name="theme-color" content="#101828">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
+<style>
+  #report-view{display:none}
+  body.report-open > *:not(#report-view){display:none !important}
+  body.report-open{background:#fff !important}
+  body.report-open #report-view{display:block;position:relative;z-index:9999}
+  @media print{ #report-view .bar{display:none !important} }
+</style>
 </head>
 <body class="admin-body">
   <div id="admin-container"></div>
@@ -1575,30 +1582,47 @@
     // 📄 تقرير كامل قابل للطباعة/الحفظ PDF: الملخص + كل زيارة بكل خطواتها
     async function exportJourneysPdf(r, days) {
       const btn = document.getElementById('jr-pdf');
-      // نفتح النافذة فوراً (قبل أي انتظار) عشان متصفح الموبايل مايمنعهاش
-      const w = window.open('', '_blank');
-      if (!w) { toast('اسمح بالنوافذ المنبثقة عشان التقرير يفتح'); return; }
-      w.document.write('<p style="font-family:sans-serif;padding:20px;">⏳ جاري تجهيز التقرير...</p>');
+      // التقرير بيتعرض جوه نفس الصفحة (مش تبويب جديد): الآيفون بيوقّف الصفحة اللي في الخلفية
+      // فالتبويب الجديد كان بيفضل "جاري تجهيز التقرير" للأبد
+      let view = document.getElementById('report-view');
+      if (!view) { view = document.createElement('div'); view.id = 'report-view'; document.body.appendChild(view); }
+      view.innerHTML = '<p style="padding:20px;">⏳ جاري تجهيز التقرير...</p>';
+      document.body.classList.add('report-open');
+      window.scrollTo(0, 0);
       const br = document.getElementById('jr-br').value, out = document.getElementById('jr-out').value;
       const list = r.sessions.filter((x) => (!br || (x.br || 'eg') === br) && (!out || x.outcome === out)).slice(0, 300);
       const steps = {};
       for (let i = 0; i < list.length; i += 8) {
         btn.textContent = `⏳ ${i}/${list.length}`;
+        view.innerHTML = `<p style="padding:20px;">⏳ جاري تجهيز التقرير... ${i}/${list.length} زيارة</p>`;
         await Promise.all(list.slice(i, i + 8).map((x) => api('/track?session=' + encodeURIComponent(x.sid), { headers: authHeaders() }).then((j) => { steps[x.sid] = j; }).catch(() => {})));
       }
       btn.textContent = '📄 تقرير PDF كامل (كل الرحلات بالتفصيل)';
       const whyList = Object.entries(r.why).sort((a, b) => b[1].n - a[1].n);
       const exits = (Array.isArray(r.exits) ? r.exits.map((e) => (Array.isArray(e) ? e : [e.k || e.key || e.path, e.n || e.count])) : Object.entries(r.exits || {})).sort((a, b) => b[1] - a[1]).slice(0, 15);
       const brRow = (k) => { const b = r.branches[k]; if (!b) return ''; return `<tr><td>${BR_LBL[k]}</td><td>${b.sessions}</td><td>${b.sessions ? Math.round(b.cart / b.sessions * 100) : 0}%</td><td>${b.sessions ? Math.round(b.bought / b.sessions * 100) : 0}%</td><td>${(b.pages / b.sessions).toFixed(1)}</td><td>${fmtDur(Math.round(b.dur / b.sessions))}</td></tr>`; };
-      const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تقرير رحلات الزوار — ${new Date().toLocaleDateString('ar-EG')}</title>
-      <style>body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#111;background:#fff;margin:0;padding:16px;font-size:13px;line-height:1.6}
-      h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #f5a524;padding-bottom:4px}h3{font-size:14px;margin:0}
-      table{width:100%;border-collapse:collapse;margin:6px 0}td,th{border:1px solid #ddd;padding:5px 7px;text-align:start;vertical-align:top}th{background:#f6f6f6}
-      .j{border:1px solid #ddd;border-radius:8px;padding:10px;margin:10px 0;page-break-inside:avoid}.jr-step{padding:3px 0;border-bottom:1px dashed #eee}.jr-at{display:inline-block;min-width:70px;color:#666;font-size:12px}
-      .jr-ev{color:#1d4ed8}.jr-leave{color:#666}.badge{padding:1px 6px;border-radius:6px;font-size:11px}.muted{color:#666}button{display:none}
-      .bar{position:sticky;top:0;background:#fff;padding:8px 0;border-bottom:1px solid #eee;margin-bottom:10px}.bar button{display:inline-block;background:#f5a524;border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700}
-      @media print{.bar{display:none}body{padding:0}}</style></head><body>
-      <div class="bar"><button onclick="print()">🖨️ احفظ PDF / اطبع</button> <small class="muted">من نافذة الطباعة اختار "حفظ كـ PDF"</small></div>
+      const html = `<style>#report-view{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#111;background:#fff;margin:0;padding:16px;font-size:13px;line-height:1.6}
+#report-view h1{font-size:20px;margin:0 0 4px}
+#report-view h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #f5a524;padding-bottom:4px}
+#report-view h3{font-size:14px;margin:0}
+#report-view table{width:100%;border-collapse:collapse;margin:6px 0}
+#report-view td,#report-view th{border:1px solid #ddd;padding:5px 7px;text-align:start;vertical-align:top}
+#report-view th{background:#f6f6f6}
+#report-view .j{border:1px solid #ddd;border-radius:8px;padding:10px;margin:10px 0;page-break-inside:avoid}
+#report-view .jr-step{padding:3px 0;border-bottom:1px dashed #eee}
+#report-view .jr-at{display:inline-block;min-width:70px;color:#666;font-size:12px}
+#report-view .jr-ev{color:#1d4ed8}
+#report-view .jr-leave{color:#666}
+#report-view .badge{padding:1px 6px;border-radius:6px;font-size:11px}
+#report-view .muted{color:#666}
+#report-view button{display:none}
+#report-view .bar{position:sticky;top:0;background:#fff;padding:8px 0;border-bottom:1px solid #eee;margin-bottom:10px}
+#report-view .bar button{display:inline-block;background:#f5a524;border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700}
+#report-view @media print{.bar{display:none}
+#report-view{padding:0}
+#report-view }</style>
+      <div class="bar"><button onclick="print()">🖨️ احفظ PDF / اطبع</button> <button onclick="document.body.classList.remove('report-open');document.getElementById('report-view').innerHTML=''" style="background:#eee;">✕ رجوع</button>
+        <br><small class="muted">آيفون: اطبع ← زرار المشاركة ← حفظ في الملفات • أندرويد: اختار "حفظ كـ PDF"</small></div>
       <h1>🧭 تقرير رحلات الزوار — FixIt</h1>
       <div class="muted">الفترة: آخر ${days === 1 ? 'يوم' : days + ' يوم'} · ${list.length} زيارة${br ? ' · ' + BR_LBL[br] : ''}${out && r.why[out] ? ' · ' + r.why[out].label : ''} · اتعمل ${new Date().toLocaleString('ar-EG')}</div>
       <h2>📊 ملخص الفروع</h2><table><tr><th>الفرع</th><th>زيارات</th><th>حطوا في السلة</th><th>اشتروا</th><th>صفحة/زيارة</th><th>متوسط المدة</th></tr>${brRow('eg')}${brRow('ae')}</table>
@@ -1608,8 +1632,8 @@
       ${list.map((x, i) => `<div class="j"><h3>#${i + 1} — ${esc(x.outcomeLabel)}</h3>
         <div class="muted">${pageLbl(x.land, x.landPn)} ← ${pageLbl(x.exit, x.exitPn)} · ${x.pages || 0} صفحة · ${fmtDur(x.dur || x.span)}${Number(x.new) ? ' · زائر جديد' : ' · راجع'}</div>
         ${steps[x.sid] ? journeyHtml(steps[x.sid], false) : '<p class="muted">تعذّر تحميل الخطوات</p>'}</div>`).join('')}
-      </body></html>`;
-      w.document.open(); w.document.write(html); w.document.close();
+      `;
+      view.innerHTML = html;
     }
     async function openJourney(sid) {
       const modal = document.getElementById('order-modal'), body = document.getElementById('order-modal-body');
