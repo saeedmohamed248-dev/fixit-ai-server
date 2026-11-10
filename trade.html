@@ -182,7 +182,7 @@
         <div class="hero-cta">
           <a class="btn" href="/shop.html">${t('trade_cta_browse')} →</a>
           <a class="btn btn-outline" href="#rfq">${t('trade_cta_quote')}</a>
-          ${u ? '' : `<a class="btn btn-ghost" href="/account.html">${t('trade_cta_join')}</a>`}
+          ${u ? '' : `<a class="btn btn-ghost" href="/account.html?mode=register">${t('trade_cta_join')}</a>`}
         </div>
         ${u ? `<div class="signed">✓ ${t('trade_signedin')}: ${esc(u.name)}${u.company ? ' — ' + esc(u.company) : ''}</div>` : ''}
       </section>`;
@@ -195,7 +195,7 @@
         <section class="trade-panel" id="order-pad">
           <h2>⚡ ${t('op_title')}</h2>
           <div class="panel-sub">${t('op_login_first')}</div>
-          <a class="btn" href="/account.html">${t('ws_login_cta')}</a>
+          <a class="btn" href="/account.html?mode=register">${t('ws_login_cta')}</a>
         </section>`;
       }
       return `

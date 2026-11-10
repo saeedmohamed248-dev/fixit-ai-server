@@ -1334,7 +1334,38 @@
           const theirs = orders.filter((o) => o.userId === u.id || o.customer.phone === u.phone);
           return { count: theirs.length, total: theirs.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0) };
         };
+        // 🔥 تقييم تجار الجملة حسب تصرفاتهم في الموقع
+        const traders = customers.filter((u) => u.account === 'wholesale');
+        const act = traders.length ? await api('/track?traders=' + traders.map((u) => u.id).join(','), { headers: authHeaders() }).catch(() => ({})) : {};
+        const scoreOf = (u, s) => {
+          const a = act[u.id] || {}; const n = (k) => Number(a[k]) || 0;
+          const pts = n('prods') + n('cart') * 5 + n('wa') * 8 + n('rfq') * 15 + n('order') * 25 + Math.max(0, n('days') - 1) * 6 + Math.min(20, Math.round(n('dur') / 60)) + (s.count ? 40 : 0);
+          const lvl = pts >= 40 ? ['🔥', 'جاد — كلّمه النهارده', 3] : pts >= 12 ? ['🙂', 'مهتم', 2] : ['❄️', 'بيلف / لسه', 1];
+          return { a, pts, lvl };
+        };
+        const kindLbl = { trader: 'تاجر', workshop: 'ورشة', personal: 'شخصي' };
+        const ago = (ts) => { if (!ts) return '—'; const h = Math.round((Date.now() - Number(ts)) / 36e5); return h < 1 ? 'دلوقتي' : h < 24 ? `من ${h} ساعة` : `من ${Math.round(h / 24)} يوم`; };
+        const traderRows = traders.map((u) => ({ u, s: statsFor(u) })).map((x) => ({ ...x, sc: scoreOf(x.u, x.s) }))
+          .sort((a, b) => b.sc.pts - a.sc.pts);
+        const tradersHtml = traders.length ? `
+          <h3 style="margin:6px 0 8px;">🇦🇪 تجار الجملة — مرتّبين حسب الجدّية</h3>
+          <p class="muted" style="font-size:13px;margin-bottom:8px;">🔥 جاد: ${traderRows.filter((x) => x.sc.lvl[2] === 3).length} • 🙂 مهتم: ${traderRows.filter((x) => x.sc.lvl[2] === 2).length} • ❄️ بيلف: ${traderRows.filter((x) => x.sc.lvl[2] === 1).length}
+            — التقييم من: القطع اللي فتحها، السلة، طلبات عرض السعر، واتساب، عدد مرات رجوعه، والوقت.</p>
+          <div class="table-wrap" style="margin-bottom:22px;"><table class="table">
+          <tr><th>التقييم</th><th>التاجر</th><th>النشاط</th><th>شاف إيه</th><th>آخر ظهور</th><th></th></tr>
+          ${traderRows.map(({ u, sc }) => { const a = sc.a; const wa = String(u.phone).replace(/\D/g, '').replace(/^0/, '20');
+            return `<tr data-cu="${esc([u.name, u.phone, u.email, u.company].join(' ').toLowerCase())}">
+            <td style="white-space:nowrap;"><b>${sc.lvl[0]} ${sc.lvl[1]}</b><br><small class="muted">${sc.pts} نقطة</small></td>
+            <td>${esc(u.name)}${u.company ? '<br><small>🏢 ' + esc(u.company) + '</small>' : ''}<br><small dir="ltr">${esc(u.phone)}</small>
+              <br><small class="muted">${esc(u.country || '')}${u.kind ? ' • ' + (kindLbl[u.kind] || '') : ''}</small></td>
+            <td style="font-size:13px;white-space:nowrap;">👀 ${a.prods || 0} قطعة<br>🛒 ${a.cart || 0} • 📝 ${a.rfq || 0} • 💬 ${a.wa || 0}<br>📅 ${a.days || 0} يوم • ⏱️ ${Math.round((a.dur || 0) / 60)} د</td>
+            <td style="font-size:12px;max-width:220px;">${(a.parts || []).map(esc).join('<br>') || '—'}</td>
+            <td style="font-size:13px;">${ago(a.last)}</td>
+            <td><a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}?text=${encodeURIComponent('أهلاً ' + u.name + ' 👋 معاك FixIt Trade — شفتك مهتم ببعض القطع، تحب أبعتلك عرض سعر بالكمية؟')}">💬</a></td>
+          </tr>`; }).join('')}
+          </table></div>` : '';
         box.innerHTML = customers.length ? `<input id="cu-search" placeholder="🔍 ابحث بالاسم أو الموبايل أو الإيميل..." style="max-width:340px;margin-bottom:12px;">
+          ${tradersHtml}
           <p class="muted" style="font-size:13px;margin-bottom:8px;">${customers.length} عميل مسجّل • مرتّبين حسب إجمالي المشتريات</p>
           <div class="table-wrap"><table class="table">
           <tr><th>الاسم</th><th>الموبايل</th><th>طلبات</th><th>إجمالي مشترياته</th><th>⭐ نقاط</th><th>💳 رصيد</th><th></th></tr>

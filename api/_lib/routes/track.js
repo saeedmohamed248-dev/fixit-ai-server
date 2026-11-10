@@ -5,6 +5,7 @@
 // GET    /api/track?days=14  → تقرير كامل للفترة + مقارنة بالفترة اللي قبلها (إدارة)
 // DELETE /api/track  → تصفير (إدارة)
 import { kvPipeline, hasPersistence, getOrders, getAnalytics, saveAnalytics, getProducts } from '../db.js';
+import { verifyToken } from '../auth.js';
 import { cors, requireAdmin, rateLimit, searchScore, carCodes } from '../util.js';
 
 const TZ = 'Africa/Cairo';
@@ -156,6 +157,27 @@ async function record(req, b) {
       if (step.ord) cmds.push(['HSET', mk, 'ord', step.ord]);
     } else if (step.d) cmds.push(['HINCRBY', mk, 'dur', step.d]);
     cmds.push(['EXPIRE', mk, SESS_TTL], ['ZADD', `an:ss:${date}`, now, sid], ['EXPIRE', `an:ss:${date}`, SESS_TTL]);
+  }
+
+  // 🔥 نشاط تاجر الجملة المسجّل (بيتربط بحسابه عن طريق التوكن الموقّع)
+  const tok = b.tk && verifyToken(String(b.tk));
+  if (tok && tok.uid) {
+    const tk = `an:tr:${clean(tok.uid, 30)}`, TR_TTL = 180 * 86400;
+    cmds.push(['HSET', tk, 'last', Date.now()], ['HSET', tk, 'day:' + date, 1], ['EXPIRE', tk, TR_TTL]);
+    if (b.t === 'view') {
+      cmds.push(['HINCRBY', tk, 'pages', 1]);
+      if (b.pid) {
+        cmds.push(['HINCRBY', tk, 'prods', 1]);
+        const pl = `an:trp:${clean(tok.uid, 30)}`;
+        cmds.push(['RPUSH', pl, clean(b.pname || b.pid, 80)], ['LTRIM', pl, -15, -1], ['EXPIRE', pl, TR_TTL]);
+      }
+    } else if (b.t === 'event') {
+      const f = { add_cart: 'cart', whatsapp: 'wa', ws_order: 'order', rfq: 'rfq', container_request: 'rfq', part_request: 'rfq', search: 'search' }[clean(b.ev, 30)];
+      if (f) cmds.push(['HINCRBY', tk, f, 1]);
+    } else if (b.t === 'leave') {
+      const d = Math.min(3600, Math.max(0, Math.round(Number(b.dur) || 0)));
+      if (d) cmds.push(['HINCRBY', tk, 'dur', d]);
+    }
   }
 
   if (!cmds.length) return;
@@ -323,6 +345,22 @@ export default async function handler(req, res) {
         const [steps, meta] = await exec([['LRANGE', `an:s:${sid}`, 0, -1], ['HGETALL', `an:sm:${sid}`]]);
         const names = toObj((await exec([['HGETALL', 'an:pn']]))[0]);
         return res.status(200).json({ meta: toObj(meta), steps: (steps || []).map((x) => { try { const o = JSON.parse(x); if (o.pid && !o.pn) o.pn = names[o.pid]; return o; } catch { return null; } }).filter(Boolean) });
+      }
+      if (req.query && req.query.traders) {
+        // 🔥 نشاط تجار الجملة: ?traders=uid1,uid2
+        const ids = String(req.query.traders).split(',').map((x) => clean(x, 30)).filter(Boolean).slice(0, 300);
+        const out = {};
+        if (ids.length) {
+          const r = await exec(ids.flatMap((id) => [['HGETALL', `an:tr:${id}`], ['LRANGE', `an:trp:${id}`, 0, -1]]));
+          ids.forEach((id, i) => {
+            const m = toObj(r[i * 2]);
+            const days = Object.keys(m).filter((k) => k.startsWith('day:')).length;
+            Object.keys(m).forEach((k) => { if (k.startsWith('day:')) delete m[k]; });
+            out[id] = { ...m, days, parts: [...new Set((r[i * 2 + 1] || []).reverse())].slice(0, 6) };
+          });
+        }
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json(out);
       }
       if (req.query && req.query.missing) {
         const d = Math.min(90, Math.max(1, parseInt(req.query.days || '30', 10) || 30));

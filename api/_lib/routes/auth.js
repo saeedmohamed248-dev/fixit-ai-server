@@ -8,7 +8,16 @@ import { signToken, getUser, hashPassword, checkPassword } from '../auth.js';
 import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
 import { sendWelcome } from '../email.js';
 
-const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0, account: u.account || 'retail', company: u.company || '', country: u.country || '' });
+function countryFromPhone(p) {
+  const d = String(p || '').replace(/\D/g, '').replace(/^00/, '');
+  if (/^(20|01)/.test(d)) return 'مصر';
+  if (/^971/.test(d)) return 'الإمارات';
+  if (/^7/.test(d)) return 'روسيا';
+  if (/^966/.test(d)) return 'السعودية';
+  if (/^964/.test(d)) return 'العراق';
+  return '';
+}
+const publicUser = (u) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email || '', points: u.points || 0, credit: u.credit || 0, account: u.account || 'retail', company: u.company || '', country: u.country || '', kind: u.kind || '', createdAt: u.createdAt || '' });
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -16,12 +25,15 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'POST') {
       if (!rateLimit(req, res, 'auth', 10)) return;
-      const { action, name, phone, password, email, account, company, country } = req.body || {};
+      const { action, phone, password, email, account, company, country, kind } = req.body || {};
+      let { name } = req.body || {};
       const users = await getUsers();
 
       if (action === 'register') {
         // حساب الجملة (تاجر) بيقبل أرقام دولية، حساب القطاعي بيقبل الأرقام المصرية
         const isWholesale = account === 'wholesale';
+        // تاجر الجملة: الموبايل وكلمة السر بس — الاسم يتكمّل بعدين من "تعديل بياناتي"
+        if (isWholesale && !String(name || '').trim()) name = 'تاجر ' + String(phone || '').replace(/\D/g, '').slice(-4);
         if (!name || !phone || !password) {
           return res.status(400).json({ error: 'الاسم ورقم الموبايل وكلمة السر مطلوبين' });
         }
@@ -43,7 +55,9 @@ export default async function handler(req, res) {
           name, phone, email: email || '',
           account: isWholesale ? 'wholesale' : 'retail',
           company: company || '',
-          country: country || '',
+          // الدولة من كود الموبايل لو مكتبهاش (عشان شروط الدفع حسب البلد)
+          country: country || countryFromPhone(phone),
+          kind: ['trader', 'workshop', 'personal'].includes(kind) ? kind : '',
           pass: hashPassword(password),
           createdAt: new Date().toISOString(),
         };
