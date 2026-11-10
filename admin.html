@@ -1839,6 +1839,17 @@
             <div class="full"><label>رسالة الشريط العلوي (إنجليزي)</label><input id="s-topbarEn" dir="ltr" value="${esc(s.topbarEn || '')}" placeholder="🚚 Delivery all over Egypt"></div>
           </div>
 
+          <div style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px;">
+            <h4 style="margin-bottom: 6px;">📣 فيسبوك وانستجرام (Meta)</h4>
+            <p style="color: var(--muted); font-size: 13px; margin-bottom: 10px;">حط رقم الـ Pixel عشان فيسبوك يعرف مين زار ومين ضاف للسلة ومين اشترى — الإعلانات تبقى أذكى وتقدر تعمل Retargeting. (من Events Manager ← Data sources ← Pixel ID)</p>
+            <div class="form-grid">
+              <div><label>Meta Pixel ID</label><input id="s-metaPixel" dir="ltr" inputmode="numeric" placeholder="مثلاً 1234567890123456" value="${esc(s.metaPixel || '')}"></div>
+              <div><label>رابط كتالوج المنتجات (Data feed)</label>
+                <div style="display:flex;gap:6px;"><input readonly dir="ltr" id="feed-url" value="${location.origin}/api/feed"><button type="button" class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('feed-url').value);toast('✅ اتنسخ')">نسخ</button></div>
+                <small style="color: var(--muted);">في Commerce Manager ← Catalog ← Data sources ← Data feed ← حط الرابط ده (تحديث يومي) — قطع مصر المتاحة اللي ليها صور</small></div>
+            </div>
+          </div>
+
           <div class="pay-status" style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px;">
             <h4 style="margin-bottom: 6px;">💳 طرق الدفع</h4>
             <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">دي الطرق اللي العميل بيدفع بيها من صفحة السلة</p>
@@ -1879,7 +1890,7 @@
         document.getElementById('s-save').addEventListener('click', async () => {
           try {
             const body = {};
-            ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn']
+            ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel']
               .forEach((k) => { body[k] = document.getElementById('s-' + k).value.trim(); });
             const saved = await api('/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
             localStorage.setItem('site_settings', JSON.stringify(saved));

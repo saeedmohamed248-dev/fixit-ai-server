@@ -7,7 +7,7 @@ import { cors, requireAdmin } from '../util.js';
 // المفاتيح المسموح تعديلها من اللوحة
 const KEYS = [
   'storeName', 'accent', 'whatsapp', 'phoneDisplay',
-  'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn',
+  'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel',
 ];
 
 export default async function handler(req, res) {
@@ -25,6 +25,7 @@ export default async function handler(req, res) {
       for (const key of KEYS) {
         if (key in body) current[key] = body[key];
       }
+      if ('metaPixel' in body) current.metaPixel = String(body.metaPixel || '').replace(/\D/g, '').slice(0, 20);
       await saveSettings(current);
       await logActivity('settings', 'تعديل إعدادات المتجر (الاسم/الألوان/الأرقام)');
       return res.status(200).json(current);

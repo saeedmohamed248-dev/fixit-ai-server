@@ -287,9 +287,31 @@ function shadeColor(hex, pct) {
   return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
 }
 
+/* ---------- 📣 Meta Pixel (فيسبوك/انستجرام) — الـ ID بيتحط من لوحة التحكم ← الإعدادات ---------- */
+function initPixel(id) {
+  id = String(id || '').trim();
+  if (!/^\d{6,20}$/.test(id) || window._pxInit || IS_NATIVE) return;
+  window._pxInit = id;
+  /* eslint-disable */
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  /* eslint-enable */
+  fbq('init', id);
+  fbq('track', 'PageView');
+  (window._pxQueue || []).forEach((a) => fbq('track', a[0], a[1]));
+  window._pxQueue = [];
+}
+function px(ev, data) {
+  try {
+    if (window.fbq) fbq('track', ev, data || {});
+    else (window._pxQueue = window._pxQueue || []).push([ev, data || {}]);
+  } catch {}
+}
+function pxCurrency() { return isWholesale() ? (WCUR === 'usd' ? 'USD' : 'AED') : 'EGP'; }
+
 function applySettings(s) {
   if (!s || typeof s !== 'object') return;
   window.SETTINGS = s;
+  if (s.metaPixel) initPixel(s.metaPixel);
   if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent)) {
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent);
@@ -391,7 +413,13 @@ function trackPageview(extra = {}) {
   const utm = new URLSearchParams(location.search).get('utm_source') || '';
   track('view', { path: location.pathname, q: location.search.slice(0, 80), nv, ns, ref: ns ? document.referrer : '', utm: ns ? utm : '', locked: wsLocked() ? 1 : 0, cart: Object.keys(getCart()).length, ...extra });
 }
-function trackEvent(ev, extra = {}) { track('event', { ev, ...extra }); }
+function trackEvent(ev, extra = {}) {
+  track('event', { ev, ...extra });
+  // 📣 نفس الأحداث بتروح لفيسبوك بالأسماء القياسية (للإعلانات والـ Retargeting)
+  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead' };
+  if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
+  else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
+}
 // 🔎 تسجيل البحث (مرة واحدة لكل كلمة في الجلسة) — n=0 يعني مالقاش حاجة متاحة في المخزون
 // بنستنى العميل يخلّص كتابة (ثانية ونص من غير كتابة) — عشان مانسجّلش "طقم فوانيس خ" و"خا" و"خلف" كل واحدة لوحدها
 let _searchTimer = null, _searchPending = null;
@@ -459,7 +487,7 @@ function addToCart(id, qty = 1) {
   cart[id] = (cart[id] || 0) + qty;
   setCart(cart);
   toast(t('toast_added'));
-  trackEvent('add_cart');
+  trackEvent('add_cart', { pid: id });
 }
 function removeFromCart(id) {
   const cart = getCart();
@@ -513,57 +541,109 @@ function toggleWishlist(id) {
 function inWishlist(id) { return getWishlist().includes(id); }
 
 /* ---------- 🚗 جراج عربيتي ---------- */
-const CAR_MODELS = ['E36', 'E46', 'E60', 'E90', 'E92', 'F10', 'F20', 'F22', 'F30', 'F32', 'F36', 'G20', 'G30', 'X1', 'X3', 'X5', 'X6', 'R50', 'R55', 'R56', 'R60', 'F54', 'F55', 'F56'];
+const CAR_GROUPS = {
+  BMW: [
+    ['E36', '3 · 1990-2000'], ['E46', '3 · 1998-2006'], ['E90', '3 · 2005-2012'], ['E92', '3 Coupé · 2006-2013'],
+    ['F30', '3 · 2012-2019'], ['G20', '3 · 2019+'], ['E87', '1 · 2004-2011'], ['F20', '1 · 2011-2019'],
+    ['E39', '5 · 1995-2004'], ['E60', '5 · 2003-2010'], ['F10', '5 · 2010-2017'], ['G30', '5 · 2017+'],
+    ['E65', '7 · 2001-2008'], ['F01', '7 · 2008-2015'], ['F02', '7 L · 2008-2015'],
+    ['E84', 'X1 · 2009-2015'], ['F48', 'X1 · 2015-2022'], ['E83', 'X3 · 2003-2010'], ['F25', 'X3 · 2010-2017'],
+    ['G01', 'X3 · 2017+'], ['E70', 'X5 · 2006-2013'], ['F15', 'X5 · 2013-2018'], ['G05', 'X5 · 2018+'], ['F16', 'X6 · 2014-2019'],
+  ],
+  MINI: [
+    ['R56', 'Hatch · 2006-2013'], ['R55', 'Clubman · 2007-2014'], ['R60', 'Countryman · 2010-2016'],
+    ['F56', 'Hatch · 2014+'], ['F55', '5-door · 2014+'], ['F54', 'Clubman · 2015+'], ['F60', 'Countryman · 2017+'],
+  ],
+};
+const CAR_MODELS = Object.values(CAR_GROUPS).flat().map((x) => x[0]);
 
 function getGarage() {
-  try { return JSON.parse(localStorage.getItem('garage')) || null; }
-  catch { return null; }
+  try {
+    const g = JSON.parse(localStorage.getItem('garage')) || null;
+    if (g && g.model) g.model = String(g.model).toUpperCase();
+    return g && g.model ? g : null;
+  } catch { return null; }
+}
+function garageLabel(g = getGarage()) {
+  if (!g) return '';
+  const row = Object.values(CAR_GROUPS).flat().find((x) => x[0] === g.model);
+  let fam = row ? row[1].split(' · ')[0] : '';
+  if (/^\d$/.test(fam)) fam = (LANG === 'en' ? 'Series ' : 'الفئة ') + fam;
+  return g.model + (fam ? ' · ' + fam : '') + (g.year ? ' ' + g.year : '');
+}
+// 🚗 هل القطعة بتركب على عربية العميل؟ true / false / null (مش معروف)
+function fitsCar(p) {
+  const g = getGarage();
+  const codes = (p && p.fits) || [];
+  if (!g || !codes.length) return null;
+  return codes.includes(g.model);
 }
 function openGarageModal() {
-  let modal = document.getElementById('garage-modal');
-  if (!modal) {
-    const garage = getGarage();
-    modal = document.createElement('div');
-    modal.id = 'garage-modal';
-    modal.className = 'modal-overlay open';
-    modal.innerHTML = `
-    <div class="modal" style="max-width: 420px;">
-      <h3>${t('garage_title')}</h3>
-      <p style="color: var(--muted); font-size: 13px; margin-bottom: 14px;">${t('garage_sub')}</p>
-      <div class="form-stack">
-        <div><label>${t('garage_model')}</label>
-          <select id="g-model">${CAR_MODELS.map((m) => `<option ${garage?.model === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
-        <div><label>${t('garage_year')}</label><input id="g-year" type="number" min="1990" max="2030" value="${garage?.year || ''}"></div>
-        <button class="btn" id="g-save">${t('garage_save')}</button>
-        ${garage ? `<button class="btn btn-outline btn-sm" id="g-remove">${t('garage_remove')}</button>` : ''}
-      </div>
-    </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-    modal.querySelector('#g-save').addEventListener('click', () => {
-      localStorage.setItem('garage', JSON.stringify({
-        model: modal.querySelector('#g-model').value,
-        year: modal.querySelector('#g-year').value.trim(),
-      }));
-      toast(t('garage_saved'));
-      modal.remove();
-      renderLayout(window._active || '');
+  document.getElementById('garage-modal')?.remove();
+  const garage = getGarage();
+  const modal = document.createElement('div');
+  modal.id = 'garage-modal';
+  modal.className = 'modal-overlay open';
+  let sel = garage?.model || '';
+  const grid = Object.entries(CAR_GROUPS).map(([brand, list]) => `
+    <div class="gm-brand">${brand === 'MINI' ? 'MINI Cooper' : 'BMW'}</div>
+    <div class="gm-grid">${list.map(([c, d]) => `<button type="button" class="gm-car ${sel === c ? 'on' : ''}" data-c="${c}"><b>${c}</b><small>${d}</small></button>`).join('')}</div>`).join('');
+  modal.innerHTML = `
+  <div class="modal gm-modal">
+    <button class="gm-x" type="button" aria-label="close">✕</button>
+    <h3>${t('garage_title')}</h3>
+    <p style="color: var(--muted); font-size: 13px; margin-bottom: 10px;">${t('garage_sub')}</p>
+    <input id="g-search" type="search" placeholder="${LANG === 'en' ? 'Search: F30, X5, 2015…' : 'ابحث: F30 أو X5 أو 2015…'}" dir="ltr">
+    <div class="gm-list">${grid}</div>
+    <div class="gm-foot">
+      <input id="g-year" type="number" min="1985" max="2030" placeholder="${t('garage_year')}" value="${garage?.year || ''}">
+      <button class="btn" id="g-save" ${sel ? '' : 'disabled'}>${t('garage_save')}</button>
+    </div>
+    ${garage ? `<button class="btn btn-outline btn-sm" id="g-remove" style="width:100%;margin-top:8px;">${t('garage_remove')}</button>` : ''}
+  </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  modal.querySelector('.gm-x').addEventListener('click', close);
+  modal.querySelectorAll('.gm-car').forEach((b) => b.addEventListener('click', () => {
+    sel = b.dataset.c;
+    modal.querySelectorAll('.gm-car').forEach((x) => x.classList.toggle('on', x === b));
+    modal.querySelector('#g-save').disabled = false;
+  }));
+  modal.querySelector('#g-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const yr = /^\d{4}$/.test(q) ? Number(q) : 0;
+    modal.querySelectorAll('.gm-car').forEach((b) => {
+      const txt = b.textContent.toLowerCase();
+      let show = !q || txt.includes(q);
+      if (yr) { const m = txt.match(/(\d{4})-?(\d{4})?(\+)?/); show = !!m && yr >= +m[1] && (m[3] || yr <= +(m[2] || m[1])); }
+      b.style.display = show ? '' : 'none';
     });
-    modal.querySelector('#g-remove')?.addEventListener('click', () => {
-      localStorage.removeItem('garage');
-      modal.remove();
-      renderLayout(window._active || '');
-    });
-  }
+  });
+  modal.querySelector('#g-save').addEventListener('click', () => {
+    if (!sel) return;
+    localStorage.setItem('garage', JSON.stringify({ model: sel, year: modal.querySelector('#g-year').value.trim() }));
+    toast(t('garage_saved'));
+    close();
+    if (typeof window.onGarageChange === 'function') window.onGarageChange();
+    else location.reload();
+  });
+  modal.querySelector('#g-remove')?.addEventListener('click', () => {
+    localStorage.removeItem('garage');
+    close();
+    if (typeof window.onGarageChange === 'function') window.onGarageChange();
+    else location.reload();
+  });
 }
 // شارة التوافق مع عربية العميل على صفحة المنتج
 function compatBadge(p) {
-  const garage = getGarage();
-  if (!garage) return '';
-  const label = garage.model + (garage.year ? ' ' + garage.year : '');
-  return p.models.includes(garage.model)
-    ? `<div class="compat compat-ok">${t('compat_ok', { m: label })}</div>`
-    : `<div class="compat compat-no">${t('compat_no', { m: label })}</div>`;
+  const g = getGarage();
+  if (!g) return '';
+  const fit = fitsCar(p);
+  const m = esc(garageLabel(g));
+  if (fit === true) return `<div class="compat compat-ok">${t('compat_ok', { m })}</div>`;
+  if (fit === false) return `<div class="compat compat-no">${t('compat_no', { m })}</div>`;
+  return `<div class="compat compat-ask">${t('compat_ask', { m })}</div>`;
 }
 
 /* ---------- شاهدتها مؤخراً ---------- */
@@ -664,7 +744,8 @@ function productCard(p) {
         ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-used">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
       </div>
       <h3 class="card-title">${esc(pname(p))}</h3>
-      <div class="card-models">${p.models.map((m) => esc(m)).join(' • ')}</div>
+      ${fitsCar(p) === true ? `<div class="fit-badge">✅ ${t('fits_yours')}</div>` : ''}
+      <div class="card-models">${((p.fits && p.fits.length) ? p.fits : p.models.filter((m) => m && m !== '—')).slice(0, 6).map((m) => esc(m)).join(' • ')}</div>
       ${p.ratingCount ? `<div class="card-rating">${starsHtml(p.ratingAvg, p.ratingCount)}</div>` : ''}
       ${isWholesale() && !wsLocked() && dispPrice(p) !== null && wsTiers().length > 1
         ? `<div class="tier-hint">📊 ${t('tier_hint')}</div>` : ''}
@@ -838,7 +919,7 @@ function renderLayout(active = '') {
           ${branchSwitch}
           ${curSwitch}
           <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
-          ${isWholesale() ? '' : `<button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) : t('garage_btn')}</button>`}
+          ${isWholesale() ? '' : `<button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) + ' ✓' : t('garage_btn')}</button>`}
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
             👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>

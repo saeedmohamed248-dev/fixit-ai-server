@@ -146,6 +146,37 @@
         }));
     }
 
+    // 🚗 شريط "عربيتك" فوق النتايج
+    function renderGarageBar() {
+      let bar = document.getElementById('garage-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'garage-bar';
+        const lay = document.querySelector('.shop-layout');
+        lay.parentNode.insertBefore(bar, lay);
+      }
+      if (isWholesale()) { bar.innerHTML = ''; return; }
+      const g = getGarage();
+      const mSel = document.getElementById('f-model');
+      if (!g) {
+        bar.className = 'garage-bar';
+        bar.innerHTML = `<span>🚗 ${LANG === 'en' ? 'Pick your car to see the parts that fit it' : 'اختار عربيتك ونوريك القطع اللي بتركب عليها بس'}</span>
+          <button class="btn btn-sm" type="button" onclick="openGarageModal()">${LANG === 'en' ? 'Pick my car' : 'اختار عربيتك'}</button>`;
+        return;
+      }
+      const on = mSel.value === g.model;
+      bar.className = 'garage-bar has-car';
+      bar.innerHTML = `<span>${t('garage_banner', { m: esc(garageLabel(g)) })}</span>
+        <label class="gb-toggle"><input type="checkbox" id="gb-only" ${on ? 'checked' : ''}> ${t('garage_only')}</label>
+        <button class="btn btn-outline btn-sm" type="button" onclick="openGarageModal()">${t('garage_change')}</button>`;
+      bar.querySelector('#gb-only').addEventListener('change', (e) => {
+        if (e.target.checked && ![...mSel.options].some((o) => o.value === g.model)) mSel.add(new Option(g.model, g.model));
+        mSel.value = e.target.checked ? g.model : '';
+        load();
+      });
+    }
+    window.onGarageChange = () => { renderLayout('shop'); const g = getGarage(); const mSel = document.getElementById('f-model'); if (g) { if (![...mSel.options].some((o) => o.value === g.model)) mSel.add(new Option(g.model, g.model)); mSel.value = g.model; } else mSel.value = ''; load(); };
+
     async function load() {
       grid.innerHTML = skeletonCards(9);
       const qs = new URLSearchParams();
@@ -159,6 +190,12 @@
         //    (الـ API بيفلتر stock>0 تلقائياً لما مانبعتش all=1).
         lastResults = wsCatalogFilter(await api('/products' + (qs.toString() ? '?' + qs : '')));
         if (document.getElementById('f-sort').value === 'newest') lastResults = [...lastResults].sort(byNewest);
+        // 🚗 لو العميل مسجّل عربيته: القطع اللي بتركب عليها تطلع الأول
+        if (getGarage() && !/^price/.test(document.getElementById('f-sort').value)) {
+          const rank = (p) => (fitsCar(p) === true ? 0 : fitsCar(p) === null ? 1 : 2);
+          lastResults = [...lastResults].sort((a, b) => rank(a) - rank(b));
+        }
+        renderGarageBar();
         currentPage = 1;
         document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
         if (qs.get('q')) trackSearch(qs.get('q'), lastResults.length); // 📈 يظهر في "بحث بدون نتائج" لو مفيش
@@ -172,7 +209,7 @@
     // موديل/فئة نتيجتها فاضية (كل قطعها مخزونها صفر ومخفية عن العميل).
     api('/products').then((all) => {
       const products = wsCatalogFilter(all);
-      const models = [...new Set(products.flatMap((p) => p.models))].sort();
+      const models = [...new Set(products.flatMap((p) => p.fits || []))].sort();
       const cats = [...new Set(products.map((p) => p.category))];
       const mSel = document.getElementById('f-model');
       const cSel = document.getElementById('f-category');
