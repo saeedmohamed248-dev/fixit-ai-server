@@ -118,3 +118,63 @@ export function requireAdmin(req, res) {
   }
   return true;
 }
+
+// 🔎 بحث ذكي بالعربي المصري: يوحّد الحروف (أ/إ/آ→ا، ة→ه، ى→ي)، يشيل التشكيل والتطويل،
+//    ويفهم الجمع والمرادفات الشائعة في قطع الغيار (فوانيس=فانوس، طارات=طارة…)
+export function normalizeAr(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[ً-ْـ]/g, '')       // تشكيل + تطويل
+    .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')               // الشرطة والنقط والأقواس → مسافة
+    .replace(/\s+/g, ' ').trim();
+}
+// كل مجموعة = كلمات بنعتبرها نفس الحاجة (بعد التطبيع)
+const SYNONYMS = [
+  ['فانوس', 'فوانيس', 'كشاف', 'كشافات', 'اناره', 'headlight', 'headlamp', 'taillight', 'lamp', 'light'],
+  ['اكصدام', 'اكسدام', 'صدام', 'اكصدامات', 'bumper'],
+  ['طاره', 'طارات', 'دريكسيون', 'steering'],
+  ['شاشه', 'شاشات', 'screen', 'display', 'monitor'],
+  ['مقص', 'مقصات', 'control arm', 'arm'],
+  ['مساعد', 'مساعدين', 'مساعدات', 'shock', 'absorber'],
+  ['تيل', 'فحمات', 'فحمه', 'brake pad', 'pads'],
+  ['طنبوره', 'طنابير', 'ديسك', 'ديسكات', 'disc', 'rotor'],
+  ['رديتر', 'ردياتير', 'رادياتير', 'radiator'],
+  ['ماسك', 'ماسكات', 'شبكه', 'grille', 'kidney'],
+  ['مراه', 'مرايه', 'مرايات', 'مرايا', 'mirror'],
+  ['موتور', 'محرك', 'ماتور', 'engine'],
+  ['فتيس', 'جيربوكس', 'ناقل حركه', 'gearbox', 'transmission'],
+  ['شورت بلوك', 'شورتبلوك', 'short block'],
+  ['كولر', 'زيت كولر', 'oil cooler'],
+  ['طلمبه', 'طلمبات', 'مضخه', 'pump'],
+  ['كباس', 'كمبروسر', 'compressor'],
+  ['جوان', 'جوانات', 'gasket'],
+  ['خرطوم', 'خراطيم', 'hose'],
+  ['حساس', 'حساسات', 'سنسور', 'sensor'],
+  ['بوجيه', 'بوجيهات', 'شمعه', 'spark plug'],
+  ['بوبينه', 'موبينه', 'موبينات', 'بوبينات', 'coil'],
+  ['فلتر', 'فلاتر', 'filter'],
+  ['كبوت', 'كابوت', 'hood', 'bonnet'],
+  ['رفرف', 'رفارف', 'fender'],
+  ['باب', 'ابواب', 'door'],
+  ['جنط', 'جنوط', 'rim', 'wheel'],
+  ['كاوتش', 'كاوتشات', 'اطار', 'tire', 'tyre'],
+];
+const SYN_INDEX = new Map();
+SYNONYMS.forEach((g) => { const n = g.map(normalizeAr); n.forEach((w) => SYN_INDEX.set(w, n)); });
+// بيرجع درجة التطابق (0 = مش مطابق). كل كلمة في البحث لازم تطابق (بأي مرادف)
+export function searchScore(p, q) {
+  const words = normalizeAr(q).split(' ').filter(Boolean);
+  if (!words.length) return 1;
+  const name = normalizeAr([p.name, p.nameEn].join(' '));
+  const hay = normalizeAr([p.name, p.nameEn, p.sku, p.oem, p.description, ...(p.models || []), ...(p.partNumbers || []), p.brand, p.category].join(' '));
+  const full = normalizeAr(q);
+  const variants = (w) => SYN_INDEX.get(w) || [...SYN_INDEX.entries()].filter(([k]) => k.length >= 3 && (k.startsWith(w) && w.length >= 3)).flatMap(([, v]) => v).concat([w]);
+  let hit = 0, nameHit = 0;
+  words.forEach((w) => {
+    const vs = variants(w);
+    if (vs.some((v) => hay.includes(v))) hit++;
+    if (vs.some((v) => name.includes(v))) nameHit++;
+  });
+  if (hit === words.length) return 100 + nameHit * 10 + (name.includes(full) ? 50 : 0);
+  return 0; // لازم كل الكلمات تطابق — نتايج نص صح بتلخبط العميل أكتر ما بتساعده
+}
