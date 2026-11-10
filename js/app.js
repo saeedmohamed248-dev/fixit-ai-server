@@ -386,18 +386,22 @@ function sendLeave() {
   _pgSent = true;
   track('leave', { path: location.pathname, dur: Math.min(3600, Math.round(_pgVisible / 1000)), scroll: Math.round(Math.min(1, (scrollY + innerHeight) / Math.max(1, document.documentElement.scrollHeight)) * 100) });
 }
+// 🔥 نشاط تاجر الجملة المسجّل بيتربط بحسابه — عشان لوحة التحكم تفرز الجاد من اللي بيجمع أسعار
+function traderTag() {
+  try { const u = currentUser(); return u && u.account === 'wholesale' && userToken() ? { tk: userToken() } : {}; } catch { return {}; }
+}
 function track(type, data = {}) {
   try {
     if (localStorage.getItem('admin_token')) return; // زيارات صاحب المتجر مش بتتحسب
   } catch {}
   // الخروج من الصفحة: sendBeacon بيوصل حتى والصفحة بتتقفل
   if (type === 'leave' && navigator.sendBeacon) {
-    try { navigator.sendBeacon(API + '/track', new Blob([JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...data })], { type: 'application/json' })); return; } catch {}
+    try { navigator.sendBeacon(API + '/track', new Blob([JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...traderTag(), ...data })], { type: 'application/json' })); return; } catch {}
   }
   try {
     fetch(API + '/track', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...data }), keepalive: true,
+      body: JSON.stringify({ t: type, vid: anonId(), sid: sessId(), br: isWholesale() ? 'ae' : 'eg', ...traderTag(), ...data }), keepalive: true,
     }).catch(() => {});
   } catch {}
 }
@@ -448,7 +452,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-login]');
   if (!el) return;
   e.preventDefault(); e.stopPropagation();
-  location.href = '/account.html';
+  location.href = '/account.html?mode=register&next=' + encodeURIComponent(location.pathname + location.search);
 }, true);
 // تتبّع نقرات واتساب
 document.addEventListener('click', (e) => {

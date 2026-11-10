@@ -155,7 +155,7 @@
       if (items.length === 0) return load();
       if (!currentUser()) {
         container.innerHTML = `<div class="empty-state"><span class="icon">🔒</span>
-          ${t('ws_login_required')}<br><br><a class="btn" href="/account.html">${t('ws_login_cta')}</a></div>`;
+          ${t('ws_login_required')}<br><br><a class="btn" href="/account.html?mode=register&next=${encodeURIComponent(location.pathname + location.search)}">${t('ws_login_cta')}</a></div>`;
         return;
       }
       let subtotal = 0;
