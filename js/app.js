@@ -1040,7 +1040,37 @@ function renderLayout(active = '') {
 
   applyI18n();
   updateCartBadge();
+  markActiveNav();
+  scrollToHash();
 }
+
+// 🧭 تحديد الزرار النشط في القائمة حسب الرابط الكامل (مش الصفحة بس) — عشان "وصل حديثاً"
+//    و BMW و MINI مايبانوش كأنهم رجّعوا للكتالوج، والقائمة تتحرك لحد الزرار النشط على الموبايل
+function markActiveNav() {
+  const nav = document.getElementById('main-nav');
+  if (!nav) return;
+  const here = location.pathname.replace(/\/$/, '/index.html') + location.search + location.hash;
+  const links = [...nav.querySelectorAll('a')];
+  const exact = links.find((a) => a.getAttribute('href') === here)
+    || links.find((a) => location.hash && a.getAttribute('href') === location.pathname + location.hash);
+  if (exact) { links.forEach((a) => a.classList.remove('active')); exact.classList.add('active'); }
+  const act = nav.querySelector('a.active');
+  if (act) requestAnimationFrame(() => { try { act.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch {} });
+}
+// ⚓ روابط زي /trade.html#rfq: المحتوى بيترسم بعد التحميل، فالمتصفح مابيلاقيش القسم — نوصله إحنا
+function scrollToHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id || scrollToHash._done === location.href) return;
+  let tries = 0;
+  const go = () => {
+    const el = document.getElementById(id);
+    if (el && el.offsetParent !== null) { scrollToHash._done = location.href; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (++tries < 20) setTimeout(go, 200);
+  };
+  setTimeout(go, 50);
+}
+// نفس الصفحة + هاش جديد (طلب سريع ⇄ عرض سعر) — المتصفح بيغيّر الرابط بس
+window.addEventListener('hashchange', () => { scrollToHash._done = ''; markActiveNav(); scrollToHash(); });
 
 /* ============================================================
    📱 تهيئة تطبيق الموبايل (Capacitor) — أندرويد / iOS

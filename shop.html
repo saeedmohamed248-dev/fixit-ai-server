@@ -198,7 +198,12 @@
         }
         renderGarageBar();
         currentPage = 1;
-        document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
+        {
+          // عنوان واضح للقسم المفتوح (وصل حديثاً / BMW / MINI / ماركات تانية) عشان العميل يعرف هو فين
+          const sv = document.getElementById('f-sort').value, bv = document.getElementById('f-brand').value;
+          const label = sv === 'newest' ? '🆕 ' + t('nav_new_arrivals') : bv === 'OTHER' ? t('f_other_makes') : bv ? '⭐ ' + bv : '';
+          document.getElementById('results-count').innerHTML = (label ? `<b style="color:var(--brand);">${esc(label)}</b> • ` : '') + `${lastResults.length} ${t('n_products')}`;
+        }
         if (qs.get('q')) trackSearch(qs.get('q'), lastResults.length); // 📈 يظهر في "بحث بدون نتائج" لو مفيش
         renderPage();
       } catch (e) {
