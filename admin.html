@@ -1508,7 +1508,7 @@
     const BR_LBL = { eg: '🇪🇬 مصر (قطاعي)', ae: '🇦🇪 الإمارات (جملة)' };
     const fmtDur = (sec) => { sec = Number(sec) || 0; return sec < 60 ? sec + ' ث' : Math.floor(sec / 60) + ' د ' + (sec % 60) + ' ث'; };
     // اسم الصفحة + اسم المنتج لو صفحة منتج (المفتاح ممكن يبقى "path|اسم المنتج")
-    const pageLbl = (p, pn) => { if (p && p.includes('|')) [p, pn] = p.split('|'); if (pn) return `🔧 <b title="${esc(pn)}">${esc(pn.length > 32 ? pn.slice(0, 30) + '…' : pn)}</b>`; return PAGE_LABELS[p] || esc(p || '—'); };
+    const pageLbl = (p, pn) => { p = p == null ? '' : String(p); pn = pn == null || pn === '' ? '' : String(pn); if (p.includes('|')) [p, pn] = p.split('|'); if (pn) return `🔧 <b title="${esc(pn)}">${esc(pn.length > 32 ? pn.slice(0, 30) + '…' : pn)}</b>`; return PAGE_LABELS[p] || esc(p || '—'); };
     async function loadJourneys(days) {
       const box = document.getElementById('an-journeys');
       if (!box) return;
@@ -1581,6 +1581,14 @@
     }
     // 📄 تقرير كامل قابل للطباعة/الحفظ PDF: الملخص + كل زيارة بكل خطواتها
     async function exportJourneysPdf(r, days) {
+      try { await buildJourneysReport(r, days); }
+      catch (e) {
+        const v = document.getElementById('report-view');
+        if (v) v.innerHTML = `<p style="padding:20px;">⚠️ حصل خطأ: ${esc(e.message)}</p><button class="btn" onclick="document.body.classList.remove('report-open')">✕ رجوع</button>`;
+        const b = document.getElementById('jr-pdf'); if (b) b.textContent = '📄 تقرير PDF كامل (كل الرحلات بالتفصيل)';
+      }
+    }
+    async function buildJourneysReport(r, days) {
       const btn = document.getElementById('jr-pdf');
       // التقرير بيتعرض جوه نفس الصفحة (مش تبويب جديد): الآيفون بيوقّف الصفحة اللي في الخلفية
       // فالتبويب الجديد كان بيفضل "جاري تجهيز التقرير" للأبد
@@ -1595,7 +1603,10 @@
       for (let i = 0; i < list.length; i += 8) {
         btn.textContent = `⏳ ${i}/${list.length}`;
         view.innerHTML = `<p style="padding:20px;">⏳ جاري تجهيز التقرير... ${i}/${list.length} زيارة</p>`;
-        await Promise.all(list.slice(i, i + 8).map((x) => api('/track?session=' + encodeURIComponent(x.sid), { headers: authHeaders() }).then((j) => { steps[x.sid] = j; }).catch(() => {})));
+        await Promise.all(list.slice(i, i + 8).map((x) => Promise.race([
+          api('/track?session=' + encodeURIComponent(x.sid), { headers: authHeaders() }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000)), // زيارة معلّقة ماتوقفش التقرير كله
+        ]).then((j) => { steps[x.sid] = j; }).catch(() => {})));
       }
       btn.textContent = '📄 تقرير PDF كامل (كل الرحلات بالتفصيل)';
       const whyList = Object.entries(r.why).sort((a, b) => b[1].n - a[1].n);
@@ -1631,7 +1642,7 @@
       <h2>👣 كل زيارة بالتفصيل</h2>
       ${list.map((x, i) => `<div class="j"><h3>#${i + 1} — ${esc(x.outcomeLabel)}</h3>
         <div class="muted">${pageLbl(x.land, x.landPn)} ← ${pageLbl(x.exit, x.exitPn)} · ${x.pages || 0} صفحة · ${fmtDur(x.dur || x.span)}${Number(x.new) ? ' · زائر جديد' : ' · راجع'}</div>
-        ${steps[x.sid] ? journeyHtml(steps[x.sid], false) : '<p class="muted">تعذّر تحميل الخطوات</p>'}</div>`).join('')}
+        ${(() => { try { return steps[x.sid] ? journeyHtml(steps[x.sid], false) : '<p class="muted">تعذّر تحميل الخطوات</p>'; } catch { return '<p class="muted">تعذّر عرض خطوات الزيارة دي</p>'; } })()}</div>`).join('')}
       `;
       view.innerHTML = html;
     }
@@ -1642,11 +1653,12 @@
       body.innerHTML = journeyHtml(r, true);
     }
     const EVL = { add_cart: '🛒 حط في السلة', checkout: '💳 ضغط "تأكيد الطلب"', order_placed: '✅ الطلب اتعمل', whatsapp: '💬 فتح واتساب', search: '🔎 دوّر على', ws_order: '🇦🇪 بعت طلب جملة', rfq: '📝 طلب عرض سعر', container_request: '🧩 طلب حاوية', part_request: '🔍 طلب قطعة', notify_stock: '🔔 بلّغني لما يتوفر', question: '❓ سأل سؤال', savings_lead: '🧾 استخدم حاسبة التوفير', container_book: '🧩 حجز في حاوية', pricelist_dl: '⬇️ نزّل قائمة الأسعار' };
+    const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return String(x || ''); } };
     function journeyHtml(r, withClose) {
       const t0 = r.steps.length ? r.steps[0].at : 0;
       const rows = r.steps.map((st) => {
         const at = '+' + fmtDur(Math.round((st.at - t0) / 1000));
-        if (st.t === 'v') return `<div class="jr-step"><span class="jr-at">${at}</span><b>📄 ${pageLbl(st.p)}</b>${st.pn ? ` — ${esc(st.pn)}` : ''}${st.q && !st.pid ? ` <small class="muted" dir="ltr">${esc(decodeURIComponent(st.q))}</small>` : ''}
+        if (st.t === 'v') return `<div class="jr-step"><span class="jr-at">${at}</span><b>📄 ${pageLbl(st.p)}</b>${st.pn ? ` — ${esc(st.pn)}` : ''}${st.q && !st.pid ? ` <small class="muted" dir="ltr">${esc(safeDecode(st.q))}</small>` : ''}
           ${st.oos ? ' <span class="badge" style="background:#fee2e2;color:#b91c1c;">خلصانة</span>' : ''}${st.np ? ' <span class="badge" style="background:#fef3c7;color:#92400e;">سعر عند الطلب</span>' : ''}${st.lk ? ' <span class="badge" style="background:#fef3c7;color:#92400e;">🔒 السعر مقفول</span>' : ''}</div>`;
         if (st.t === 'e') return `<div class="jr-step jr-ev"><span class="jr-at">${at}</span>${EVL[st.ev] || esc(st.ev)}${st.ev === 'search' ? ` "<b>${esc(st.q || '')}</b>" ${st.n === 0 ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">مالقاش</span>' : `(${st.n} نتيجة)`}` : ''}${st.ord ? ` <b>${esc(st.ord)}</b> — ${nf(st.val)} ج.م` : ''}</div>`;
         return `<div class="jr-step jr-leave"><span class="jr-at">${at}</span>⏱️ قعد ${fmtDur(st.d)} · نزل لحد ${st.sc || 0}% من الصفحة</div>`;
