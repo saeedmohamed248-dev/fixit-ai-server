@@ -85,7 +85,8 @@
         const c = getCart();
         ids.forEach((id) => {
           const p = allProducts.find((x) => x.id === id);
-          if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0))) {
+          // قطعة مش تبع فرع الوضع الحالي (مثلاً قطعة إمارات في السلة القطاعي) بتتشال برضه
+          if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0)) || !wsCatalogFilter([p]).length) {
             removed.push(p ? pname(p) : null); delete c[id];
           } else if (c[id] > p.stock) c[id] = p.stock;
         });

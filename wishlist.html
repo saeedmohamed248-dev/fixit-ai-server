@@ -43,7 +43,7 @@
       }
       try {
         const all = await api('/products');
-        const items = all.filter((p) => ids.includes(p.id));
+        const items = wsCatalogFilter(all.filter((p) => ids.includes(p.id)));
         grid.innerHTML = items.map(productCard).join('') ||
           `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🤍</span>${t('wish_empty')}</div>`;
       } catch (e) {

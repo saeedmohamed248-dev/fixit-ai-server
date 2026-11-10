@@ -87,6 +87,15 @@
       }
       try {
         const p = product = await api('/products?id=' + encodeURIComponent(id));
+        // 🇦🇪 قطعة فرع الإمارات بتتباع جملة بس — لو اتفتحت من المتجر المصري نوضّح ونحوّل
+        if (!isWholesale() && !wsCatalogFilter([p]).length) {
+          container.innerHTML = `<div class="empty-state"><span class="icon">🇦🇪</span>
+            <b>${esc(pname(p))}</b><br>${LANG === 'en' ? 'This part is sold wholesale from our UAE branch (for traders).' : 'القطعة دي متاحة جملة من فرع الإمارات (للتجار).'}
+            <br><br><button class="btn" id="go-ws">${LANG === 'en' ? 'Open in the trade store' : 'افتحها في متجر الجملة'}</button>
+            &nbsp;<a class="btn btn-outline" href="/shop.html">${LANG === 'en' ? 'Browse Egypt store' : 'تصفّح متجر مصر'}</a></div>`;
+          document.getElementById('go-ws').addEventListener('click', () => { try { localStorage.setItem('mode', 'wholesale'); } catch {} location.reload(); });
+          return;
+        }
         document.title = pname(p) + ' | FixIt';
         pushRecent(p.id);
         trackPageview({ pid: p.id, pname: pname(p), oos: p.stock <= 0 ? 1 : 0, noprice: dispPrice(p) === null ? 1 : 0 }); // 📈 زيارة منتج
