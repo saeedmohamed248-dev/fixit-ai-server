@@ -106,34 +106,41 @@
       currentPage = Math.min(currentPage, pages);
       const slice = lastResults.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
       const currentQ = document.getElementById('f-q').value.trim();
-      grid.innerHTML = slice.map(productCard).join('') ||
-        `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a>
-        ${currentQ ? `<form id="miss-form" class="miss-form" style="max-width:420px;margin:18px auto 0;text-align:start;background:var(--card,#fff);border:1px solid var(--line,#e4e7ec);border-radius:14px;padding:14px;">
-          <b style="display:block;margin-bottom:6px;">${LANG === 'en' ? `🔔 We'll find "${esc(currentQ)}" for you` : `🔔 هندوّرلك على "${esc(currentQ)}"`}</b>
-          <small style="color:var(--muted);display:block;margin-bottom:10px;">${LANG === 'en' ? 'Leave your number and we\'ll WhatsApp you as soon as it\'s available.' : 'سيب رقمك وهنكلمك واتساب أول ما نوفّرها.'}</small>
-          <input id="miss-name" placeholder="${LANG === 'en' ? 'Your name' : 'اسمك'}" value="${esc(currentUser()?.name || '')}" required style="margin-bottom:8px;">
-          <input id="miss-phone" type="tel" dir="ltr" placeholder="01xxxxxxxxx" value="${esc(currentUser()?.phone || '')}" required style="margin-bottom:8px;text-align:start;">
-          <input id="miss-car" placeholder="${LANG === 'en' ? 'Car model (optional) e.g. F30 2016' : 'عربيتك (اختياري) مثلاً F30 2016'}" style="margin-bottom:10px;">
-          <button class="btn" type="submit" style="width:100%;">${LANG === 'en' ? 'Notify me 🔔' : 'بلّغني لما تتوفر 🔔'}</button>
-          <div id="miss-msg" style="font-size:13px;margin-top:8px;"></div>
-        </form>` : ''}
-        <br><a href="/request.html?q=${encodeURIComponent(currentQ)}" style="color: var(--accent-dark);">${t('req_link')} 🔎</a></div>`;
-      document.getElementById('miss-form')?.addEventListener('submit', async (e) => {
+      const near = lastResults.length && lastResults[0]._near;
+      const AR = LANG !== 'en';
+      // 📩 "مش لاقي اللي بتدور عليه؟ اطلبها" — بدل ما الزبون يمشي، ناخد رقمه ونوفّرهاله
+      const reqBox = (title) => `<form class="miss-form" style="grid-column:1/-1;max-width:520px;width:100%;margin:6px auto 14px;text-align:start;background:var(--card,#fff);border:2px solid var(--brand,#f5a524);border-radius:14px;padding:16px;">
+          <b style="display:block;font-size:17px;margin-bottom:4px;">${title}</b>
+          <small style="color:var(--muted);display:block;margin-bottom:12px;">${AR ? 'سيب رقمك واسم القطعة وهنوفّرهالك ونكلمك واتساب — من غير أي التزام.' : 'Leave your number and the part — we\'ll source it and WhatsApp you. No obligation.'}</small>
+          <input name="part" value="${esc(currentQ)}" placeholder="${AR ? 'اسم القطعة' : 'Part name'}" required style="margin-bottom:8px;">
+          <input name="car" placeholder="${AR ? 'عربيتك وسنتها (مثلاً F30 2016)' : 'Car & year (e.g. F30 2016)'}" style="margin-bottom:8px;">
+          <input name="name" placeholder="${AR ? 'اسمك' : 'Your name'}" value="${esc(currentUser()?.name || '')}" required style="margin-bottom:8px;">
+          <input name="phone" type="tel" inputmode="tel" dir="ltr" placeholder="${isWholesale() ? '2010xxxxxxxx' : '01xxxxxxxxx'}" value="${esc(currentUser()?.phone || '')}" required style="margin-bottom:10px;text-align:start;">
+          <button class="btn" type="submit" style="width:100%;">📩 ${AR ? 'اطلبها — هنوفّرهالك' : 'Request it — we\'ll find it'}</button>
+          <a class="btn btn-green" target="_blank" rel="noopener" style="width:100%;margin-top:8px;text-align:center;" data-wa-req href="${waLink((AR ? 'محتاج قطعة: ' : 'I need a part: ') + currentQ)}">💬 ${AR ? 'أو اطلبها على واتساب' : 'Or ask on WhatsApp'}</a>
+          <div class="miss-msg" style="font-size:13px;margin-top:8px;"></div>
+        </form>`;
+      grid.innerHTML = slice.length
+        ? (near && currentQ ? `<div class="note" style="grid-column:1/-1;">🔎 ${AR ? `مفيش تطابق كامل لـ "<b>${esc(currentQ)}</b>" — دي أقرب نتايج. مش هي؟ اطلبها تحت 👇` : `No exact match for "<b>${esc(currentQ)}</b>" — closest results. Not it? Request it below 👇`}</div>` : '')
+          + slice.map(productCard).join('')
+          + (near && currentQ && currentPage === pages ? reqBox(AR ? '🙋 مش لاقي اللي بتدور عليه؟ اطلبها' : '🙋 Can\'t find it? Request it') : '')
+        : (currentQ ? reqBox(AR ? `🙋 مش لاقي "${esc(currentQ)}"؟ اطلبها وهنوفّرهالك` : `🙋 Can't find "${esc(currentQ)}"? Request it`) : '')
+          + `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a></div>`;
+      grid.querySelectorAll('[data-wa-req]').forEach((a) => a.addEventListener('click', () => trackEvent('part_request', { via: 'wa' })));
+      grid.querySelectorAll('.miss-form').forEach((f) => f.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const msg = document.getElementById('miss-msg'), btn = e.target.querySelector('button');
+        const msg = f.querySelector('.miss-msg'), btn = f.querySelector('button');
         btn.disabled = true; msg.textContent = '';
         try {
           await api('/requests', { method: 'POST', body: JSON.stringify({
-            name: document.getElementById('miss-name').value.trim(),
-            phone: document.getElementById('miss-phone').value.trim(),
-            car: document.getElementById('miss-car').value.trim(),
-            partName: currentQ, source: 'search',
-            notes: LANG === 'en' ? 'From search (no results)' : '🔎 من البحث — مالقاش نتيجة',
+            name: f.name.value.trim(), phone: f.phone.value.trim(), car: f.car.value.trim(),
+            partName: f.part.value.trim() || currentQ, source: 'search',
+            notes: (AR ? '🔎 من البحث — ' : 'From search — ') + (near ? (AR ? 'أقرب نتايج مش مناسبة' : 'near results not suitable') : (AR ? 'مالقاش نتيجة' : 'no results')) + ` ("${currentQ}")`,
           }) });
           trackEvent('part_request');
-          e.target.innerHTML = `<div style="color:var(--green);font-weight:700;text-align:center;">${LANG === 'en' ? '✅ Got it! We\'ll contact you soon.' : '✅ تمام! هنكلمك أول ما نوفّرها.'}</div>`;
+          f.innerHTML = `<div style="color:var(--green);font-weight:700;text-align:center;">${AR ? '✅ تمام! هنكلمك أول ما نوفّرها.' : '✅ Got it! We\'ll contact you soon.'}</div>`;
         } catch (err) { msg.style.color = 'var(--red)'; msg.textContent = err.message; btn.disabled = false; }
-      });
+      }));
       const pag = document.getElementById('pagination');
       pag.innerHTML = pages > 1
         ? Array.from({ length: pages }, (_, i) =>
@@ -204,7 +211,10 @@
           const label = sv === 'newest' ? '🆕 ' + t('nav_new_arrivals') : bv === 'OTHER' ? t('f_other_makes') : bv ? '⭐ ' + bv : '';
           document.getElementById('results-count').innerHTML = (label ? `<b style="color:var(--brand);">${esc(label)}</b> • ` : '') + `${lastResults.length} ${t('n_products')}`;
         }
-        if (qs.get('q')) trackSearch(qs.get('q'), lastResults.length); // 📈 يظهر في "بحث بدون نتائج" لو مفيش
+        // 📱 على الموبايل الفلاتر فوق النتايج — لو البحث مالقاش، ننزّل الزبون لخانة "اطلبها" على طول
+        if (qs.get('q') && (!lastResults.length || lastResults[0]._near) && innerWidth < 900)
+          setTimeout(() => document.querySelector(lastResults.length ? '#results-count' : '.miss-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+        if (qs.get('q')) trackSearch(qs.get('q'), lastResults[0] && lastResults[0]._near ? 0 : lastResults.length); // 📈 يظهر في "بحث بدون نتائج" لو مفيش
         renderPage();
       } catch (e) {
         grid.innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
