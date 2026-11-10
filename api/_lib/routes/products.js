@@ -5,7 +5,7 @@
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, requireAdmin, productCategory, productBrand, productSupplier } from '../util.js';
+import { cors, requireAdmin, productCategory, productBrand, productSupplier, searchScore } from '../util.js';
 
 // نضمن حقول العرض المشتقّة (فئة + نوع عربية + مورّد) للمنتجات الجاية من موس تك
 function withDerived(p) {
@@ -46,13 +46,10 @@ export default async function handler(req, res) {
       if (condition) list = list.filter((p) => p.condition === condition);
       if (model) list = list.filter((p) => p.models.includes(model));
       if (q) {
-        const term = q.trim().toLowerCase();
-        list = list.filter((p) =>
-          [p.name, p.nameEn || '', p.sku, p.oem, p.description, ...p.models, ...(p.partNumbers || [])]
-            .join(' ')
-            .toLowerCase()
-            .includes(term)
-        );
+        // 🔎 بحث ذكي: يوحّد الحروف العربي ويفهم الجمع/المرادفات، ويرتّب الأقرب الأول
+        const scored = list.map((p) => [p, searchScore(p, q)]).filter(([, sc]) => sc > 0);
+        const strong = scored.filter(([, sc]) => sc >= 100);
+        list = (strong.length ? strong : scored).sort((a, b) => b[1] - a[1]).map(([p]) => p);
       }
       if (sort === 'price_asc') list = [...list].sort((a, b) => a.price - b.price);
       else if (sort === 'price_desc') list = [...list].sort((a, b) => b.price - a.price);
