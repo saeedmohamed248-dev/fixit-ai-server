@@ -11,7 +11,7 @@ import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
 import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-const PAYMENTS = ['cod', 'instapay', 'wallet', 'card'];
+const PAYMENTS = ['instapay', 'wallet', 'card']; // 💵 الدفع عند الاستلام اتلغى
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
         userId: session?.uid || null,
         email: (user && user.email) || (customer.email || '').trim(),
         notes: body.notes || '',
-        payment: PAYMENTS.includes(body.payment) ? body.payment : 'cod',
+        payment: PAYMENTS.includes(body.payment) ? body.payment : 'instapay',
         items: orderItems,
         subtotal,
         discount,
