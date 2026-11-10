@@ -99,10 +99,31 @@ export function productSupplier(p) {
 }
 
 // نوع العربية النهائي للفلترة/الشارة: نحترم MINI لو متسجّلة صراحة، وإلا نستنتج من الاسم.
+// 🚙 ماركات تانية غير BMW/MINI — بنتعرّف عليها من اسم القطعة (عربي/إنجليزي)
+const _OTHER_MAKES = [
+  ['Mercedes', /(mercedes|benz|مرسيدس|مارسيدس)/i], ['Audi', /(\baudi\b|اودي|أودي)/i],
+  ['Volkswagen', /(volkswagen|\bvw\b|فولكس)/i], ['Porsche', /(porsche|بورش)/i],
+  ['Land Rover', /(land ?rover|range ?rover|رينج|لاند ?روفر)/i], ['Toyota', /(toyota|lexus|تويوتا|لكزس)/i],
+  ['Nissan', /(nissan|infiniti|نيسان|انفينيتي)/i], ['Hyundai', /(hyundai|هيونداي|هيونداى)/i],
+  ['Kia', /(\bkia\b|كيا)/i], ['Chevrolet', /(chevrolet|chevy|شيفروليه|شفروليه)/i],
+  ['Ford', /(\bford\b|فورد)/i], ['Peugeot', /(peugeot|بيجو)/i], ['Renault', /(renault|رينو)/i],
+  ['Opel', /(\bopel\b|اوبل|أوبل)/i], ['Skoda', /(skoda|سكودا)/i], ['Honda', /(honda|هوندا)/i],
+  ['Mitsubishi', /(mitsubishi|ميتسوبيشي)/i], ['Mazda', /(mazda|مازدا)/i], ['Jeep', /(\bjeep\b|جيب)/i],
+  ['Volvo', /(volvo|فولفو)/i], ['Fiat', /(\bfiat\b|فيات)/i],
+];
+const _BMW_RE = /(\bbmw\b|بي ?ام|\b[EFG]\d{2}\b|\b[NBS]\d{2}\b)/i;
+export const PRIORITY_MAKES = ['BMW', 'MINI'];
+
+// نوع العربية النهائي للفلترة/الشارة: نحترم MINI لو متسجّلة صراحة، وبعدين نشوف BMW/MINI،
+// وبعدين الماركات التانية — ولو مفيش أي دليل نفترض BMW (أغلب المخزون).
 export function productBrand(p) {
   const raw = String((p && p.brand) || '').trim();
   if (/^mini$/i.test(raw)) return 'MINI';
-  return inferCarMake(p && p.name, p && p.models);
+  const hay = String((p && p.name) || '') + ' ' + String((p && p.nameEn) || '') + ' ' + (Array.isArray(p && p.models) ? p.models.join(' ') : '');
+  if (_MINI_RE.test(hay)) return 'MINI';
+  if (_BMW_RE.test(hay)) return 'BMW';
+  const other = _OTHER_MAKES.find(([, re]) => re.test(hay));
+  return other ? other[0] : 'BMW';
 }
 
 // حماية عمليات الإدارة: لازم ضبط ADMIN_TOKEN في إعدادات Vercel

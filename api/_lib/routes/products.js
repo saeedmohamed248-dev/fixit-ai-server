@@ -5,7 +5,7 @@
 // PUT    /api/products            → تعديل منتج (إدارة)
 // DELETE /api/products?id=p1      → حذف منتج (إدارة)
 import { getProducts, saveProducts, logActivity } from '../db.js';
-import { cors, requireAdmin, productCategory, productBrand, productSupplier, searchScore, carCodes } from '../util.js';
+import { cors, requireAdmin, productCategory, productBrand, productSupplier, searchScore, carCodes, PRIORITY_MAKES } from '../util.js';
 
 // نضمن حقول العرض المشتقّة (فئة + نوع عربية + مورّد) للمنتجات الجاية من موس تك
 function withDerived(p) {
@@ -41,7 +41,8 @@ export default async function handler(req, res) {
       //    ?all=1 بيرجّع الكل (للإدارة/الأدوات). المنتج بيفضل محفوظ — بس مش بيظهر
       //    في القوايم، ويرجع لوحده أول ما مخزونه يزيد من مزامنة موس تك.
       if (!all) list = list.filter((p) => Number(p.stock) > 0);
-      if (brand) list = list.filter((p) => p.brand === brand);
+      if (brand === 'OTHER') list = list.filter((p) => !PRIORITY_MAKES.includes(p.brand));
+      else if (brand) list = list.filter((p) => p.brand === brand);
       if (category) list = list.filter((p) => p.category === category);
       if (condition) list = list.filter((p) => p.condition === condition);
       if (model) { const M = String(model).toUpperCase(); list = list.filter((p) => p.fits.includes(M)); }
@@ -51,6 +52,8 @@ export default async function handler(req, res) {
         const strong = scored.filter(([, sc]) => sc >= 100);
         list = (strong.length ? strong : scored).sort((a, b) => b[1] - a[1]).map(([p]) => p);
       }
+      // ⭐ الترتيب الافتراضي: BMW و MINI الأول (أولوية المحل)، وبعدهم باقي الماركات
+      if (!sort && !q) list = [...list].sort((a, b) => (PRIORITY_MAKES.includes(b.brand) ? 1 : 0) - (PRIORITY_MAKES.includes(a.brand) ? 1 : 0));
       if (sort === 'price_asc') list = [...list].sort((a, b) => a.price - b.price);
       else if (sort === 'price_desc') list = [...list].sort((a, b) => b.price - a.price);
       else if (sort === 'best') list = [...list].sort((a, b) => (b.sold || 0) - (a.sold || 0));

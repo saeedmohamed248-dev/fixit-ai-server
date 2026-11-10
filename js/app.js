@@ -941,8 +941,9 @@ function renderLayout(active = '') {
           <a href="/trade.html" class="${active === 'trade' ? 'active' : ''}">${t('nav_trade_desk')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_catalog')}</a>
           <a href="/shop.html?sort=newest">🆕 ${t('nav_new_arrivals')}</a>
-          <a href="/shop.html?brand=BMW">BMW</a>
-          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
           <a href="/about.html" class="${active === 'about' ? 'active' : ''}">${t('nav_about')}</a>
@@ -951,8 +952,9 @@ function renderLayout(active = '') {
           ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
-          <a href="/shop.html?brand=BMW">BMW</a>
-          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/shop.html?condition=used">${t('nav_used')}</a>
           <a href="/shop.html?condition=new">${t('nav_new')}</a>
           <a href="/savings.html" class="nav-savings ${active === 'savings' ? 'active' : ''}">${t('nav_savings')}</a>
@@ -1038,7 +1040,37 @@ function renderLayout(active = '') {
 
   applyI18n();
   updateCartBadge();
+  markActiveNav();
+  scrollToHash();
 }
+
+// 🧭 تحديد الزرار النشط في القائمة حسب الرابط الكامل (مش الصفحة بس) — عشان "وصل حديثاً"
+//    و BMW و MINI مايبانوش كأنهم رجّعوا للكتالوج، والقائمة تتحرك لحد الزرار النشط على الموبايل
+function markActiveNav() {
+  const nav = document.getElementById('main-nav');
+  if (!nav) return;
+  const here = location.pathname.replace(/\/$/, '/index.html') + location.search + location.hash;
+  const links = [...nav.querySelectorAll('a')];
+  const exact = links.find((a) => a.getAttribute('href') === here)
+    || links.find((a) => location.hash && a.getAttribute('href') === location.pathname + location.hash);
+  if (exact) { links.forEach((a) => a.classList.remove('active')); exact.classList.add('active'); }
+  const act = nav.querySelector('a.active');
+  if (act) requestAnimationFrame(() => { try { act.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch {} });
+}
+// ⚓ روابط زي /trade.html#rfq: المحتوى بيترسم بعد التحميل، فالمتصفح مابيلاقيش القسم — نوصله إحنا
+function scrollToHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id || scrollToHash._done === location.href) return;
+  let tries = 0;
+  const go = () => {
+    const el = document.getElementById(id);
+    if (el && el.offsetParent !== null) { scrollToHash._done = location.href; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (++tries < 20) setTimeout(go, 200);
+  };
+  setTimeout(go, 50);
+}
+// نفس الصفحة + هاش جديد (طلب سريع ⇄ عرض سعر) — المتصفح بيغيّر الرابط بس
+window.addEventListener('hashchange', () => { scrollToHash._done = ''; markActiveNav(); scrollToHash(); });
 
 /* ============================================================
    📱 تهيئة تطبيق الموبايل (Capacitor) — أندرويد / iOS
