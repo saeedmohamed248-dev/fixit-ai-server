@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   try {
     const reply = await aiChat(messages, {
       temperature: 0.7,
-      maxTokens: Number(process.env.DIAGNOSE_MAX_TOKENS) || 800,
+      maxTokens: Number(process.env.DIAGNOSE_MAX_TOKENS) || 4096,
     });
     // شكل متوافق مع OpenAI عشان الواجهة (assistant.html) تقرأه من غير تغيير
     return res.status(200).json({ choices: [{ message: { role: 'assistant', content: reply } }] });
