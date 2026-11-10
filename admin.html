@@ -103,22 +103,24 @@
     // 🛍️ خريطة الأقسام: المفتاح ← الأيقونة + الاسم (على طراز Shopify)
     const NAV = [
       { tab: 'dashboard', ic: '🏠', label: 'نظرة عامة' },
+      { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
+      { sep: '🇪🇬 متجر مصر (قطاعي)' },
       { tab: 'orders', ic: '📦', label: 'الطلبات' },
+      { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
+      { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
+      { tab: 'questions', ic: '❓', label: 'أسئلة العملاء' },
+      { tab: 'maintenance', ic: '🛠️', label: 'مواعيد الصيانة' },
+      { sep: '🇦🇪 الإمارات (جملة)' },
+      { tab: 'ctreqs', ic: '🧩', label: 'طلبات الحاويات' },
+      { tab: 'containers', ic: '🚢', label: 'حاويات الشحن' },
+      { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
+      { sep: '🛍️ الكتالوج والعملاء' },
       { tab: 'products', ic: '🔧', label: 'المنتجات والمخزون' },
       { tab: 'customers', ic: '👥', label: 'العملاء' },
       { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
-      { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
-      { sep: true },
-      { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
-      { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
-      { tab: 'ctreqs', ic: '🧩', label: 'طلبات الحاويات' },
-      { tab: 'questions', ic: '❓', label: 'الأسئلة' },
-      { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
-      { tab: 'maintenance', ic: '🛠️', label: 'الصيانة' },
-      { tab: 'containers', ic: '🧩', label: 'حاويات الشحن' },
-      { sep: true },
+      { sep: '⚙️ النظام' },
+      { tab: 'sync', ic: '🔄', label: 'المزامنة مع موس تك' },
       { tab: 'activity', ic: '📝', label: 'سجل العمليات' },
-      { tab: 'sync', ic: '🔄', label: 'المزامنة' },
       { tab: 'settings', ic: '⚙️', label: 'إعدادات المتجر' },
     ];
     const NAV_LABEL = Object.fromEntries(NAV.filter((n) => n.tab).map((n) => [n.tab, n.label]));
@@ -208,7 +210,7 @@
       const newOrdersCount = ordersCache.filter((o) => o.status === 'new').length;
       const newLeadsCount = leadsCache.filter((l) => l.status === 'new').length;
       const navHtml = NAV.map((n) => n.sep
-        ? '<div class="sh-nav-sep"></div>'
+        ? `<div class="sh-nav-group">${typeof n.sep === 'string' ? esc(n.sep) : ''}</div>`
         : `<button class="sh-nav-item" data-tab="${n.tab}"><span class="ic">${n.ic}</span><span>${n.label}</span>${
             n.tab === 'orders' && newOrdersCount ? `<span class="badge" id="nav-orders-badge">${newOrdersCount}</span>` : ''
           }${

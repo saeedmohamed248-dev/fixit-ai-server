@@ -256,7 +256,7 @@
       const esc2 = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
       const cbmOf = (p) => (p.lengthCm && p.widthCm && p.heightCm) ? (p.lengthCm * p.widthCm * p.heightCm / 1e6).toFixed(4) : (p.cbm || '');
       const rows = CATALOG.filter((p) => Number(p.stock) > 0).map((p) => {
-        const aed = Number(p.wholesalePrice) || 0;
+        const aed = wsBaseAED(p);
         return [
           p.sku || '', p.name || '', p.nameEn || '', p.brand || '', (p.models || []).join(' / '),
           p.condition === 'new' ? 'New' : 'Used',
