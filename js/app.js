@@ -941,8 +941,9 @@ function renderLayout(active = '') {
           <a href="/trade.html" class="${active === 'trade' ? 'active' : ''}">${t('nav_trade_desk')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_catalog')}</a>
           <a href="/shop.html?sort=newest">🆕 ${t('nav_new_arrivals')}</a>
-          <a href="/shop.html?brand=BMW">BMW</a>
-          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
           <a href="/about.html" class="${active === 'about' ? 'active' : ''}">${t('nav_about')}</a>
@@ -951,8 +952,9 @@ function renderLayout(active = '') {
           ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
-          <a href="/shop.html?brand=BMW">BMW</a>
-          <a href="/shop.html?brand=MINI">MINI</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/shop.html?condition=used">${t('nav_used')}</a>
           <a href="/shop.html?condition=new">${t('nav_new')}</a>
           <a href="/savings.html" class="nav-savings ${active === 'savings' ? 'active' : ''}">${t('nav_savings')}</a>

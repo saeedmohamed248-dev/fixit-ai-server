@@ -30,6 +30,8 @@ const I18N = {
   ws_checkout: { ar: 'أكمل الطلب عبر واتساب', en: 'Complete order on WhatsApp' },
   ws_order_title: { ar: 'طلب جملة جديد', en: 'New wholesale order' },
   ws_min_note: { ar: 'أسعار جملة — الطلب بيتأكد على واتساب', en: 'Wholesale prices — order confirmed on WhatsApp' },
+  f_other_makes: { ar: '🚙 ماركات تانية', en: '🚙 Other makes' },
+  nav_all_makes: { ar: '🚙 كل الماركات', en: '🚙 All makes' },
   ws_login_price: { ar: 'شوف سعر الجملة — تسجيل في 10 ثواني', en: 'See wholesale price — 10-second signup' },
   ws_login_required: { ar: '✅ القطعة متاحة. سعر الجملة وخصومات الكمية بتظهر فوراً بعد تسجيل سريع (رقم الموبايل وكلمة سر بس).', en: '✅ In stock. Wholesale price and volume discounts show instantly after a quick signup (just phone and password).' },
   ws_login_cta: { ar: '🔓 شوف السعر الآن', en: '🔓 See price now' },

@@ -1414,3 +1414,4 @@ html { background: var(--accent-dark); }
 .car-others h2 { font-size: 17px; }
 .car-others div { display: flex; flex-wrap: wrap; gap: 6px; }
 .car-others a { font-size: 13px; padding: 4px 9px; border: 1px solid var(--line, #e4e7ec); border-radius: 8px; color: inherit; text-decoration: none; }
+.nav-prio { color: var(--brand, #f5a524) !important; font-weight: 800; }
