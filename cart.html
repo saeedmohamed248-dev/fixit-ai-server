@@ -437,9 +437,8 @@
           <div>
             <label>${t('pay_method')}</label>
             <div class="pay-options">
-              <label class="pay-option"><input type="radio" name="pay" value="cod" checked> ${t('pay_cod')}</label>
               ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
-              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
+              <label class="pay-option"><input type="radio" name="pay" value="instapay" checked> ${t('pay_instapay')}</label>
               <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
           </div>
@@ -450,6 +449,24 @@
       </div>`;
 
       restoreDraft();
+      // 📱 التحقق من رقم الموبايل وهو بيكتب (وتحويل الأرقام العربي ٠١٢ لإنجليزي)
+      const phoneEl = document.getElementById('c-phone');
+      if (phoneEl && !document.getElementById('c-phone-hint')) {
+        const hint = document.createElement('small'); hint.id = 'c-phone-hint'; hint.style.cssText = 'display:block;font-size:12.5px;margin-top:4px;';
+        phoneEl.insertAdjacentElement('afterend', hint);
+        const check = () => {
+          const v = phoneEl.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[^\d]/g, '');
+          if (v !== phoneEl.value) phoneEl.value = v;
+          if (!v) { hint.textContent = ''; phoneEl.style.borderColor = ''; return; }
+          const ok = /^01[0125]\d{8}$/.test(v);
+          phoneEl.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+          hint.style.color = ok ? 'var(--green)' : 'var(--red)';
+          hint.textContent = ok ? (LANG === 'en' ? '✓ Valid number' : '✓ رقم صحيح')
+            : v.length < 11 ? (LANG === 'en' ? `Mobile number is 11 digits (${v.length}/11)` : `رقم الموبايل ١١ رقم (كتبت ${v.length})`)
+            : (LANG === 'en' ? 'Must start with 010, 011, 012 or 015' : 'لازم يبدأ بـ 010 أو 011 أو 012 أو 015');
+        };
+        phoneEl.addEventListener('input', check); check();
+      }
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
@@ -515,6 +532,11 @@
           email: document.getElementById('c-email').value.trim(),
           address: document.getElementById('c-address').value.trim(),
         };
+        if (customer.phone && !/^01[0125]\d{8}$/.test(customer.phone)) {
+          errBox.textContent = LANG === 'en' ? 'Please check the mobile number (11 digits starting with 01)' : 'راجع رقم الموبايل — ١١ رقم بيبدأ بـ 01';
+          document.getElementById('c-phone').focus();
+          return;
+        }
         if (!customer.name || !customer.phone || !customer.address) {
           errBox.textContent = t('fill_required');
           return;
