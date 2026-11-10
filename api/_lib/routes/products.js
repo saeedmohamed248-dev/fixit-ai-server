@@ -51,6 +51,8 @@ export default async function handler(req, res) {
         const scored = list.map((p) => [p, searchScore(p, q)]).filter(([, sc]) => sc > 0);
         const strong = scored.filter(([, sc]) => sc >= 100);
         list = (strong.length ? strong : scored).sort((a, b) => b[1] - a[1]).map(([p]) => p);
+        // مفيش تطابق كامل → دي "أقرب نتايج" والواجهة بتعرض "اطلبها" فوقها
+        if (!strong.length) list = list.map((p) => ({ ...p, _near: true }));
       }
       // ⭐ الترتيب الافتراضي: BMW و MINI الأول (أولوية المحل)، وبعدهم باقي الماركات
       if (!sort && !q) list = [...list].sort((a, b) => (PRIORITY_MAKES.includes(b.brand) ? 1 : 0) - (PRIORITY_MAKES.includes(a.brand) ? 1 : 0));

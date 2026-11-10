@@ -151,7 +151,7 @@ export function normalizeAr(s) {
 }
 // كل مجموعة = كلمات بنعتبرها نفس الحاجة (بعد التطبيع)
 const SYNONYMS = [
-  ['فانوس', 'فوانيس', 'كشاف', 'كشافات', 'اناره', 'headlight', 'headlamp', 'taillight', 'lamp', 'light'],
+  ['فانوس', 'فوانيس', 'فانوص', 'فنوس', 'فوانس', 'اسطب', 'اسطبات', 'استوب', 'استوبات', 'كشاف', 'كشافات', 'اناره', 'headlight', 'headlamp', 'taillight', 'lamp', 'light'],
   ['اكصدام', 'اكسدام', 'صدام', 'اكصدامات', 'bumper'],
   ['طاره', 'طارات', 'دريكسيون', 'steering'],
   ['شاشه', 'شاشات', 'screen', 'display', 'monitor'],
@@ -161,7 +161,12 @@ const SYNONYMS = [
   ['طنبوره', 'طنابير', 'ديسك', 'ديسكات', 'disc', 'rotor'],
   ['رديتر', 'ردياتير', 'رادياتير', 'radiator'],
   ['ماسك', 'ماسكات', 'شبكه', 'grille', 'kidney'],
-  ['مراه', 'مرايه', 'مرايات', 'مرايا', 'mirror'],
+  ['مرايا', 'مراه', 'مرايه', 'مرايات', 'مرايه', 'مري', 'مريا', 'مريه', 'مريات', 'مرايت', 'مرايتين', 'mirror'],
+  ['خلفي', 'خلفيه', 'خلفيين', 'خافي', 'خلقي', 'ورا', 'ورانيه', 'rear', 'back'],
+  ['امامي', 'اماميه', 'امامين', 'قدام', 'قدامي', 'قدامانيه', 'front'],
+  ['يمين', 'يمني', 'right', 'rh'],
+  ['شمال', 'يسار', 'يسري', 'left', 'lh'],
+  ['ضم', 'طي', 'فولد', 'فولدنج', 'folding', 'fold'],
   ['موتور', 'محرك', 'ماتور', 'engine'],
   ['فتيس', 'جيربوكس', 'ناقل حركه', 'gearbox', 'transmission'],
   ['شورت بلوك', 'شورتبلوك', 'short block'],
@@ -190,14 +195,35 @@ export function searchScore(p, q) {
   const hay = normalizeAr([p.name, p.nameEn, p.sku, p.oem, p.description, ...(p.models || []), ...(p.partNumbers || []), p.brand, p.category].join(' '));
   const full = normalizeAr(q);
   const variants = (w) => SYN_INDEX.get(w) || [...SYN_INDEX.entries()].filter(([k]) => k.length >= 3 && (k.startsWith(w) && w.length >= 3)).flatMap(([, v]) => v).concat([w]);
-  let hit = 0, nameHit = 0;
+  const tokens = hay.split(' '), nameTokens = name.split(' ');
+  // ✍️ غلطة حرف واحد (فانوص/خلقي...) في الكلمات الطويلة — نقارن بكلمات القطعة نفسها
+  const near = (w) => w.length >= 4 && tokens.some((tk) => tk.length >= 3 && Math.abs(tk.length - w.length) <= 1 && editDist1(tk, w));
+  let hit = 0, nameHit = 0, partHit = false;
   words.forEach((w) => {
     const vs = variants(w);
-    if (vs.some((v) => hay.includes(v))) hit++;
-    if (vs.some((v) => name.includes(v))) nameHit++;
+    // الكلمات القصيرة (مري/ضم) لازم تبقى كلمة كاملة — عشان "مري" ماتجيبش "مريحه"
+    const has = (txt, toks, v) => (v.length <= 3 ? toks.includes(v) : txt.includes(v));
+    const ok = vs.some((v) => has(hay, tokens, v)) || near(w);
+    if (ok) { hit++; if (SYN_INDEX.has(w) || w.length >= 4) partHit = true; }
+    if (vs.some((v) => has(name, nameTokens, v))) nameHit++;
   });
   if (hit === words.length) return 100 + nameHit * 10 + (name.includes(full) ? 50 : 0);
-  return 0; // لازم كل الكلمات تطابق — نتايج نص صح بتلخبط العميل أكتر ما بتساعده
+  // تطابق جزئي (مثلاً "مريات ضم" والقطعة "مرايا" بس): درجة أقل من 100 —
+  // بتظهر بس لو مفيش ولا نتيجة كاملة، كـ "أقرب نتايج"
+  if (hit && partHit && hit >= Math.ceil(words.length / 2)) return 10 + hit * 5 + nameHit;
+  return 0;
+}
+// هل الفرق بين الكلمتين حرف واحد بالظبط (زيادة/نقص/تبديل)؟
+function editDist1(a, b) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, diff = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++diff > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+  }
+  return diff + (a.length - i) + (b.length - j) <= 1;
 }
 
 // 🚗 أكواد الشاسيه اللي القطعة بتركب عليها (E90/F30/R56/X5...) مستخرجة من

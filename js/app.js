@@ -835,15 +835,17 @@ function initHeaderSearch() {
     timer = setTimeout(async () => {
       try {
         const results = wsCatalogFilter(await api('/products?q=' + encodeURIComponent(q))).slice(0, 6);
-        trackSearch(q, results.length);
+        trackSearch(q, results[0] && results[0]._near ? 0 : results.length);
         box.innerHTML = results.length
-          ? results.map((p) => `
+          ? (results[0]._near ? `<div class="suggest-empty" style="padding:6px 10px;">🔎 ${LANG === 'en' ? 'Closest results' : 'أقرب نتايج'} — <a href="/shop.html?q=${encodeURIComponent(q)}">${LANG === 'en' ? 'not it? request it' : 'مش هي؟ اطلبها'}</a></div>` : '') + results.map((p) => `
             <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
               <span class="suggest-icon">${categoryIcon(p.category)}</span>
               <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
               <b>${wsLocked() ? '🔒' : (dispPrice(p) === null ? t('price_request') : money(dispPrice(p)))}</b>
             </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
-          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}" — <a href="/shop.html?q=${encodeURIComponent(q)}">${LANG === 'en' ? '🔔 Notify me when available' : '🔔 بلّغني لما تتوفر'}</a> · <a href="/assistant.html">${t('ask_expert')}</a></div>`;
+          : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}"
+              <a class="btn btn-sm" style="display:block;margin-top:8px;text-align:center;" href="/shop.html?q=${encodeURIComponent(q)}">📩 ${LANG === 'en' ? 'Can\'t find it? Request it — we\'ll source it' : 'مش لاقيها؟ اطلبها — هنوفّرهالك'}</a>
+              <a class="btn btn-sm btn-green" style="display:block;margin-top:6px;text-align:center;" target="_blank" rel="noopener" href="${waLink((LANG === 'en' ? 'I need a part: ' : 'محتاج قطعة: ') + q)}">💬 ${LANG === 'en' ? 'Ask on WhatsApp' : 'اطلبها على واتساب'}</a></div>`;
         box.classList.add('open');
       } catch {}
     }, 300);
