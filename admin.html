@@ -116,6 +116,7 @@
       { tab: 'alerts', ic: '🔔', label: 'تنبيهات الوصول' },
       { sep: '🛍️ الكتالوج والعملاء' },
       { tab: 'products', ic: '🔧', label: 'المنتجات والمخزون' },
+      { tab: 'missing', ic: '🛒', label: 'قائمة الشراء' },
       { tab: 'customers', ic: '👥', label: 'العملاء' },
       { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
       { sep: '⚙️ النظام' },
@@ -274,7 +275,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, missing: loadMissing, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -1758,6 +1759,51 @@
     }
 
     /* ==================== 🔔 تنبيهات الوصول (مشتركين) ==================== */
+    /* ==================== 🛒 قائمة الشراء ==================== */
+    async function loadMissing(days) {
+      days = days || Number(localStorage.getItem('miss_days')) || 30;
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      try {
+        const r = await api('/track?missing=1&days=' + days, { headers: authHeaders() });
+        const todo = r.items.filter((e) => !e.nowAvailable);
+        const done = r.items.filter((e) => e.nowAvailable);
+        const row = (e) => `<tr>
+            <td><b>${esc(e.q)}</b>${e.cars.length ? ` <span class="badge">${e.cars.map(esc).join(' / ')}</span>` : ''}</td>
+            <td style="text-align:center;"><b>${e.count}</b></td>
+            <td style="text-align:center;">${e.days}</td>
+            <td style="white-space:nowrap;">${esc(e.last)}</td>
+            <td>${e.nowAvailable ? `<span style="color:var(--green);font-weight:700;">✅ اتوفّر (${e.nowAvailable})</span>` : '<span style="color:var(--amber);font-weight:700;">❌ مش موجود</span>'}</td>
+          </tr>`;
+        const table = (list) => list.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>اللي الناس كتبته</th><th>مرات</th><th>أيام</th><th>آخر مرة</th><th>الحالة</th></tr></thead><tbody>${list.map(row).join('')}</tbody></table></div>` : '<p class="muted">مفيش.</p>';
+        box.innerHTML = `
+        <div class="summary">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+            <h3 style="margin:0;">🛒 قائمة الشراء — قطع الناس دورت عليها ومالقيتهاش</h3>
+            <div style="display:flex;gap:6px;">
+              <select id="miss-days">${[7, 30, 90].map((d) => `<option value="${d}" ${d === days ? 'selected' : ''}>آخر ${d} يوم</option>`).join('')}</select>
+              <button class="btn btn-sm" id="miss-copy">📋 انسخ القائمة للمورّد</button>
+            </div>
+          </div>
+          <p class="muted" style="font-size:13px;margin:8px 0 14px;">كل سطر هنا = عميل كان عايز يشتري ومشي. الأكتر طلباً فوق — هاتهم الأول. لما القطعة تتضاف للمخزون بتتنقل لوحدها لـ "اتوفّر".</p>
+          <div class="stats-grid" style="margin-bottom:14px;">
+            <div class="stat-card"><div class="label">قطعة مطلوبة ومش موجودة</div><div class="value">${todo.length}</div></div>
+            <div class="stat-card"><div class="label">مرة بحث ضاعت</div><div class="value">${todo.reduce((s, e) => s + e.count, 0)}</div></div>
+            <div class="stat-card"><div class="label">اتوفّرت بعد كده</div><div class="value">${done.length}</div></div>
+          </div>
+          ${table(todo)}
+          ${done.length ? `<h4 style="margin:18px 0 8px;">✅ اتوفّرت بعد ما اتطلبت</h4>${table(done)}` : ''}
+        </div>`;
+        document.getElementById('miss-days').addEventListener('change', (e) => { localStorage.setItem('miss_days', e.target.value); loadMissing(Number(e.target.value)); });
+        document.getElementById('miss-copy').addEventListener('click', () => {
+          const txt = 'قطع مطلوبة (FixIt):\n' + todo.map((e, i) => `${i + 1}. ${e.q}${e.cars.length ? ' — ' + e.cars.join('/') : ''} (${e.count})`).join('\n');
+          navigator.clipboard.writeText(txt).then(() => toast('✅ اتنسخت — ابعتها للمورّد واتساب'));
+        });
+      } catch (e) {
+        box.innerHTML = `<div class="note">${esc(e.message)}</div>`;
+      }
+    }
+
     async function loadAlerts() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';

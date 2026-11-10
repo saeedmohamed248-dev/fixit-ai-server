@@ -25,10 +25,11 @@ import describe from './_lib/routes/describe.js';
 import alerts from './_lib/routes/alerts.js';
 import savings from './_lib/routes/savings.js';
 import feed from './_lib/routes/feed.js';
+import car from './_lib/routes/car.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed, car, bmw: car, mini: car,
 };
 
 export default async function handler(req, res) {

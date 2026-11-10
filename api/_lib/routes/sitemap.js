@@ -1,6 +1,7 @@
 // خريطة الموقع لمحركات البحث — بتتولد تلقائياً وتشمل كل المنتجات
 // متاحة على /sitemap.xml (عبر إعادة التوجيه في vercel.json)
 import { getProducts } from '../db.js';
+import { CARS, carPartsCount } from './car.js';
 
 export default async function handler(req, res) {
   try {
@@ -12,6 +13,7 @@ export default async function handler(req, res) {
 
     const urls = [
       ...staticPages.map((p) => `<url><loc>${host}${p}</loc></url>`),
+      ...Object.entries(CARS).flatMap(([b, m]) => Object.keys(m).filter((c) => carPartsCount(products, c) > 0).map((c) => `<url><loc>${host}/${b.toLowerCase()}/${c.toLowerCase()}</loc></url>`)),
       ...products.map((p) => `<url><loc>${host}/product.html?id=${p.id}</loc></url>`),
     ].join('\n');
 

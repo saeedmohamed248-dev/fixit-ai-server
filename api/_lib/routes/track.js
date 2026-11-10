@@ -4,8 +4,8 @@
 // POST   /api/track  { t:'view'|'event', vid, ns, path?, pid?, pname?, ev?, ref?, utm?, q?, n? }  (عام)
 // GET    /api/track?days=14  → تقرير كامل للفترة + مقارنة بالفترة اللي قبلها (إدارة)
 // DELETE /api/track  → تصفير (إدارة)
-import { kvPipeline, hasPersistence, getOrders, getAnalytics, saveAnalytics } from '../db.js';
-import { cors, requireAdmin, rateLimit } from '../util.js';
+import { kvPipeline, hasPersistence, getOrders, getAnalytics, saveAnalytics, getProducts } from '../db.js';
+import { cors, requireAdmin, rateLimit, searchScore, carCodes } from '../util.js';
 
 const TZ = 'Africa/Cairo';
 const DAY_TTL = 400 * 86400; // نحتفظ بالأيام ~13 شهر
@@ -213,6 +213,33 @@ function group(rows, prefix, limit = 15) {
   return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, limit);
 }
 
+// 🛒 قائمة الشراء: القطع اللي الناس دورت عليها ومالقيتهاش (آخر N يوم)
+//    مع عدد المرات، آخر يوم، الموديل، ولو اتوفرت في المخزون بعدها.
+async function missingReport(n) {
+  const days = lastDays(n);
+  const rows = (await exec(days.map((d) => ['HGETALL', `an:d:${d}`]))).map(toObj);
+  const m = {};
+  rows.forEach((r, i) => Object.entries(r).forEach(([k, v]) => {
+    if (!k.startsWith('q0:')) return;
+    const q = k.slice(3);
+    const e = m[q] || (m[q] = { q, count: 0, days: 0, last: '' });
+    e.count += Number(v) || 0; e.days++; e.last = days[i];
+  }));
+  const searches = {};
+  rows.forEach((r) => Object.entries(r).forEach(([k, v]) => { if (k.startsWith('q:')) searches[k.slice(2)] = (searches[k.slice(2)] || 0) + (Number(v) || 0); }));
+  let list = Object.values(m);
+  const keep = new Set(dropPrefixes(list.map((e) => [e.q, e.count])).map(([q]) => q));
+  list = list.filter((e) => keep.has(e.q));
+  const stock = (await getProducts()).filter((p) => Number(p.stock) > 0);
+  list.forEach((e) => {
+    e.cars = carCodes({ name: e.q });
+    e.nowAvailable = stock.filter((p) => searchScore(p, e.q) >= 100).length;
+    e.searchedTotal = searches[e.q] || e.count;
+  });
+  list.sort((a, b) => b.count - a.count || (b.last > a.last ? 1 : -1));
+  return { days: n, total: list.length, items: list.slice(0, 200) };
+}
+
 async function report(n) {
   const cur = lastDays(n), prev = lastDays(n, n);
   const all = [...prev, ...cur];
@@ -296,6 +323,11 @@ export default async function handler(req, res) {
         const [steps, meta] = await exec([['LRANGE', `an:s:${sid}`, 0, -1], ['HGETALL', `an:sm:${sid}`]]);
         const names = toObj((await exec([['HGETALL', 'an:pn']]))[0]);
         return res.status(200).json({ meta: toObj(meta), steps: (steps || []).map((x) => { try { const o = JSON.parse(x); if (o.pid && !o.pn) o.pn = names[o.pid]; return o; } catch { return null; } }).filter(Boolean) });
+      }
+      if (req.query && req.query.missing) {
+        const d = Math.min(90, Math.max(1, parseInt(req.query.days || '30', 10) || 30));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json(await missingReport(d));
       }
       if (req.query && req.query.sessions) {
         const d = Math.min(30, Math.max(1, parseInt(req.query.days || '1', 10) || 1));
