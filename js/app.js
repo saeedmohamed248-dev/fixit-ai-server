@@ -685,6 +685,8 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 // اسم المنتج ووصفه باللغة الحالية
+// 🔗 رابط المنتج: على الموقع الرابط النظيف /p/… (أحسن لجوجل) — في التطبيق الملف المحلي
+function productUrl(p) { return window.Capacitor ? '/product.html?id=' + encodeURIComponent(p.id) : '/' + (LANG === 'en' ? 'en/' : '') + 'p/' + encodeURIComponent(p.id); }
 function pname(p) { return LANG === 'en' && p.nameEn ? p.nameEn : p.name; }
 function pdesc(p) { return LANG === 'en' && p.descriptionEn ? p.descriptionEn : p.description; }
 
@@ -734,7 +736,7 @@ function productCard(p) {
   const out = p.stock <= 0;
   const discount = !isWholesale() && p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
   return `
-  <a class="card ${out ? 'card-out' : ''}" href="/product.html?id=${esc(p.id)}">
+  <a class="card ${out ? 'card-out' : ''}" href="${productUrl(p)}">
     <div class="card-img-wrap">
       ${productImage(p)}
       ${discount ? `<span class="discount-tag">${LANG === 'en' ? discount + '% ' + t('discount') : t('discount') + ' ' + discount + '%'}</span>` : ''}
@@ -838,7 +840,7 @@ function initHeaderSearch() {
         trackSearch(q, results[0] && results[0]._near ? 0 : results.length);
         box.innerHTML = results.length
           ? (results[0]._near ? `<div class="suggest-empty" style="padding:6px 10px;">🔎 ${LANG === 'en' ? 'Closest results' : 'أقرب نتايج'} — <a href="/shop.html?q=${encodeURIComponent(q)}">${LANG === 'en' ? 'not it? request it' : 'مش هي؟ اطلبها'}</a></div>` : '') + results.map((p) => `
-            <a href="/product.html?id=${esc(p.id)}" class="suggest-item">
+            <a href="${productUrl(p)}" class="suggest-item">
               <span class="suggest-icon">${categoryIcon(p.category)}</span>
               <span class="suggest-name">${esc(pname(p))}<small>${p.models.map(esc).join(' • ')}</small></span>
               <b>${wsLocked() ? '🔒' : (dispPrice(p) === null ? t('price_request') : money(dispPrice(p)))}</b>

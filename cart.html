@@ -18,7 +18,7 @@
 
   <main class="section">
     <div class="container" id="cart-container">
-      <div class="spinner" data-i18n="loading"></div>
+      <div class="spinner" data-i18n="loading">جاري التحميل...</div>
     </div>
   </main>
 
@@ -123,9 +123,9 @@
       <h3 style="margin: 22px 0 12px;">${t('bought_together')}</h3>
       ${suggestions.map((p) => `
         <div class="cart-item">
-          <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+          <a class="thumb" href="${productUrl(p)}">${productImage(p, 'thumb-img')}</a>
           <div>
-            <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+            <h4><a href="${productUrl(p)}">${esc(pname(p))}</a></h4>
             <div class="price" style="font-size: 15px;">${money(p.price)}</div>
           </div>
           <button class="btn-icon add-together" data-add="${esc(p.id)}">＋</button>
@@ -187,9 +187,9 @@
             const line = d === null ? t('price_request') : money(d * cart[p.id]);
             return `
           <div class="cart-item">
-            <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+            <a class="thumb" href="${productUrl(p)}">${productImage(p, 'thumb-img')}</a>
             <div>
-              <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+              <h4><a href="${productUrl(p)}">${esc(pname(p))}</a></h4>
               <div class="sub">${conditionBadge(p)} <span class="sku">${esc(p.sku)}</span> ${off > 0 ? `<span class="badge badge-new">−${off}%</span>` : ''}</div>
               ${deliveryBadge(p, 'cart-delivery')}
               <div class="price" style="font-size: 15px;">${d === null ? t('price_request') : money(d)} ${d !== null ? `<small style="color:var(--muted);">× ${cart[p.id]} = <b>${line}</b></small>` : ''}</div>
@@ -378,9 +378,9 @@
         <div>
           ${items.map((p) => `
           <div class="cart-item">
-            <a class="thumb" href="/product.html?id=${esc(p.id)}">${productImage(p, 'thumb-img')}</a>
+            <a class="thumb" href="${productUrl(p)}">${productImage(p, 'thumb-img')}</a>
             <div>
-              <h4><a href="/product.html?id=${esc(p.id)}">${esc(pname(p))}</a></h4>
+              <h4><a href="${productUrl(p)}">${esc(pname(p))}</a></h4>
               <div class="sub">${conditionBadge(p)} ${esc(p.sku)}</div>
               <div class="price" style="font-size: 15px;">${money(p.price)}</div>
             </div>

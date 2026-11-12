@@ -22,19 +22,19 @@
   <main class="section">
     <div class="container" style="max-width: 640px;" id="req-container">
       <div style="text-align: center; margin-bottom: 24px;">
-        <h1 data-i18n="req_title"></h1>
-        <p style="color: var(--muted);" data-i18n="req_sub"></p>
+        <h1 data-i18n="req_title">مش لاقي قطعتك؟ اطلبها 🔎</h1>
+        <p style="color: var(--muted);" data-i18n="req_sub">سيب بياناتك واسم القطعة (ورقم الشاسيه لو متاح) وهندور عليها ونرد عليك خلال ٢٤ ساعة.</p>
       </div>
       <div class="summary">
-        <div><label data-i18n="req_part"></label><input id="r-part" data-i18n-ph="req_part_ph"></div>
-        <div><label data-i18n="req_car"></label><input id="r-car" data-i18n-ph="req_car_ph"></div>
-        <div><label data-i18n="req_vin"></label><input id="r-vin" dir="ltr" style="text-align: start;" placeholder="WBA8E9G50GNT..."></div>
+        <div><label data-i18n="req_part">القطعة المطلوبة *</label><input id="r-part" data-i18n-ph="req_part_ph" placeholder="مثال: طرمبة بنزين ميني كوبر R56"></div>
+        <div><label data-i18n="req_car">العربية (الموديل والسنة)</label><input id="r-car" data-i18n-ph="req_car_ph" placeholder="مثال: BMW F30 موديل 2015"></div>
+        <div><label data-i18n="req_vin">رقم الشاسيه VIN (اختياري — بيضمن قطعة مظبوطة 100%)</label><input id="r-vin" dir="ltr" style="text-align: start;" placeholder="WBA8E9G50GNT..."></div>
         <div class="form-grid">
-          <div><label data-i18n="full_name"></label><input id="r-name"></div>
-          <div><label data-i18n="phone"></label><input id="r-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
+          <div><label data-i18n="full_name">الاسم بالكامل *</label><input id="r-name"></div>
+          <div><label data-i18n="phone">رقم الموبايل *</label><input id="r-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx"></div>
         </div>
-        <div><label data-i18n="req_notes"></label><textarea id="r-notes" rows="2"></textarea></div>
-        <button class="btn" id="r-send" data-i18n="req_send"></button>
+        <div><label data-i18n="req_notes">تفاصيل إضافية (جديد ولا مستعمل؟ ميزانيتك؟)</label><textarea id="r-notes" rows="2"></textarea></div>
+        <button class="btn" id="r-send" data-i18n="req_send">إرسال الطلب 🔎</button>
         <div id="r-error" style="color: var(--red); font-size: 14px;"></div>
       </div>
     </div>

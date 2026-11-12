@@ -22,7 +22,8 @@
   <!-- 🇦🇪 تجار الجملة يروحوا مباشرة لمكتب التجارة (شكل B2B) بدل الصفحة القطاعية -->
   <script>try{if(localStorage.getItem('mode')==='wholesale')location.replace('/trade.html');}catch(e){}</script>
   <link rel="stylesheet" href="/css/style.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoPartsStore","name":"Fixit Spare Parts","alternateName":"FixIt","url":"https://fixitauto.parts/","telephone":"+201125157767","address":{"@type":"PostalAddress","streetAddress":"الحي العاشر، مدينة نصر","addressLocality":"Nasr City","addressRegion":"Cairo","addressCountry":"EG"},"hasMap":"https://share.google/InODxiIyOGIAOBHaM","priceRange":"$$","brand":[{"@type":"Brand","name":"BMW"},{"@type":"Brand","name":"MINI"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoPartsStore","name":"Fixit Spare Parts","alternateName":"FixIt","url":"https://fixitauto.parts/","telephone":"+201125157767","address":{"@type":"PostalAddress","streetAddress":"الحي العاشر، مدينة نصر","addressLocality":"Nasr City","addressRegion":"Cairo","addressCountry":"EG"},"hasMap":"https://share.google/InODxiIyOGIAOBHaM","priceRange":"$$","logo":"https://fixitauto.parts/assets/fixit-logo-square.png","image":"https://fixitauto.parts/assets/fixit-logo-square.png","areaServed":{"@type":"Country","name":"Egypt"},"currenciesAccepted":"EGP","brand":[{"@type":"Brand","name":"BMW"},{"@type":"Brand","name":"MINI"}]}</script>
+  <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "FixIt", "url": "https://fixitauto.parts/", "inLanguage": ["ar", "en"], "potentialAction": {"@type": "SearchAction", "target": "https://fixitauto.parts/shop.html?q={search_term_string}", "query-input": "required name=search_term_string"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "منين أشتري قطع غيار BMW أصلية في مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "FixIt متخصص في قطع غيار BMW وميني كوبر بس — جديد ومستعمل وارد أوروبا وأمريكا، كل قطعة بتتفحص قبل البيع وعليها ضمان، ومحلنا في الحي العاشر بمدينة نصر بالقاهرة مع شحن لكل المحافظات."}}, {"@type": "Question", "name": "هل قطع الغيار المستعملة عليها ضمان؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، القطع المستعملة الوارد بتتفحص وبتتباع بضمان. تفاصيل مدة الضمان والاستبدال موجودة في صفحة السياسات."}}, {"@type": "Question", "name": "إزاي أعرف القطعة المناسبة لعربيتي؟", "acceptedAnswer": {"@type": "Answer", "text": "اختار موديل عربيتك (زي F30 أو E90 أو R56) من “عربيتي”، أو ابعتلنا رقم الشاسيه (VIN) على واتساب ونحدد لك رقم القطعة الصح."}}, {"@type": "Question", "name": "لو القطعة مش موجودة على الموقع أعمل إيه؟", "acceptedAnswer": {"@type": "Answer", "text": "اطلبها من صفحة “اطلب قطعتك” بالاسم أو رقم القطعة، وهنرد عليك خلال 24 ساعة بالسعر والمدة."}}, {"@type": "Question", "name": "بتشحنوا لكل محافظات مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، بنشحن لكل المحافظات، وممكن تستلم من المحل في مدينة نصر."}}, {"@type": "Question", "name": "إيه موديلات BMW وميني اللي بتوفروا قطعها؟", "acceptedAnswer": {"@type": "Answer", "text": "كل فئات BMW (الفئة 1 و3 و5 و7 و X1 و X3 و X5 و X6) من E36 لحد G20 و G30، وميني كوبر R56 و R55 و R60 و F56 و F55 و F54 و F60."}}]}]</script>
 </head>
 <body>
   <div id="site-header"></div>
@@ -31,22 +32,22 @@
     <!-- الهيرو -->
     <section class="hero">
       <div class="container">
-        <h1 data-i18n="hero_title"></h1>
-        <p data-i18n="hero_sub"></p>
+        <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
+        <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
         <form class="search-box" action="/shop.html" method="get">
-          <input type="search" name="q" data-i18n-ph="hero_search_ph">
-          <button class="btn" type="submit" data-i18n="search_btn"></button>
+          <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
+          <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
         </form>
         <div class="brand-chips">
           <a class="chip" href="/shop.html?brand=BMW">BMW</a>
           <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
-          <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new"></a>
-          <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used"></a>
+          <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
+          <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
         </div>
         <div class="hero-stats">
-          <span data-i18n="stat1"></span>
-          <span data-i18n="stat2"></span>
-          <span data-i18n="stat3"></span>
+          <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
+          <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
+          <span data-i18n="stat3">✓ استيراد مباشر</span>
         </div>
       </div>
     </section>
@@ -54,11 +55,11 @@
     <!-- شريط الثقة -->
     <div class="trust-strip">
       <div class="container trust-strip-inner">
-        <span class="ts-item">🚚 <b data-i18n="trust_ship"></b></span>
-        <span class="ts-item">✅ <b data-i18n="trust_genuine"></b></span>
-        <span class="ts-item">💵 <b data-i18n="trust_cod"></b></span>
-        <span class="ts-item">🔍 <b data-i18n="trust_inspect"></b></span>
-        <span class="ts-item">💬 <b data-i18n="trust_support"></b></span>
+        <span class="ts-item">🚚 <b data-i18n="trust_ship">شحن لكل المحافظات</b></span>
+        <span class="ts-item">✅ <b data-i18n="trust_genuine">قطع أصلية مضمونة</b></span>
+        <span class="ts-item">💵 <b data-i18n="trust_cod">دفع آمن: انستاباي / محفظة</b></span>
+        <span class="ts-item">🔍 <b data-i18n="trust_inspect">فحص قبل التسليم</b></span>
+        <span class="ts-item">💬 <b data-i18n="trust_support">دعم واتساب سريع</b></span>
       </div>
     </div>
 
@@ -67,8 +68,8 @@
       <div class="container">
         <a href="/savings.html" class="savings-band">
           <span class="sb-ic">🧾💰</span>
-          <span class="sb-text" data-i18n="sav_home_cta"></span>
-          <span class="sb-go" data-i18n="nav_savings"></span>
+          <span class="sb-text" data-i18n="sav_home_cta">عندك فاتورة أو مقايسة قطع غيار؟ اعرف كنت هتوفّر كام مع فيكس إت 💰</span>
+          <span class="sb-go" data-i18n="nav_savings">احسب توفيرك 💰</span>
         </a>
       </div>
     </section>
@@ -79,12 +80,12 @@
         <div class="sbc-card">
           <div class="sbc-head">
             <span class="sbc-ic">🚗</span>
-            <div><h2 data-i18n="sbc_title"></h2><p data-i18n="sbc_sub"></p></div>
+            <div><h2 data-i18n="sbc_title">دوّر بعربيتك</h2><p data-i18n="sbc_sub">اختار الماركة والموديل، وهنوريك القطع اللي تناسبها</p></div>
           </div>
           <div class="sbc-form">
             <select id="sbc-brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
             <select id="sbc-model"></select>
-            <button class="btn" id="sbc-go" data-i18n="sbc_go"></button>
+            <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
           </div>
         </div>
       </div>
@@ -94,8 +95,8 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="section-head">
-          <h2 data-i18n="sec_cats"></h2>
-          <a href="/shop.html" data-i18n="view_all"></a>
+          <h2 data-i18n="sec_cats">تسوّق حسب الفئة</h2>
+          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
         </div>
         <div class="cats-grid" id="cats-grid"></div>
       </div>
@@ -112,8 +113,8 @@
     <section class="section" style="padding-top: 0; display: none;" id="deals-section">
       <div class="container">
         <div class="section-head">
-          <h2 data-i18n="sec_deals"></h2>
-          <a href="/shop.html" data-i18n="view_all"></a>
+          <h2 data-i18n="sec_deals">🔥 عروض وخصومات</h2>
+          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
         </div>
         <div class="hscroll" id="deals-grid"></div>
       </div>
@@ -123,8 +124,8 @@
     <section class="section" style="padding-top: 0; display: none;" id="new-section">
       <div class="container">
         <div class="section-head">
-          <h2>🆕 <span data-i18n="na_title"></span></h2>
-          <a href="/shop.html?sort=newest" data-i18n="view_all"></a>
+          <h2>🆕 <span data-i18n="na_title">وصل حديثاً</span></h2>
+          <a href="/shop.html?sort=newest" data-i18n="view_all">عرض الكل ←</a>
         </div>
         <div class="hscroll" id="new-grid"></div>
       </div>
@@ -134,8 +135,8 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="section-head">
-          <h2 data-i18n="sec_best"></h2>
-          <a href="/shop.html" data-i18n="view_all"></a>
+          <h2 data-i18n="sec_best">⭐ الأكثر مبيعاً</h2>
+          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
         </div>
         <div class="products-grid" id="featured-grid"></div>
       </div>
@@ -144,7 +145,7 @@
     <!-- آراء العملاء -->
     <section class="section" style="padding-top: 0; display: none;" id="reviews-section">
       <div class="container">
-        <div class="section-head"><h2>⭐ <span data-i18n="sec_reviews"></span></h2></div>
+        <div class="section-head"><h2>⭐ <span data-i18n="sec_reviews">آراء عملائنا</span></h2></div>
         <div class="reviews-grid" id="reviews-grid"></div>
       </div>
     </section>
@@ -152,7 +153,7 @@
     <!-- شاهدتها مؤخراً -->
     <section class="section" style="padding-top: 0; display: none;" id="recent-section">
       <div class="container">
-        <div class="section-head"><h2 data-i18n="sec_recent"></h2></div>
+        <div class="section-head"><h2 data-i18n="sec_recent">👀 شاهدتها مؤخراً</h2></div>
         <div class="hscroll" id="recent-grid"></div>
       </div>
     </section>
@@ -161,10 +162,10 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
         <div class="features-grid">
-          <div class="feature"><span class="icon">✅</span><div><h3 data-i18n="feat1_t"></h3><p data-i18n="feat1_d"></p></div></div>
-          <div class="feature"><span class="icon">🚢</span><div><h3 data-i18n="feat2_t"></h3><p data-i18n="feat2_d"></p></div></div>
-          <div class="feature"><span class="icon">🚚</span><div><h3 data-i18n="feat3_t"></h3><p data-i18n="feat3_d"></p></div></div>
-          <div class="feature"><span class="icon">🤖</span><div><h3 data-i18n="feat4_t"></h3><p data-i18n="feat4_d"></p></div></div>
+          <div class="feature"><span class="icon">✅</span><div><h3 data-i18n="feat1_t">فحص شامل</h3><p data-i18n="feat1_d">كل قطعة مستعملة بتتفحص بالكامل قبل البيع وبنضمنها.</p></div></div>
+          <div class="feature"><span class="icon">🚢</span><div><h3 data-i18n="feat2_t">استيراد مباشر</h3><p data-i18n="feat2_d">وارد أوروبا وأمريكا بدون وسطاء، فالأسعار أفضل.</p></div></div>
+          <div class="feature"><span class="icon">🚚</span><div><h3 data-i18n="feat3_t">شحن سريع</h3><p data-i18n="feat3_d">توصيل لجميع المحافظات خلال ٢-٤ أيام عمل.</p></div></div>
+          <div class="feature"><span class="icon">🤖</span><div><h3 data-i18n="feat4_t">خبير يساعدك</h3><p data-i18n="feat4_d">مش عارف اسم القطعة؟ اسأل الخبير الذكي وهيوصلك ليها.</p></div></div>
         </div>
       </div>
     </section>
@@ -174,14 +175,26 @@
       <div class="container">
         <div class="cta-band">
           <div>
-            <h2 data-i18n="cta_title"></h2>
-            <p data-i18n="cta_sub"></p>
+            <h2 data-i18n="cta_title">مش لاقي القطعة اللي بتدور عليها؟</h2>
+            <p data-i18n="cta_sub">ابعتلنا رقم الشاسيه أو صورة القطعة على واتساب وهنوفرهالك.</p>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a class="btn" href="/request.html" data-i18n="cta_request" style="background: #fff; color: var(--accent-dark);"></a>
-            <a class="btn btn-green" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn"></a>
+            <a class="btn" href="/request.html" data-i18n="cta_request" style="background: #fff; color: var(--accent-dark);">اطلب قطعتك دلوقتي 🔎</a>
+            <a class="btn btn-green" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn">كلمنا واتساب 💬</a>
           </div>
         </div>
+      </div>
+    </section>
+    <!-- ❓ أسئلة شائعة (SEO) -->
+    <section class="section faq-home">
+      <div class="container">
+        <div class="section-head"><h2>أسئلة شائعة عن قطع غيار BMW و MINI</h2></div>
+        <details class="hfaq"><summary>منين أشتري قطع غيار BMW أصلية في مصر؟</summary><p>FixIt متخصص في قطع غيار BMW وميني كوبر بس — جديد ومستعمل وارد أوروبا وأمريكا، كل قطعة بتتفحص قبل البيع وعليها ضمان، ومحلنا في الحي العاشر بمدينة نصر بالقاهرة مع شحن لكل المحافظات.</p></details>
+        <details class="hfaq"><summary>هل قطع الغيار المستعملة عليها ضمان؟</summary><p>أيوه، القطع المستعملة الوارد بتتفحص وبتتباع بضمان. تفاصيل مدة الضمان والاستبدال موجودة في صفحة السياسات.</p></details>
+        <details class="hfaq"><summary>إزاي أعرف القطعة المناسبة لعربيتي؟</summary><p>اختار موديل عربيتك (زي F30 أو E90 أو R56) من “عربيتي”، أو ابعتلنا رقم الشاسيه (VIN) على واتساب ونحدد لك رقم القطعة الصح.</p></details>
+        <details class="hfaq"><summary>لو القطعة مش موجودة على الموقع أعمل إيه؟</summary><p>اطلبها من صفحة “اطلب قطعتك” بالاسم أو رقم القطعة، وهنرد عليك خلال 24 ساعة بالسعر والمدة.</p></details>
+        <details class="hfaq"><summary>بتشحنوا لكل محافظات مصر؟</summary><p>أيوه، بنشحن لكل المحافظات، وممكن تستلم من المحل في مدينة نصر.</p></details>
+        <details class="hfaq"><summary>إيه موديلات BMW وميني اللي بتوفروا قطعها؟</summary><p>كل فئات BMW (الفئة 1 و3 و5 و7 و X1 و X3 و X5 و X6) من E36 لحد G20 و G30، وميني كوبر R56 و R55 و R60 و F56 و F55 و F54 و F60.</p></details>
       </div>
     </section>
   </main>
@@ -272,7 +285,7 @@
             <h3>${esc(pname(top))}</h3>
             <div class="flash-price"><span class="old-price">${money(top.oldPrice)}</span> <span class="price">${money(top.price)}</span></div>
             <div class="flash-timer">${t('deal_ends')} <span id="flash-clock">--:--:--</span></div>
-            <a class="btn" href="/product.html?id=${esc(top.id)}">${t('deal_grab')} →</a>
+            <a class="btn" href="${productUrl(top)}">${t('deal_grab')} →</a>
           </div>
           <div class="flash-img">${productImage(top, 'flash-thumb')}</div>`;
         const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);

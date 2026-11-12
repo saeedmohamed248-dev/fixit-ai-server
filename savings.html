@@ -70,52 +70,52 @@
   <main class="section">
     <div class="container">
       <div class="sav-hero">
-        <h1 data-i18n="sav_title"></h1>
-        <p data-i18n="sav_sub"></p>
+        <h1 data-i18n="sav_title">كنت هتوفّر كام مع فيكس إت؟</h1>
+        <p data-i18n="sav_sub">سجّل بياناتك وارفع فاتورتك أو مقايستك، والبوت هيقرأها ويقارن الأسعار بأسعارنا ويقولك التوفير.</p>
       </div>
 
       <div class="sav-card">
         <div class="sav-steps">
-          <span class="st on" id="step1">1 · <span data-i18n="sav_step_reg"></span></span>
-          <span class="st" id="step2">2 · <span data-i18n="sav_step_upload"></span></span>
-          <span class="st" id="step3">3 · <span data-i18n="sav_step_result"></span></span>
+          <span class="st on" id="step1">1 · <span data-i18n="sav_step_reg">بياناتك</span></span>
+          <span class="st" id="step2">2 · <span data-i18n="sav_step_upload">ارفع</span></span>
+          <span class="st" id="step3">3 · <span data-i18n="sav_step_result">النتيجة</span></span>
         </div>
 
         <!-- مرحلة 1: التسجيل -->
         <div id="stage-reg">
           <div class="reg-grid">
-            <div class="full"><label data-i18n="sav_name"></label><input id="c-name" data-i18n-ph="sav_name_ph"></div>
-            <div><label data-i18n="sav_phone"></label><input id="c-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="01xxxxxxxxx"></div>
-            <div><label data-i18n="sav_car"></label><input id="c-car" data-i18n-ph="sav_car_ph"></div>
+            <div class="full"><label data-i18n="sav_name">الاسم</label><input id="c-name" data-i18n-ph="sav_name_ph" placeholder="اسمك بالكامل"></div>
+            <div><label data-i18n="sav_phone">رقم الموبايل</label><input id="c-phone" type="tel" dir="ltr" style="text-align:start;" placeholder="01xxxxxxxxx"></div>
+            <div><label data-i18n="sav_car">نوع العربية</label><input id="c-car" data-i18n-ph="sav_car_ph" placeholder="مثال: BMW F30 2016"></div>
           </div>
           <div class="sav-err" id="reg-err" style="display:none;"></div>
-          <div class="sav-actions"><button class="btn" id="reg-next" data-i18n="sav_continue"></button></div>
+          <div class="sav-actions"><button class="btn" id="reg-next" data-i18n="sav_continue">التالي ←</button></div>
         </div>
 
         <!-- مرحلة 2: الرفع -->
         <div id="stage-upload" style="display:none;">
           <div class="mode-toggle">
-            <button id="mode-invoice" class="on" data-mode="invoice" data-i18n="sav_mode_invoice"></button>
-            <button id="mode-quote" data-mode="quote" data-i18n="sav_mode_quote"></button>
+            <button id="mode-invoice" class="on" data-mode="invoice" data-i18n="sav_mode_invoice">🧾 عندي فاتورة</button>
+            <button id="mode-quote" data-mode="quote" data-i18n="sav_mode_quote">📋 عندي مقايسة أسعار</button>
           </div>
           <div class="mode-hint" id="mode-hint"></div>
           <label class="drop" id="drop">
             <div class="big">🧾</div>
-            <div><b data-i18n="sav_upload"></b></div>
-            <div class="hint" data-i18n="sav_upload_hint"></div>
+            <div><b data-i18n="sav_upload">📷 ارفع الصورة</b></div>
+            <div class="hint" data-i18n="sav_upload_hint">صورة واضحة (JPG/PNG) — لحد ٤ صور لو من كذا صفحة.</div>
             <input type="file" id="file" accept="image/*" multiple capture="environment" hidden>
           </label>
           <div class="previews" id="previews"></div>
           <div class="sav-actions">
-            <button class="btn btn-outline btn-sm" id="reg-back" data-i18n="sav_back"></button>
-            <button class="btn" id="go" disabled data-i18n="sav_analyze"></button>
+            <button class="btn btn-outline btn-sm" id="reg-back" data-i18n="sav_back">→ رجوع</button>
+            <button class="btn" id="go" disabled data-i18n="sav_analyze">حلّل دلوقتي</button>
           </div>
         </div>
 
         <!-- التحميل -->
         <div class="sav-loading" id="sav-loading" style="display:none;">
           <div style="font-size:34px;">⏳</div>
-          <p data-i18n="sav_analyzing"></p>
+          <p data-i18n="sav_analyzing">⏳ بنقرأ الصورة ونقارن الأسعار...</p>
         </div>
 
         <!-- مرحلة 3: النتيجة -->
@@ -249,7 +249,7 @@
     function partCell(m) {
       const p = m.product || {};
       const img = p.image ? `<img src="${esc(p.image)}" alt="">` : '';
-      const link = p.id ? `/product.html?id=${esc(p.id)}` : '#';
+      const link = p.id ? productUrl(p) : '#';
       return `<div class="sav-part">${img}<div><a href="${link}">${esc(m.name || p.name)}</a>${p.sku ? `<div style="font-size:11px;color:var(--muted);" dir="ltr">${esc(p.sku)}</div>` : ''}</div></div>`;
     }
 

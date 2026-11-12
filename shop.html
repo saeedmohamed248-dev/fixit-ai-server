@@ -27,37 +27,37 @@
       <div class="shop-layout">
         <!-- الفلاتر -->
         <aside class="filters">
-          <h3 data-i18n="filters"></h3>
+          <h3 data-i18n="filters">تصفية النتائج</h3>
           <div>
-            <label data-i18n="f_search"></label>
-            <input type="search" id="f-q" data-i18n-ph="f_search_ph">
+            <label data-i18n="f_search">بحث</label>
+            <input type="search" id="f-q" data-i18n-ph="f_search_ph" placeholder="اسم القطعة أو OEM...">
           </div>
           <div>
-            <label data-i18n="f_brand"></label>
+            <label data-i18n="f_brand">الماركة</label>
             <select id="f-brand">
-              <option value="" data-i18n="all"></option>
+              <option value="" data-i18n="all">الكل</option>
               <option value="BMW">BMW</option>
               <option value="MINI">MINI Cooper</option>
-              <option value="OTHER" data-i18n="f_other_makes"></option>
+              <option value="OTHER" data-i18n="f_other_makes">🚙 ماركات تانية</option>
             </select>
           </div>
           <div>
-            <label data-i18n="f_model"></label>
-            <select id="f-model"><option value="" data-i18n="all"></option></select>
+            <label data-i18n="f_model">الموديل</label>
+            <select id="f-model"><option value="" data-i18n="all">الكل</option></select>
           </div>
           <div>
-            <label data-i18n="f_cat"></label>
-            <select id="f-category"><option value="" data-i18n="all"></option></select>
+            <label data-i18n="f_cat">الفئة</label>
+            <select id="f-category"><option value="" data-i18n="all">الكل</option></select>
           </div>
           <div>
-            <label data-i18n="f_cond"></label>
+            <label data-i18n="f_cond">الحالة</label>
             <select id="f-condition">
-              <option value="" data-i18n="all"></option>
-              <option value="new" data-i18n="cond_new"></option>
-              <option value="used" data-i18n="cond_used"></option>
+              <option value="" data-i18n="all">الكل</option>
+              <option value="new" data-i18n="cond_new">جديد</option>
+              <option value="used" data-i18n="cond_used">مستعمل وارد</option>
             </select>
           </div>
-          <button class="btn btn-outline btn-sm" id="f-reset" data-i18n="clear_filters"></button>
+          <button class="btn btn-outline btn-sm" id="f-reset" data-i18n="clear_filters">مسح الفلاتر</button>
         </aside>
 
         <!-- النتائج -->
@@ -65,12 +65,12 @@
           <div class="shop-toolbar">
             <span class="count" id="results-count"></span>
             <select id="f-sort">
-              <option value="" data-i18n="sort_new"></option>
-              <option value="newest" data-i18n="sort_newest"></option>
-              <option value="best" data-i18n="sort_best"></option>
-              <option value="rating" data-i18n="sort_rating"></option>
-              <option value="price_asc" data-i18n="sort_asc"></option>
-              <option value="price_desc" data-i18n="sort_desc"></option>
+              <option value="" data-i18n="sort_new">الأحدث</option>
+              <option value="newest" data-i18n="sort_newest">الأحدث وصولاً</option>
+              <option value="best" data-i18n="sort_best">الأكثر مبيعاً</option>
+              <option value="rating" data-i18n="sort_rating">الأعلى تقييماً</option>
+              <option value="price_asc" data-i18n="sort_asc">السعر: من الأقل</option>
+              <option value="price_desc" data-i18n="sort_desc">السعر: من الأعلى</option>
             </select>
           </div>
           <div class="products-grid" id="products-grid"></div>

@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: host + '/' }, { '@type': 'ListItem', position: 2, name: ar, item: url }] }];
     const cards = list.slice(0, 48).map((p) => `
-      <a class="card" href="/product.html?id=${encodeURIComponent(p.id)}">
+      <a class="card" href="/p/${encodeURIComponent(p.id)}">
         <div class="card-img-wrap">${img(p) ? `<img class="card-img" src="${esc(img(p))}" alt="${esc(p.name)}" loading="lazy" decoding="async">` : '<div class="card-img img-placeholder"><span>🔧</span></div>'}</div>
         <div class="card-body"><h3 class="card-title">${esc(p.name)}</h3>
         <div class="card-footer"><div class="card-price"><span class="price">${Number(p.price) ? Number(p.price).toLocaleString('en') + ' ج.م' : ''}</span></div></div></div>
