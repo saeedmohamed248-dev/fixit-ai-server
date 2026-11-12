@@ -88,6 +88,11 @@
             <span style="color: var(--muted); font-size: 13px;">${payLabel}</span>
           </div>
         </div>
+        ${o.status === 'delivered' && !window.Capacitor ? `<div class="order-card" style="margin-top:12px">
+          <b>${LANG === 'en' ? 'Rate your parts ⭐' : 'قيّم القطع اللي اشتريتها ⭐'}</b>
+          <p style="color:var(--muted);font-size:13px;margin:4px 0 10px">${LANG === 'en' ? 'Your review helps other drivers choose the right part.' : 'تقييمك بيساعد عملاء تانيين يختاروا القطعة الصح.'}</p>
+          ${o.items.filter((i) => i.id).map((i) => `<a class="btn btn-outline btn-sm" style="margin:3px" href="${productUrl(i)}#reviews-section">⭐ ${esc(i.name)}</a>`).join('')}
+        </div>` : ''}
         <div style="text-align: center; margin-top: 14px;">
           <a class="btn btn-green btn-sm" target="_blank" rel="noopener" href="${waLink((LANG === 'en' ? 'Question about order ' : 'استفسار عن الطلب رقم ') + o.number)}">${t('ask_order_wa')}</a>
         </div>`;

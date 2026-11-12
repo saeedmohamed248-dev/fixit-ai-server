@@ -211,7 +211,7 @@ export default async function handler(req, res) {
         if (!order) return res.status(404).json({ error: 'مفيش طلب بالرقم ده — اتأكد من رقم الطلب ورقم الموبايل' });
         return res.status(200).json({
           number: order.number, status: order.status, createdAt: order.createdAt,
-          items: order.items.map((i) => ({ name: i.name, qty: i.qty })),
+          items: order.items.map((i) => ({ id: i.id, name: i.name, qty: i.qty })),
           total: order.total, payment: order.payment,
         });
       }

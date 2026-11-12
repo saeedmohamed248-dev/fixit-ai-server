@@ -1,7 +1,7 @@
 // 🚗 صفحة لكل موديل (SEO): /bmw/f30 ، /mini/r56 → صفحة HTML كاملة من السيرفر
 // عشان جوجل يلاقي "قطع غيار BMW F30" ويجيب زيارات مجانية.
 import { getProducts } from '../db.js';
-import { carCodes, productBrand } from '../util.js';
+import { carCodes, productBrand, productCategory } from '../util.js';
 import { inEgypt } from './feed.js';
 
 export const CARS = {
@@ -18,6 +18,7 @@ export const CARS = {
     F56: ['Hatch', '2014+'], F55: ['5-door', '2014+'], F54: ['Clubman', '2015+'], F60: ['Countryman', '2017+'],
   },
 };
+const CAT_SLUG = { 'فرامل': 'brakes', 'فلاتر وصيانة': 'filters', 'عفشة وتعليق': 'suspension', 'كهرباء وإشعال': 'electrical', 'تبريد': 'cooling', 'وقود': 'fuel', 'محرك': 'engine', 'هيكل وإكسسوارات': 'body' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const MEDIA = 'https://fixit-02e0.mousstec.com';
 const img = (p) => { const u = String(p.image || (p.images && p.images[0]) || ''); return u.startsWith('/media/') ? MEDIA + u : u; };
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
     const list = all.filter((p) => Number(p.stock) > 0 && inEgypt(p) && carCodes(p).includes(code))
       .sort((a, b) => (img(b) ? 1 : 0) - (img(a) ? 1 : 0));
     const cats = {};
-    list.forEach((p) => { if (p.category) cats[p.category] = (cats[p.category] || 0) + 1; });
+    list.forEach((p) => { const c = productCategory(p); if (c) cats[c] = (cats[c] || 0) + 1; });
     const title = `قطع غيار ${brand} ${code} (${series} ${years}) في مصر | FixIt`;
     const desc = `${list.length} قطعة غيار متاحة لعربية ${brand} ${code} ${series} موديلات ${years} — جديد ومستعمل وارد بضمان، شحن لكل المحافظات أو استلام من المحل في الحي العاشر بمدينة نصر.`;
     const others = Object.entries(CARS).flatMap(([b, m]) => Object.keys(m).filter((c) => c !== code).map((c) => `<a href="/${b.toLowerCase()}/${c.toLowerCase()}">${b} ${c}</a>`)).join(' ');
@@ -84,7 +85,7 @@ export default async function handler(req, res) {
         <button class="btn" type="button" id="save-car">🚗 دي عربيتي — احفظها</button>
         <a class="btn btn-outline" href="/request.html?q=${encodeURIComponent(brand + ' ' + code)}">🔎 مش لاقي قطعتك؟ اطلبها</a>
       </div>
-      ${Object.keys(cats).length ? `<div class="car-cats">${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<a href="/shop.html?model=${code}&category=${encodeURIComponent(c)}">${esc(c)} <b>${n}</b></a>`).join('')}</div>` : ''}
+      ${Object.keys(cats).length ? `<div class="car-cats">${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<a href="${CAT_SLUG[c] ? `/parts/${CAT_SLUG[c]}/${code.toLowerCase()}` : `/shop.html?model=${code}&category=${encodeURIComponent(c)}`}">${esc(c)} <b>${n}</b></a>`).join('')}</div>` : ''}
     </div>
     <div class="products-grid" id="products-grid">${cards || '<div class="empty-state" style="grid-column:1/-1;">لسه مفيش قطع متاحة للموديل ده — اطلب قطعتك وهنوفّرها 🔎</div>'}</div>
     ${list.length > 48 ? `<p style="text-align:center;margin:18px 0;"><a class="btn" href="/shop.html?model=${code}">شوف كل الـ ${list.length} قطعة ←</a></p>` : ''}

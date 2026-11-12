@@ -86,7 +86,7 @@ export default async function handler(req, res) {
           ${Number(p.price) ? `<div class="price">${Number(p.price).toLocaleString('en')} ${L.cur}</div>` : ''}
           <p>${esc(pdesc)}</p>
           <table class="meta-table">
-            ${p.oem ? `<tr><td>OEM</td><td dir="ltr">${esc(p.oem)}</td></tr>` : ''}
+            ${p.oem ? `<tr><td>OEM</td><td dir="ltr"><a href="/oem/${esc(String(p.oem).toUpperCase().replace(/[^A-Z0-9]/g, ''))}">${esc(p.oem)}</a></td></tr>` : ''}
             <tr><td>${L.condL}</td><td>${cond}</td></tr>
             ${fits.length ? `<tr><td>${L.fits}</td><td>${fits.map((c) => `<a class="model-chip" href="/${brand.toLowerCase()}/${c.toLowerCase()}">${brand} ${c}</a>`).join(' ')}</td></tr>` : ''}
           </table></div></div>`;

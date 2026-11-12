@@ -82,7 +82,11 @@ export function sendStatusUpdate(order, email) {
   const html = wrap(subject, `
     <p>${escapeHtml(line)}</p>
     <p>طلب رقم <b>${escapeHtml(order.number)}</b> — الإجمالي ${money(order.total)}</p>
-    <p><a href="https://fixitauto.parts/track.html?number=${encodeURIComponent(order.number)}&phone=${encodeURIComponent(order.customer.phone)}" style="color:#ea580c;">تفاصيل الطلب ←</a></p>`);
+    <p><a href="https://fixitauto.parts/track.html?number=${encodeURIComponent(order.number)}&phone=${encodeURIComponent(order.customer.phone)}" style="color:#ea580c;">تفاصيل الطلب ←</a></p>
+    ${order.status === 'delivered' && Array.isArray(order.items) && order.items.length ? `
+    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
+    <p><b>رأيك يهمنا ⭐</b> قيّم القطع اللي اشتريتها في دقيقة — تقييمك بيساعد عملاء تانيين يختاروا صح:</p>
+    <ul>${order.items.slice(0, 10).map((i) => `<li><a href="https://fixitauto.parts/p/${encodeURIComponent(i.id)}#reviews-section" style="color:#ea580c;">${escapeHtml(i.name)}</a></li>`).join('')}</ul>` : ''}`);
   return send(email, `${subject} — ${order.number}`, html);
 }
 

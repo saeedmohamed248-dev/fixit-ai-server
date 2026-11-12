@@ -5,6 +5,22 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/parts/:c/:m",
+      "destination": "/api/category?c=:c&m=:m"
+    },
+    {
+      "source": "/oem/:n",
+      "destination": "/api/oem?n=:n"
+    },
+    {
+      "source": "/guide",
+      "destination": "/api/guide"
+    },
+    {
+      "source": "/guide/:s",
+      "destination": "/api/guide?s=:s"
+    },
+    {
       "source": "/en/p/:id",
       "destination": "/api/item?id=:id&lang=en"
     },

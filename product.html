@@ -263,6 +263,7 @@
     /* ---------- المراجعات ---------- */
     async function loadReviews() {
       document.getElementById('reviews-section').style.display = '';
+      if (location.hash === '#reviews-section') setTimeout(() => document.getElementById('reviews-section').scrollIntoView({ behavior: 'smooth' }), 400);
       const list = document.getElementById('reviews-list');
       try {
         const reviews = await api('/reviews?productId=' + encodeURIComponent(id));

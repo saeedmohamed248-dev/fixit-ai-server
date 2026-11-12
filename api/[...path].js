@@ -28,10 +28,12 @@ import feed from './_lib/routes/feed.js';
 import car from './_lib/routes/car.js';
 import item from './_lib/routes/item.js';
 import category from './_lib/routes/category.js';
+import oem from './_lib/routes/oem.js';
+import guide from './_lib/routes/guide.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed, car, bmw: car, mini: car, item, p: item, category, parts: category,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed, car, bmw: car, mini: car, item, p: item, category, parts: category, oem, guide,
 };
 
 export default async function handler(req, res) {

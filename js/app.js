@@ -300,6 +300,21 @@ function initPixel(id) {
   (window._pxQueue || []).forEach((a) => fbq('track', a[0], a[1]));
   window._pxQueue = [];
 }
+/* ---------- 📈 Google Analytics 4 — الـ ID من لوحة التحكم ← الإعدادات ---------- */
+function initGA(id) {
+  id = String(id || '').trim();
+  if (!/^G-[A-Z0-9]{4,15}$/.test(id) || window._gaInit || IS_NATIVE) return;
+  window._gaInit = id;
+  const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + id; document.head.appendChild(sc);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+  gtag('js', new Date()); gtag('config', id);
+}
+// 💬 كل ضغطة على واتساب بتتسجّل (بنعرف أي صفحة بتجيب عملاء)
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a[href*="wa.me"], a[href*="whatsapp"]');
+  if (a) try { trackEvent('wa_click', { path: location.pathname }); } catch {}
+}, true);
 function px(ev, data) {
   try {
     if (window.fbq) fbq('track', ev, data || {});
@@ -312,6 +327,7 @@ function applySettings(s) {
   if (!s || typeof s !== 'object') return;
   window.SETTINGS = s;
   if (s.metaPixel) initPixel(s.metaPixel);
+  if (s.gaId) initGA(s.gaId);
   if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent)) {
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent);
@@ -423,6 +439,8 @@ function trackEvent(ev, extra = {}) {
   const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead' };
   if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
   else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
+  else if (ev === 'wa_click') px('Contact', {});
+  try { if (window.gtag) gtag('event', ev === 'order_placed' ? 'purchase' : ev, ev === 'order_placed' ? { value: Number(extra.val) || 0, currency: 'EGP', transaction_id: extra.ord } : {}); } catch {}
 }
 // 🔎 تسجيل البحث (مرة واحدة لكل كلمة في الجلسة) — n=0 يعني مالقاش حاجة متاحة في المخزون
 // بنستنى العميل يخلّص كتابة (ثانية ونص من غير كتابة) — عشان مانسجّلش "طقم فوانيس خ" و"خا" و"خلف" كل واحدة لوحدها
@@ -716,7 +734,7 @@ function firstImage(p) {
 function productImage(p, cssClass = 'card-img') {
   const src = firstImage(p);
   // لو رابط الصورة بايظ/انتهى، نعرض أيقونة الفئة بدل مربع فاضي
-  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
+  if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}${p.oem ? ' ' + esc(p.oem) : ''}" loading="lazy" decoding="async" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
   return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
 }
 
@@ -1024,6 +1042,7 @@ function renderLayout(active = '') {
           <a href="/account.html">${t('footer_account')}</a>
           <a href="/policies.html">${t('footer_policies')}</a>
           <a href="/assistant.html">${t('footer_expert')}</a>
+          ${window.Capacitor ? '' : `<a href="/guide">${LANG === 'en' ? 'BMW & MINI guides' : 'دليل أعطال BMW و MINI'}</a>`}
         </div>
         <div>
           <h4>${t('footer_contact')}</h4>

@@ -3,6 +3,7 @@ import { getProducts } from '../db.js';
 import { carCodes, productCategory } from '../util.js';
 import { inEgypt } from './feed.js';
 import { CARS } from './car.js';
+import { hostOf, page, sendHtml, cardsHtml, itemListLd, img as pimg } from '../page.js';
 
 export const CATS = {
   brakes: ['فرامل', 'Brakes', 'تيل فرامل، طنابير، ديسكات، حساسات وكل قطع الفرامل'],
@@ -21,9 +22,13 @@ export const catList = (products, ar) => products.filter((p) => Number(p.stock) 
 
 export default async function handler(req, res) {
   try {
-    const slug = String((req.query && req.query.c) || String(req.url || '').split('?')[0].split('/').filter(Boolean).pop() || '').toLowerCase();
+    const segs = String(req.url || '').split('?')[0].split('/').filter(Boolean);
+    const slug = String((req.query && req.query.c) || segs[segs.indexOf('parts') + 1] || segs.pop() || '').toLowerCase();
+    if (req.query && !req.query.m && segs[0] === 'parts' && segs[2]) req.query.m = segs[2];
     if (!CATS[slug]) { res.statusCode = 302; res.setHeader('Location', '/shop.html'); return res.end(); }
     const [ar, en, blurb] = CATS[slug];
+    const m = String((req.query && req.query.m) || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (m) return combo(req, res, slug, m);
     const host = 'https://' + (req.headers.host || 'fixitauto.parts');
     const url = `${host}/parts/${slug}`;
     const list = catList(await getProducts(), ar).sort((a, b) => (img(b) ? 1 : 0) - (img(a) ? 1 : 0));
@@ -98,4 +103,30 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
+}
+
+// 🎯 موديل + قسم: /parts/brakes/f30 → "فرامل BMW F30"
+export const comboList = (products, ar, code) => catList(products, ar).filter((p) => carCodes(p).includes(code));
+async function combo(req, res, slug, code) {
+  const [ar, en] = CATS[slug];
+  const brand = Object.keys(CARS).find((b) => CARS[b][code]);
+  if (!brand) { res.statusCode = 302; res.setHeader('Location', '/parts/' + slug); return res.end(); }
+  const [series, years] = CARS[brand][code];
+  const host = hostOf(req);
+  const list = comboList(await getProducts(), ar, code);
+  const title = `قطع غيار ${ar} ${brand} ${code} (${series} ${years}) | FixIt`;
+  const desc = `${list.length || 'كل'} قطع ${ar} لعربية ${brand} ${code} ${series} موديلات ${years} — جديد ومستعمل وارد بضمان، شحن لكل المحافظات أو استلام من مدينة نصر.`;
+  const body = `
+    <div class="car-hero">
+      <h1>${esc(ar)} ${brand} ${code} <small>${esc(series)} · ${years} · ${en}</small></h1>
+      <p>${esc(desc)}</p>
+      <div class="car-cats"><a href="/${brand.toLowerCase()}/${code.toLowerCase()}">كل قطع ${brand} ${code}</a><a href="/parts/${slug}">كل قطع ${esc(ar)}</a>
+      ${Object.entries(CATS).filter(([s2]) => s2 !== slug).map(([s2, [a2]]) => `<a href="/parts/${s2}/${code.toLowerCase()}">${esc(a2)} ${code}</a>`).join('')}</div>
+      <div class="car-hero-btns"><a class="btn btn-outline" href="/request.html?q=${encodeURIComponent(ar + ' ' + brand + ' ' + code)}">🔎 مش لاقي قطعتك؟ اطلبها</a></div>
+    </div>
+    <div class="products-grid">${cardsHtml(list.slice(0, 48)) || '<div class="empty-state" style="grid-column:1/-1;">لسه مفيش قطع متاحة هنا — اطلب قطعتك وهنوفّرها 🔎</div>'}</div>`;
+  return sendHtml(res, page({ host, path: `/parts/${slug}/${code.toLowerCase()}`, title, desc,
+    crumbs: [[ar, '/parts/' + slug], [`${brand} ${code}`, null]], body,
+    ld: list.length ? [{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, mainEntity: itemListLd(host, list) }] : [],
+    ogImage: list[0] && pimg(list[0]), noindex: !list.length }));
 }
