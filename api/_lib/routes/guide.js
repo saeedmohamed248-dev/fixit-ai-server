@@ -38,7 +38,8 @@ export default async function handler(req, res) {
       ...a.cats.flatMap((c) => [`<a href="/parts/${c}">${esc(CATS[c][0])}</a>`, ...a.cars.slice(0, 3).map((m) => `<a href="/parts/${c}/${m.toLowerCase()}">${esc(CATS[c][0])} ${m}</a>`)]),
       ...a.cars.map(carLink),
     ];
-    const others = ARTICLES.filter((x) => x.slug !== a.slug).slice(0, 5);
+    const rel = (x) => x.cars.filter((c) => a.cars.includes(c)).length * 2 + x.cats.filter((c) => a.cats.includes(c)).length;
+    const others = ARTICLES.filter((x) => x.slug !== a.slug).map((x, i) => [rel(x), -i, x]).sort((p, q) => q[0] - p[0] || q[1] - p[1]).slice(0, 6).map((r) => r[2]);
     const body = `
     <article class="guide-article">
       <h1>${esc(a.title)}</h1>
