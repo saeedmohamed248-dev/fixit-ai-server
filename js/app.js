@@ -1012,6 +1012,8 @@ function renderLayout(active = '') {
           <a href="/shop.html?brand=BMW">${t('footer_bmw')}</a>
           <a href="/shop.html?brand=MINI">${t('footer_mini')}</a>
           <a href="/wishlist.html">${t('footer_wish')}</a>
+          ${window.Capacitor ? '' : [['brakes', 'فرامل'], ['suspension', 'عفشة وتعليق'], ['engine', 'محرك'], ['electrical', 'كهرباء وإشعال'], ['cooling', 'تبريد'], ['filters', 'فلاتر وصيانة']]
+            .map(([s, c]) => `<a href="/parts/${s}">${catName(c)}</a>`).join('')}
         </div>
         <div>
           <h4>${t('footer_service')}</h4>

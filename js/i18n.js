@@ -2,7 +2,7 @@
 // اللغة محفوظة في المتصفح، والافتراضي عربي
 const _urlLang = new URLSearchParams(location.search).get('lang');
 if (_urlLang === 'ar' || _urlLang === 'en') localStorage.setItem('lang', _urlLang);
-window.LANG = localStorage.getItem('lang') || 'ar';
+window.LANG = window.__LANG || localStorage.getItem('lang') || 'ar';
 document.documentElement.lang = LANG;
 document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
 // 🇦🇪 وضع الفرع مبكراً عشان سكين الجملة (Trade Terminal) يتطبّق من غير وميض

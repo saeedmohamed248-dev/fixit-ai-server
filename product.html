@@ -6,6 +6,7 @@
   <title>قطعة غيار BMW & MINI | FixIt</title>
   <meta name="description" content="تفاصيل قطعة غيار BMW وميني كوبر — جديد ومستعمل وارد بضمان من FixIt.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
@@ -66,7 +67,7 @@
     window.SKIP_AUTOVIEW = true; // نسجّل زيارة المنتج بنفسنا مع رقم القطعة
     renderLayout('shop');
     const container = document.getElementById('product-container');
-    const id = new URLSearchParams(location.search).get('id') || ((m) => m && decodeURIComponent(m[1]))(location.pathname.match(/^\/p\/([^/?#]+)/));
+    const id = new URLSearchParams(location.search).get('id') || ((m) => m && decodeURIComponent(m[1]))(location.pathname.match(/\/p\/([^/?#]+)/));
     let product = null;
 
     function galleryHtml(p) {

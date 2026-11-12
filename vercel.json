@@ -5,6 +5,14 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/en/p/:id",
+      "destination": "/api/item?id=:id&lang=en"
+    },
+    {
+      "source": "/parts/:c",
+      "destination": "/api/category?c=:c"
+    },
+    {
       "source": "/p/:id",
       "destination": "/api/item?id=:id"
     },
@@ -21,6 +29,35 @@
     {
       "path": "/api/maintenance?cron=1",
       "schedule": "0 9 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(css|js)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/(assets|mobile-assets)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/favicon.svg",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
     }
   ]
 }

@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     };
     const cards = list.slice(0, 48).map((p) => `
       <a class="card" href="/p/${encodeURIComponent(p.id)}">
-        <div class="card-img-wrap">${img(p) ? `<img class="card-img" src="${esc(img(p))}" alt="${esc(p.name)}" loading="lazy">` : '<div class="card-img img-placeholder"><span>🔧</span></div>'}</div>
+        <div class="card-img-wrap">${img(p) ? `<img class="card-img" src="${esc(img(p))}" alt="${esc(p.name)}" loading="lazy" decoding="async">` : '<div class="card-img img-placeholder"><span>🔧</span></div>'}</div>
         <div class="card-body"><h3 class="card-title">${esc(p.name)}</h3>
         <div class="card-footer"><div class="card-price"><span class="price">${Number(p.price) ? Number(p.price).toLocaleString('en') + ' ج.م' : ''}</span></div></div></div>
       </a>`).join('');
@@ -66,6 +66,7 @@ export default async function handler(req, res) {
   <meta property="og:url" content="${url}">
   ${list[0] && img(list[0]) ? `<meta property="og:image" content="${esc(img(list[0]))}">` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="theme-color" content="#101828">
