@@ -45,10 +45,10 @@ export default async function handler(req, res) {
     const others = Object.entries(CARS).flatMap(([b, m]) => Object.keys(m).filter((c) => c !== code).map((c) => `<a href="/${b.toLowerCase()}/${c.toLowerCase()}">${b} ${c}</a>`)).join(' ');
     const ld = {
       '@context': 'https://schema.org', '@type': 'ItemList', name: title,
-      itemListElement: list.slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${host}/product.html?id=${encodeURIComponent(p.id)}`, name: p.name })),
+      itemListElement: list.slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${host}/p/${encodeURIComponent(p.id)}`, name: p.name })),
     };
     const cards = list.slice(0, 48).map((p) => `
-      <a class="card" href="/product.html?id=${encodeURIComponent(p.id)}">
+      <a class="card" href="/p/${encodeURIComponent(p.id)}">
         <div class="card-img-wrap">${img(p) ? `<img class="card-img" src="${esc(img(p))}" alt="${esc(p.name)}" loading="lazy">` : '<div class="card-img img-placeholder"><span>🔧</span></div>'}</div>
         <div class="card-body"><h3 class="card-title">${esc(p.name)}</h3>
         <div class="card-footer"><div class="card-price"><span class="price">${Number(p.price) ? Number(p.price).toLocaleString('en') + ' ج.م' : ''}</span></div></div></div>

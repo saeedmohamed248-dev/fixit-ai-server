@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         .filter(Boolean).join(' — ').slice(0, 4900);
       return [
         p.id, title, desc, 'in stock', p.condition === 'used' ? 'used' : 'new',
-        Number(p.price).toFixed(2) + ' EGP', `${host}/product.html?id=${encodeURIComponent(p.id)}`,
+        Number(p.price).toFixed(2) + ' EGP', `${host}/p/${encodeURIComponent(p.id)}`,
         fixMediaUrl(p.image || p.images[0]), productBrand(p) || 'BMW', 'Vehicles & Parts > Vehicle Parts & Accessories',
       ].map(cell).join(',');
     });

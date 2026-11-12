@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /cart.html
+Disallow: /account.html
+Disallow: /wishlist.html
+Disallow: /api/
 
 Sitemap: https://fixitauto.parts/sitemap.xml
