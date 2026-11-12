@@ -508,7 +508,7 @@ function addToCart(id, qty = 1) {
   const cart = getCart();
   cart[id] = (cart[id] || 0) + qty;
   setCart(cart);
-  toast(t('toast_added'));
+  toast(t('toast_added'), { href: '/cart.html', label: LANG === 'en' ? 'Checkout →' : 'كمّل الطلب ←' });
   trackEvent('add_cart', { pid: id });
 }
 function removeFromCart(id) {
@@ -531,7 +531,27 @@ function setPartChoice(id, partNumber) {
 function cartCount() {
   return Object.values(getCart()).reduce((a, b) => a + b, 0);
 }
+/* 🛒 شريط ثابت «كمّل الطلب» — بيظهر طول ما السلة فيها حاجة (الزوار كانوا بيحطوا في السلة ومش بيرجعولها) */
+function updateCartBar() {
+  if (/\/(cart|account|admin)\.html/.test(location.pathname)) return;
+  const n = cartCount();
+  let bar = document.getElementById('cart-bar');
+  if (!n) { if (bar) bar.remove(); document.body.classList.remove('has-cartbar'); return; }
+  if (!bar) {
+    bar = document.createElement('a');
+    bar.id = 'cart-bar';
+    bar.className = 'cart-bar';
+    bar.href = '/cart.html';
+    bar.addEventListener('click', () => trackEvent('cartbar_click'));
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `<span>🛒 ${LANG === 'en' ? 'Cart' : 'سلتك'} (${n})</span><b>${LANG === 'en' ? 'Complete order →' : 'كمّل الطلب ←'}</b>`;
+  document.body.classList.add('has-cartbar');
+}
+document.addEventListener('DOMContentLoaded', () => { try { updateCartBar(); } catch {} });
+
 function updateCartBadge() {
+  try { updateCartBar(); } catch {}
   const badge = document.querySelector('.cart-badge');
   if (badge) {
     const n = cartCount();
@@ -825,7 +845,7 @@ function initReveal() {
 }
 document.addEventListener('DOMContentLoaded', initReveal);
 
-function toast(msg) {
+function toast(msg, action) {
   let el = document.querySelector('.toast');
   if (!el) {
     el = document.createElement('div');
@@ -833,9 +853,15 @@ function toast(msg) {
     document.body.appendChild(el);
   }
   el.textContent = msg;
+  if (action) {
+    const a = document.createElement('a');
+    a.href = action.href; a.textContent = action.label; a.className = 'toast-action';
+    el.appendChild(a);
+  }
+  el.classList.toggle('has-action', !!action);
   el.classList.add('show');
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  el._t = setTimeout(() => el.classList.remove('show'), action ? 4000 : 2200);
 }
 
 function waLink(text) {

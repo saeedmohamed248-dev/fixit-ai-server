@@ -1434,3 +1434,17 @@ html { background: var(--accent-dark); }
 
 .guide-group { margin-top: 26px; scroll-margin-top: 90px; }
 .guide-group > h2 { font-size: 21px; margin: 0 0 12px; }
+
+/* ====== 🛒 شريط «كمّل الطلب» الثابت ====== */
+.cart-bar{position:fixed;left:88px;right:12px;bottom:calc(12px + var(--safe-bottom,0px));z-index:61;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:15px;padding:13px 18px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.28);max-width:640px;margin:0 auto;animation:cartbar-in .3s ease}
+.cart-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cart-bar b{background:#fff;color:var(--accent);padding:7px 14px;border-radius:999px;font-weight:800;white-space:nowrap}
+@keyframes cartbar-in{from{transform:translateY(120%)}to{transform:none}}
+body.has-cartbar{padding-bottom:84px}
+body.has-cartbar .ct-float{display:none}
+body.has-cartbar .wa-float{bottom:calc(86px + var(--safe-bottom,0px))}
+body.has-cartbar .scroll-top{bottom:154px}
+body.has-cartbar .toast{bottom:92px}
+.toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:12px;white-space:nowrap}
+.toast-action{color:#fff;background:var(--accent);padding:6px 12px;border-radius:999px;font-weight:800;text-decoration:none}
+@media (prefers-reduced-motion: reduce){.cart-bar{animation:none}}
