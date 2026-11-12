@@ -1048,6 +1048,7 @@ function renderLayout(active = '') {
           <h4>${t('footer_contact')}</h4>
           <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
           <a href="${esc(SITE.mapsUrl || '#')}" target="_blank" rel="noopener" style="color:inherit;">📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)} — ${LANG === 'en' ? 'Open in Maps' : 'افتح على الخريطة'} ↗</a>
+          <span>🕛 ${LANG === 'en' ? 'Daily 12 PM – 11 PM · Closed Sunday' : 'يوميًا من 12 الظهر لـ 11 بالليل · الأحد إجازة'}</span>
         </div>
       </div>`}
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
