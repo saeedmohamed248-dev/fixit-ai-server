@@ -3,15 +3,16 @@
 // GET  /api/orders?track=ORD-123&phone=010  → تتبع طلب (عام)
 // GET  /api/orders                          → كل الطلبات (إدارة)
 // PUT  /api/orders                          → تغيير حالة طلب (إدارة)
-import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity } from '../db.js';
+import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, logActivity, getSettings } from '../db.js';
 import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { generateFromOrder } from './maintenance.js';
 import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
-import { cors, requireAdmin, rateLimit, validPhone } from '../util.js';
+import { cors, requireAdmin, rateLimit, validPhone, calcDeposit } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-const PAYMENTS = ['instapay', 'wallet', 'card']; // 💵 الدفع عند الاستلام اتلغى
+// 💵 الدفع الكامل عند الاستلام اتلغى — بداله «عربون والباقي عند الاستلام» (deposit)
+const PAYMENTS = ['deposit', 'instapay', 'wallet', 'card'];
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -159,6 +160,15 @@ export default async function handler(req, res) {
         source: 'website',
       };
 
+      // 💵 عربون والباقي عند الاستلام — المبلغ بيتحسب هنا (مش من المتصفح) عشان محدش يغيّره
+      if (order.payment === 'deposit') {
+        let settings = {};
+        try { settings = await getSettings(); } catch {}
+        const { deposit, balance } = calcDeposit(order.total, settings);
+        order.deposit = deposit;
+        order.balanceDue = balance;
+      }
+
       // تحديث رصيد النقاط والاستبدال: خصم المستخدَم + إضافة نقاط مكتسبة
       if (user) {
         pointsEarned = Math.floor(order.total * 0.05);
@@ -178,7 +188,8 @@ export default async function handler(req, res) {
       // 📧 إيميل تأكيد الطلب (لو الإيميل متاح)
       try { await sendOrderConfirm(order, order.email); } catch {}
 
-      await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)`);
+      await logActivity('order', `🛒 طلب جديد ${order.number} من ${order.customer.name} بقيمة ${order.total} ج.م (${orderItems.length} قطعة)` +
+        (order.payment === 'deposit' ? ` — عربون ${order.deposit} والباقي ${order.balanceDue} عند الاستلام` : ''));
 
       // إرسال الطلب لسيستم موس تك (لو الربط مفعّل) — كفاتورة مسودة تتأكد من هناك
       if (process.env.MOUSSTEC_WEBHOOK_URL && process.env.MOUSSTEC_SECRET) {
@@ -213,6 +224,7 @@ export default async function handler(req, res) {
           number: order.number, status: order.status, createdAt: order.createdAt,
           items: order.items.map((i) => ({ id: i.id, name: i.name, qty: i.qty })),
           total: order.total, payment: order.payment,
+          deposit: order.deposit, balanceDue: order.balanceDue,
         });
       }
 

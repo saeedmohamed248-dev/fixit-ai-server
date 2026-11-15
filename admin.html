@@ -134,7 +134,7 @@
     ];
     const NAV_LABEL = Object.fromEntries(NAV.filter((n) => n.tab).map((n) => [n.tab, n.label]));
     const STATUS_AR = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 تم الشحن', delivered: '📦 تم التسليم', cancelled: '❌ ملغي' };
-    const PAY_AR = { cod: '💵 عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
+    const PAY_AR = { cod: '💵 عند الاستلام', deposit: '💵 عربون + الباقي عند الاستلام', instapay: '🏦 انستاباي', wallet: '📱 محفظة', card: '💳 بطاقة' };
     const ACT_ICONS = { order: '🛒', status: '📦', product: '🔧', coupon: '🎟️', gift: '🎁', settings: '⚙️', sync: '🔄', request: '🔎', question: '❓', notify: '🔔', credit: '💳', maintenance: '🔧', savings: '🧾' };
     let products = [];
     let ordersCache = [];
@@ -412,7 +412,7 @@
             <td>${new Date(o.createdAt).toLocaleDateString('ar-EG')}</td>
             <td>${esc(o.customer.name)}<br><small style="color: var(--muted);" dir="ltr">${esc(o.customer.phone)}</small></td>
             <td>${o.items.length} قطعة</td>
-            <td>${PAY_AR[o.payment] || '💵'}${o.paid ? '<br><span class="status-pill st-confirmed">✓ مدفوع</span>' : ''}</td>
+            <td>${PAY_AR[o.payment] || '💵'}${o.payment === 'deposit' ? `<br><small>عربون ${Number(o.deposit) || 0} · الباقي ${Number(o.balanceDue) || 0}</small>` : ''}${o.paid ? '<br><span class="status-pill st-confirmed">✓ مدفوع</span>' : ''}</td>
             <td><b>${money(o.total)}</b></td>
             <td><span class="status-pill st-${esc(o.status)}">${STATUS_AR[o.status]}</span>
               ${o.returnRequest ? '<br><span class="status-pill st-cancelled" style="margin-top: 4px; display: inline-block;">↩️ إرجاع مطلوب</span>' : ''}</td>
@@ -450,12 +450,12 @@
 
         // تصدير الطلبات لملف Excel (CSV)
         document.getElementById('export-csv').addEventListener('click', () => {
-          const rows = [['رقم الطلب', 'التاريخ', 'الحالة', 'العميل', 'الموبايل', 'المحافظة', 'العنوان', 'القطع', 'الدفع', 'الخصم', 'الإجمالي']];
+          const rows = [['رقم الطلب', 'التاريخ', 'الحالة', 'العميل', 'الموبايل', 'المحافظة', 'العنوان', 'القطع', 'الدفع', 'الخصم', 'الإجمالي', 'العربون', 'الباقي عند الاستلام']];
           ordersCache.forEach((o) => rows.push([
             o.number, new Date(o.createdAt).toLocaleDateString('ar-EG'), STATUS_AR[o.status] || o.status,
             o.customer.name, o.customer.phone, o.customer.city, o.customer.address,
             o.items.map((i) => `${i.name} x${i.qty}`).join(' | '),
-            PAY_AR[o.payment] || '', o.discount || 0, o.total,
+            PAY_AR[o.payment] || '', o.discount || 0, o.total, o.deposit ?? '', o.balanceDue ?? '',
           ]));
           const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(',')).join('\n');
           const a = document.createElement('a');
@@ -912,7 +912,7 @@
       ${o.items.map((i) => `<tr><td>${esc(i.name)}</td><td>${esc(i.sku)}</td><td>${Number(i.price)}</td><td>${Number(i.qty)}</td><td>${i.price * i.qty}</td></tr>`).join('')}
       </table>
       ${o.discount ? `<p style="text-align: left;">خصم (${esc(o.coupon)}): -${Number(o.discount)} ج.م</p>` : ''}
-      <p class="total">الإجمالي المطلوب: ${Number(o.total)} ج.م — ${PAY_AR[o.payment] || ''}</p>
+      <p class="total">الإجمالي المطلوب: ${Number(o.total)} ج.م — ${PAY_AR[o.payment] || ''}${o.payment === 'deposit' ? ` (عربون ${Number(o.deposit) || 0} ج.م — الباقي ${Number(o.balanceDue) || 0} ج.م يتحصّل عند الاستلام)` : ''}</p>
       <p class="muted">شكراً لتعاملك مع ${SITE.name} 🧡</p>
       <script>window.print();<\/script></body></html>`);
       win.document.close();
@@ -1991,6 +1991,8 @@
             <div><label>الرقم المعروض في الموقع</label><input id="s-phoneDisplay" dir="ltr" value="${esc(s.phoneDisplay || SITE.phoneDisplay)}"></div>
             <div><label>رقم انستاباي (العميل بيحوّل عليه)</label><input id="s-instapay" dir="ltr" value="${esc(s.instapay || SITE.instapay)}"></div>
             <div><label>رقم المحفظة / فودافون كاش (العميل بيحوّل عليه)</label><input id="s-wallet" dir="ltr" value="${esc(s.wallet || SITE.wallet)}"></div>
+            <div><label>💵 نسبة العربون % (عربون والباقي عند الاستلام)</label><input id="s-depositPct" type="number" min="5" max="90" value="${s.depositPct ?? (SITE.deposit || {}).pct ?? 20}"></div>
+            <div><label>💵 أقل عربون (ج.م)</label><input id="s-depositMin" type="number" min="0" value="${s.depositMin ?? (SITE.deposit || {}).min ?? 300}"></div>
             <div><label>شحن مجاني فوق (ج.م) — اكتب 0 للإلغاء</label><input id="s-freeShippingOver" type="number" min="0" value="${s.freeShippingOver ?? SITE.freeShippingOver}"></div>
             <div></div>
             <div class="full"><label>رسالة الشريط العلوي (عربي) — سيبها فاضية للافتراضي</label><input id="s-topbarAr" value="${esc(s.topbarAr || '')}" placeholder="🚚 شحن لجميع المحافظات — مجاني فوق ٥٬٠٠٠ ج.م"></div>
@@ -2049,7 +2051,7 @@
         document.getElementById('s-save').addEventListener('click', async () => {
           try {
             const body = {};
-            ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId']
+            ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'depositPct', 'depositMin', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId']
               .forEach((k) => { body[k] = document.getElementById('s-' + k).value.trim(); });
             const saved = await api('/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
             localStorage.setItem('site_settings', JSON.stringify(saved));

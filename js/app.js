@@ -69,6 +69,22 @@ function setWCur(c) {
 function waNumber() {
   return isWholesale() && wsConf().whatsapp ? wsConf().whatsapp : SITE.whatsapp;
 }
+// 📞 رابط اتصال مباشر (نفس رقم الواتساب بكود الدولة)
+function telLink() {
+  return 'tel:+' + String(waNumber() || '').replace(/\D/g, '');
+}
+// 💵 العربون — نفس حسبة السيرفر (api/_lib/util.js → calcDeposit). المبلغ النهائي بيرجع من السيرفر مع الطلب.
+function calcDeposit(total) {
+  const d = SITE.deposit || {};
+  const tt = Math.max(0, Math.round(Number(total) || 0));
+  let pct = Number(d.pct);
+  if (!Number.isFinite(pct) || pct <= 0) pct = 20;
+  pct = Math.min(90, Math.max(5, pct));
+  let min = d.min === undefined || d.min === '' ? 300 : Number(d.min);
+  if (!Number.isFinite(min) || min < 0) min = 300;
+  const deposit = Math.min(tt, Math.max(Math.ceil((tt * pct) / 100 / 10) * 10, min));
+  return { deposit, balance: tt - deposit, pct };
+}
 function phoneDisplay() {
   return isWholesale() && wsConf().phoneDisplay ? wsConf().phoneDisplay : SITE.phoneDisplay;
 }
@@ -339,6 +355,9 @@ function applySettings(s) {
   if (s.phoneDisplay) SITE.phoneDisplay = s.phoneDisplay;
   if (s.instapay) SITE.instapay = s.instapay;
   if (s.wallet) SITE.wallet = s.wallet;
+  SITE.deposit = SITE.deposit || {};
+  if (s.depositPct !== undefined && s.depositPct !== '') SITE.deposit.pct = Number(s.depositPct);
+  if (s.depositMin !== undefined && s.depositMin !== '') SITE.deposit.min = Number(s.depositMin);
   if (s.freeShippingOver !== undefined && s.freeShippingOver !== '') {
     SITE.freeShippingOver = Number(s.freeShippingOver) || 0;
   }
@@ -953,7 +972,7 @@ function renderLayout(active = '') {
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: ${esc(phoneDisplay())}</a></div>
+    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a> &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}</a></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo ${isWholesale() ? '' : 'logo-brand'}" href="${isWholesale() ? '/trade.html' : '/index.html'}">
@@ -1040,7 +1059,9 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_contact')}</h4>
-          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
+          <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <span>⚡ ${t('reply_fast')}</span>
           ${wsConf().email ? `<a href="mailto:${esc(wsConf().email)}" dir="ltr" style="text-align:start;">✉️ ${esc(wsConf().email)}</a>` : ''}
           <span>📍 ${wsAddr}</span>
           <a href="/account.html">${t('ws_account_title')}</a>
@@ -1072,7 +1093,9 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_contact')}</h4>
-          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">📱 ${t('whatsapp')}: ${esc(phoneDisplay())}</a>
+          <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <span>⚡ ${t('reply_fast')}</span>
           <a href="${esc(SITE.mapsUrl || '#')}" target="_blank" rel="noopener" style="color:inherit;">📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)} — ${LANG === 'en' ? 'Open in Maps' : 'افتح على الخريطة'} ↗</a>
           <span>🕛 ${LANG === 'en' ? 'Daily 12 PM – 11 PM · Closed Sunday' : 'يوميًا من 12 الظهر لـ 11 بالليل · الأحد إجازة'}</span>
         </div>
@@ -1080,6 +1103,7 @@ function renderLayout(active = '') {
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
+    <a class="call-float" href="${telLink()}" title="${t('call_us')}" aria-label="${t('call_us')}">📞</a>
     ${!['container', 'product', 'cart'].includes(active) && !/\/(product|cart)\.html/.test(location.pathname) ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
 
