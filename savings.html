@@ -89,6 +89,42 @@
     .opt-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .opt-foot b { color: #067647; font-size: 14px; flex: 1; }
     .opt-save { font-size: 11px; background: #ecfdf3; color: #067647; padding: 1px 6px; border-radius: 999px; font-weight: 800; }
+    .opt { position: relative; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+    .opt:hover { border-color: var(--accent,#2f33bf); }
+    .opt.on { border: 2px solid var(--accent,#2f33bf); box-shadow: 0 0 0 4px rgba(47,51,191,.12); }
+    .opt-check { position: absolute; top: 6px; inset-inline-start: 6px; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid var(--line,#d0d5dd); display: grid; place-items: center; font-weight: 900; color: #fff; z-index: 1; }
+    .opt.on .opt-check { background: var(--accent,#2f33bf); border-color: var(--accent,#2f33bf); }
+    .opt-btn { text-align: center; font-size: 13px; font-weight: 800; padding: 7px; border-radius: 8px; background: var(--accent-soft,#eef0ff); color: var(--accent-dark,#23279c); }
+    .opt.on .opt-btn { background: var(--accent,#2f33bf); color: #fff; }
+    .opt-q { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .opt-q .exact { font-size: 11.5px; background: #ecfdf3; color: #067647; padding: 2px 8px; border-radius: 999px; margin-inline-start: 6px; }
+    .line-x { border: 1px solid #fecdca; background: #fff; color: #b42318; border-radius: 999px; padding: 4px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .opt-group.removed { opacity: .55; background: var(--bg,#f5f7fc); }
+    .opt-group.removed .opt-q span { text-decoration: line-through; }
+    .opt-group.removed .line-x { color: var(--accent-dark,#23279c); border-color: var(--line,#d0d5dd); opacity: 1; }
+    .opt-group.picked { border-color: #a6f4c5; }
+    .pick-hint { margin-top: 8px; font-size: 12.5px; color: #b54708; font-weight: 700; }
+    .inv-empty { margin-top: 18px; text-align: center; padding: 16px; border: 2px dashed var(--line,#d0d5dd); border-radius: 14px; color: var(--muted); font-weight: 700; }
+    .inv { margin-top: 14px; border: 1px solid var(--line,#e4e8f2); border-radius: 16px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
+    .inv-h { font-weight: 900; font-size: 17px; margin-bottom: 8px; }
+    .inv-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line,#e4e8f2); font-size: 14px; }
+    .inv-n { white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+    .inv-n s { color: var(--muted); font-size: 12.5px; }
+    .inv-sub { color: var(--muted); }
+    .inv-total { font-size: 17px; font-weight: 900; border-bottom: 0; }
+    .inv-save { background: #ecfdf3; color: #067647; border-radius: 10px; padding: 9px 10px; border: 0; font-weight: 800; }
+    .inv-save b { font-size: 18px; }
+    .inv-warn { margin-top: 8px; font-size: 13px; color: #b54708; font-weight: 700; }
+    .inv-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .inv-actions .btn { flex: 1; min-width: 200px; text-align: center; justify-content: center; }
+    @media (max-width: 600px){
+      .opt-list { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .opt { padding: 6px; gap: 4px; }
+      .opt-name { font-size: 11.5px; }
+      .opt-foot b { font-size: 13px; }
+      .opt-btn { font-size: 12px; padding: 5px; }
+      .sav-card { padding: 14px; }
+    }
     @media (max-width: 520px){ .reg-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -338,85 +374,120 @@
     function renderResult(data) {
       $('sav-loading').style.display = 'none';
       $('sav-result').style.display = '';
-      const tt = data.totals || {};
+      const L2 = (ar, en) => (LANG === 'en' ? en : ar);
       const conf = data.confident || [];
-      let html = '';
-
-      if (!conf.length && !(data.unsure||[]).length && !(data.unmatched||[]).length) {
+      const withOpts = (data.unsure || []).filter((u) => (u.options || []).length);
+      const staff = [...(data.unsure || []).filter((u) => !(u.options || []).length).map((u) => ({ ...u, why: t('sav_why_unsure') })),
+                     ...(data.unmatched || []).map((u) => ({ ...u, why: t('sav_why_missing') }))];
+      if (!conf.length && !withOpts.length && !staff.length) {
         $('sav-result').innerHTML = `<div class="sav-err">${t('sav_none')}</div>` + backBtn();
         wireBack(); return;
       }
 
-      // ملخّص التوفير (وضع الفاتورة فقط، ولو فيه قطع مؤكدة بأسعار)
-      if (data.mode !== 'quote' && tt.matchedCount && tt.theirTotal > 0) {
-        const positive = tt.saving > 0;
-        html += `
-          <div class="sav-hero-num">
-            ${positive
-              ? `<div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
-                 <div class="amount">${money(tt.saving)}</div>
-                 <div class="pct">${t('sav_result_pct')} ${tt.savingPct}%</div>`
-              : `<div class="amount" style="color:var(--accent-dark);font-size:22px;">${t('sav_cheaper_note')}</div>`}
-          </div>
-          <div class="totals-row">
-            <div class="tbox"><div class="lbl">${t('sav_their_total')}</div><div class="val">${money(tt.theirTotal)}</div></div>
-            <div class="tbox"><div class="lbl">${t('sav_our_total')}</div><div class="val" style="color:#067647;">${money(tt.ourTotal)}</div></div>
+      // 🧾 كل بند: اختيارات + المختار + محذوف ولا لأ
+      const lines = [
+        ...conf.map((m) => ({ name: m.name, qty: m.qty || 1, theirUnit: m.theirUnit || 0, options: [m.product], pick: m.product.id, exact: true })),
+        ...withOpts.map((u) => ({ name: u.name, qty: u.qty || 1, theirUnit: u.theirUnit || 0, options: u.options.filter((o) => o.price > 0).length ? u.options : u.options, pick: null })),
+      ].map((l, i) => ({ ...l, i, removed: false }));
+
+      const optCard = (l, o) => `<div class="opt ${l.pick === o.id ? 'on' : ''}" data-line="${l.i}" data-pick="${esc(o.id)}" role="button" tabindex="0">
+          <span class="opt-check">${l.pick === o.id ? '✓' : ''}</span>
+          <div class="opt-img">${o.image ? `<img src="${esc(fixMediaUrl(o.image))}" alt="" loading="lazy" onerror="this.remove()">` : '🔧'}</div>
+          <a href="${productUrl(o)}" target="_blank" rel="noopener" class="opt-name" data-stop>${esc(o.name)}</a>
+          <div class="opt-foot"><b>${o.price ? money(o.price) : L2('السعر عند الطلب', 'Ask for price')}</b>
+            ${l.theirUnit && o.price && o.price < l.theirUnit ? `<span class="opt-save">${L2('توفّر', 'Save')} ${money(l.theirUnit - o.price)}</span>` : ''}</div>
+          <div class="opt-btn">${l.pick === o.id ? L2('✓ اخترتها', '✓ Selected') : L2('اختار دي', 'Choose')}</div>
+        </div>`;
+
+      const lineBox = (l) => `<div class="opt-group ${l.removed ? 'removed' : ''} ${l.pick ? 'picked' : ''}" id="line-${l.i}">
+          <div class="opt-q"><span>«${esc(l.name)}»${l.qty > 1 ? ' ×' + l.qty : ''}${l.theirUnit ? ` <small>${L2('اتقالك', 'quoted')} ${money(l.theirUnit)}</small>` : ''}
+            ${l.exact ? `<span class="exact">✅ ${L2('نفس رقم القطعة', 'exact part number')}</span>` : ''}</span>
+            <button type="button" class="line-x" data-toggle="${l.i}">${l.removed ? L2('↩️ رجّع البند', '↩️ Restore') : L2('✕ شيل البند', '✕ Remove')}</button></div>
+          ${l.removed ? '' : `<div class="opt-list">${l.options.map((o) => optCard(l, o)).join('')}</div>
+            ${!l.exact && !l.pick ? `<div class="pick-hint">👆 ${L2('اختار القطعة المناسبة لعربيتك', 'Pick the right one for your car')}</div>` : ''}`}
+        </div>`;
+
+      function summaryHtml() {
+        const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) }));
+        const pending = lines.filter((l) => !l.removed && !l.pick).length;
+        const ours = chosen.reduce((s, l) => s + (l.p.price || 0) * l.qty, 0);
+        const cmp = chosen.filter((l) => l.theirUnit > 0);
+        const theirs = cmp.reduce((s, l) => s + l.theirUnit * l.qty, 0);
+        const oursCmp = cmp.reduce((s, l) => s + (l.p.price || 0) * l.qty, 0);
+        const save = theirs - oursCmp;
+        if (!chosen.length) return `<div class="inv-empty">🧾 ${L2('اختار القطع اللي عاوزها من فوق وهتظهرلك فاتورتك والتوفير هنا', 'Choose your parts above and your invoice and savings will show here')}${pending ? ` · ${L2('فاضل', 'left')} ${pending}` : ''}</div>`;
+        return `
+          ${theirs > 0 && save > 0 ? `<div class="sav-hero-num"><div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
+            <div class="amount">${money(save)}</div><div class="pct">${t('sav_result_pct')} ${Math.round(save / theirs * 100)}%</div></div>` : ''}
+          <div class="inv">
+            <div class="inv-h">🧾 ${L2('فاتورتك مع فيكس إت', 'Your FixIt invoice')}</div>
+            ${chosen.map((l) => `<div class="inv-row"><span>${esc(l.p.name)}${l.qty > 1 ? ` <small>×${l.qty}</small>` : ''}</span>
+              <span class="inv-n">${l.theirUnit ? `<s>${money(l.theirUnit * l.qty)}</s>` : ''}<b>${l.p.price ? money(l.p.price * l.qty) : L2('عند الطلب', 'on request')}</b></span></div>`).join('')}
+            ${theirs > 0 ? `<div class="inv-row inv-sub"><span>${t('sav_their_total')}</span><span class="inv-n"><s>${money(theirs)}</s></span></div>` : ''}
+            <div class="inv-row inv-total"><span>${L2('الإجمالي عندنا', 'Our total')}</span><span class="inv-n"><b>${money(ours)}</b></span></div>
+            ${theirs > 0 ? `<div class="inv-row inv-save"><span>💰 ${L2('وفّرت', 'You save')}</span><span class="inv-n"><b>${money(Math.max(0, save))}</b></span></div>` : ''}
+            ${pending ? `<div class="inv-warn">⚠️ ${L2(`لسه فيه ${pending} بند ماخترتش ليه قطعة`, `${pending} line(s) still need a choice`)}</div>` : ''}
+            <div class="inv-actions">
+              <button class="btn" id="inv-cart">🛒 ${L2('أضف المختار للسلة وكمّل الطلب', 'Add selected to cart & checkout')}</button>
+              <a class="btn btn-green" target="_blank" rel="noopener" id="inv-wa">💬 ${L2('ابعت الفاتورة واتساب', 'Send on WhatsApp')}</a>
+            </div>
           </div>`;
       }
 
-      // القطع المؤكدة
-      if (conf.length) {
-        const invoiceMode = data.mode !== 'quote';
-        html += `<div class="sav-section-h">✅ ${t(invoiceMode ? 'sav_matched' : 'sav_priced')} (${conf.length})</div>
-          <table class="sav-table"><thead><tr>
-            <th>${t('sav_col_part')}</th><th class="num">${t('sav_col_qty')}</th>
-            ${invoiceMode ? `<th class="num">${t('sav_col_yours')}</th>` : ''}
-            <th class="num">${t('sav_col_ours')}</th>
-            ${invoiceMode ? `<th class="num">${t('sav_col_save')}</th>` : ''}
-          </tr></thead><tbody>
-          ${conf.map((m) => `<tr>
-            <td>${partCell(m)}</td>
-            <td class="num">${m.qty}</td>
-            ${invoiceMode ? `<td class="num">${m.theirLine ? money(m.theirLine) : '—'}</td>` : ''}
-            <td class="num" style="color:#067647;">${money(m.ourLine)}</td>
-            ${invoiceMode ? `<td class="num ${m.saving >= 0 ? 'save-pos' : ''}">${m.saving > 0 ? money(m.saving) : '—'}</td>` : ''}
-          </tr>`).join('')}
-          </tbody></table>`;
+      function draw() {
+        let html = '';
+        if (lines.length) {
+          html += `<div class="sav-section-h">🔎 ${L2('القطع اللي لقيناها — اختار، بدّل أو شيل أي بند', 'Parts we found — choose, swap or remove any line')} (${lines.filter((l) => !l.removed).length})</div>`
+            + lines.map(lineBox).join('')
+            + `<div style="font-size:12.5px;color:var(--muted);margin-top:6px;">${L2('مش متأكد أنهي تركب؟ ابعتلنا رقم الشاسيه على واتساب ونحددهالك.', 'Not sure which fits? Send us your VIN on WhatsApp.')}</div>`;
+        }
+        if (staff.length) {
+          html += `<div class="sav-section-h">📞 ${t('sav_staff_title')} (${staff.length})</div>
+            <div class="staff-box"><div class="staff-note">${t('sav_staff_note')}</div>
+              <ul>${staff.map((u) => `<li>${esc(u.name || u.code || '—')} — <span style="opacity:.8">${esc(u.why)}</span></li>`).join('')}</ul></div>`;
+        }
+        html += `<div id="inv-box">${summaryHtml()}</div>` + backBtn();
+        const y = window.scrollY;
+        $('sav-result').innerHTML = html;
+        window.scrollTo(0, y);
+        wire();
       }
 
-      // 🔎 قطع لقيناها بالاسم — نعرض أقرب الاختيارات بأسعارها والعميل يختار
-      const L2 = (ar, en) => (LANG === 'en' ? en : ar);
-      const withOpts = (data.unsure || []).filter((u) => (u.options || []).length);
-      if (withOpts.length) {
-        html += `<div class="sav-section-h">🔎 ${L2('لقينا القطع دي عندنا — اختار المناسبة لعربيتك', 'Found in our store — pick the one for your car')} (${withOpts.length})</div>
-          ${withOpts.map((u) => `<div class="opt-group"><div class="opt-q">«${esc(u.name)}»${u.qty > 1 ? ' ×' + u.qty : ''}${u.theirUnit ? ` <small>${L2('اتقالك', 'quoted')} ${money(u.theirUnit)}</small>` : ''}</div>
-            <div class="opt-list">${u.options.map((o) => `<div class="opt">
-              <a href="${productUrl(o)}" class="opt-img">${o.image ? `<img src="${esc(fixMediaUrl(o.image))}" alt="" loading="lazy" onerror="this.remove()">` : '🔧'}</a>
-              <a href="${productUrl(o)}" class="opt-name">${esc(o.name)}</a>
-              <div class="opt-foot"><b>${o.price ? money(o.price) : L2('السعر عند الطلب', 'Ask for price')}</b>
-                ${u.theirUnit && o.price && o.price < u.theirUnit ? `<span class="opt-save">${L2('توفّر', 'Save')} ${money(u.theirUnit - o.price)}</span>` : ''}
-                ${o.price ? `<button class="btn btn-sm" data-add="${esc(o.id)}" data-q="${u.qty || 1}">🛒</button>` : ''}</div>
-            </div>`).join('')}</div></div>`).join('')}
-          <div style="font-size:12.5px;color:var(--muted);margin-top:6px;">${L2('مش متأكد أنهي تركب؟ ابعتلنا رقم الشاسيه على واتساب ونحددهالك.', 'Not sure which fits? Send us your VIN on WhatsApp.')}</div>`;
+      function wire() {
+        $('sav-result').querySelectorAll('[data-stop]').forEach((a) => a.addEventListener('click', (e) => e.stopPropagation()));
+        $('sav-result').querySelectorAll('.opt[data-pick]').forEach((c) => {
+          const go = () => {
+            const l = lines[Number(c.dataset.line)];
+            if (l.exact) return;
+            l.pick = l.pick === c.dataset.pick ? null : c.dataset.pick;
+            draw();
+          };
+          c.addEventListener('click', go);
+          c.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+        });
+        $('sav-result').querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
+          const l = lines[Number(b.dataset.toggle)]; l.removed = !l.removed; draw();
+        }));
+        const cartBtn = $('inv-cart');
+        if (cartBtn) cartBtn.addEventListener('click', () => {
+          const chosen = lines.filter((l) => !l.removed && l.pick);
+          const cart = getCart();
+          chosen.forEach((l) => { const p = l.options.find((o) => o.id === l.pick); if (p && p.price) cart[p.id] = (cart[p.id] || 0) + l.qty; });
+          setCart(cart);
+          trackEvent('add_cart', { pid: 'savings', n: chosen.length });
+          location.href = '/cart.html';
+        });
+        const wa = $('inv-wa');
+        if (wa) {
+          const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ l, p: l.options.find((o) => o.id === l.pick) }));
+          const total = chosen.reduce((s, x) => s + (x.p.price || 0) * x.l.qty, 0);
+          wa.href = waLink(L2('عاوز أطلب القطع دي من حاسبة التوفير 🧾', 'I want to order these parts 🧾') + '\n' +
+            chosen.map((x) => `• ${x.p.name}${x.p.sku ? ' (' + x.p.sku + ')' : ''} ×${x.l.qty} — ${x.p.price || '?'}`).join('\n') +
+            '\n' + L2('الإجمالي', 'Total') + ': ' + total + (customer && customer.car ? '\n🚗 ' + customer.car : ''));
+        }
+        wireBack();
       }
-      // القطع اللي محتاجة مراجعة موظف (مش موجودة + اللي مالقيناش ليها اختيارات)
-      const staff = [...(data.unsure || []).filter((u) => !(u.options || []).length).map((u) => ({ ...u, why: t('sav_why_unsure') })),
-                     ...(data.unmatched || []).map((u) => ({ ...u, why: t('sav_why_missing') }))];
-      if (staff.length) {
-        html += `<div class="sav-section-h">📞 ${t('sav_staff_title')} (${staff.length})</div>
-          <div class="staff-box">
-            <div class="staff-note">${t('sav_staff_note')}</div>
-            <ul>${staff.map((u) => `<li>${esc(u.name || u.code || '—')} — <span style="opacity:.8">${esc(u.why)}</span></li>`).join('')}</ul>
-          </div>`;
-      }
-
-      html += `<div class="sav-cta">
-          <a class="btn" href="/shop.html">${t('sav_cta_shop')}</a>
-          <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(t('sav_wa_msg'))}">${t('sav_cta_wa')}</a>
-        </div>` + backBtn();
-      $('sav-result').innerHTML = html;
-      $('sav-result').querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => { addToCart(b.dataset.add, Number(b.dataset.q) || 1); b.textContent = '✓'; }));
-      wireBack();
+      draw();
     }
   </script>
 </body>
