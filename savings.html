@@ -105,6 +105,17 @@
     .opt-group.removed .line-x { color: var(--accent-dark,#23279c); border-color: var(--line,#d0d5dd); opacity: 1; }
     .opt-group.picked { border-color: #a6f4c5; }
     .pick-hint { margin-top: 8px; font-size: 12.5px; color: #b54708; font-weight: 700; }
+    .next-bar { position: sticky; bottom: 10px; z-index: 70; margin-top: 14px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #0b1030; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+    .next-bar .nb-info { flex: 1; font-size: 13px; line-height: 1.4; }
+    .next-bar .nb-info b { display: block; font-size: 14.5px; }
+    .next-bar .nb-info span { color: #5ef0a8; font-weight: 800; }
+    .next-bar .btn { background: #fff; color: var(--accent-dark,#23279c); white-space: nowrap; }
+    .next-bar .btn:disabled { opacity: .5; }
+    body.has-nextbar .cart-bar { display: none; }
+    body.has-nextbar { --safe-bottom: 76px; }
+    body.has-nextbar .mtw-b { transform: translateY(-76px); transition: transform .25s; }
+    body.has-nextbar .ct-float { display: none; }
+    #to-pick { margin-bottom: 6px; }
     .inv-empty { margin-top: 18px; text-align: center; padding: 16px; border: 2px dashed var(--line,#d0d5dd); border-radius: 14px; color: var(--muted); font-weight: 700; }
     .inv { margin-top: 14px; border: 1px solid var(--line,#e4e8f2); border-radius: 16px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
     .inv-h { font-weight: 900; font-size: 17px; margin-bottom: 8px; }
@@ -143,7 +154,8 @@
         <div class="sav-steps">
           <span class="st on" id="step1">1 · <span data-i18n="sav_step_reg">بياناتك</span></span>
           <span class="st" id="step2">2 · <span data-i18n="sav_step_upload">ارفع</span></span>
-          <span class="st" id="step3">3 · <span data-i18n="sav_step_result">النتيجة</span></span>
+          <span class="st" id="step3">3 · <span class="ar-en" data-ar="اختار القطع" data-en="Choose parts"></span></span>
+          <span class="st" id="step4">4 · <span class="ar-en" data-ar="فاتورتك والتوفير" data-en="Invoice & savings"></span></span>
         </div>
 
         <!-- مرحلة 1: التسجيل -->
@@ -280,7 +292,7 @@
     }
 
     function setStep(n) {
-      [1, 2, 3].forEach((i) => $('step' + i).classList.toggle('on', i <= n));
+      [1, 2, 3, 4].forEach((i) => $('step' + i).classList.toggle('on', i <= n));
     }
     function updateModeHint() {
       $('mode-hint').textContent = mode === 'manual'
@@ -385,7 +397,8 @@
     function goStage(n, push = true) {
       $('stage-reg').style.display = n === 1 ? '' : 'none';
       $('stage-upload').style.display = n === 2 ? '' : 'none';
-      $('sav-result').style.display = n === 3 && $('sav-result').innerHTML ? '' : 'none';
+      $('sav-result').style.display = n >= 3 && $('sav-result').innerHTML ? '' : 'none';
+      if (n < 3) document.body.classList.remove('has-nextbar');
       $('sav-loading').style.display = 'none';
       setStep(n);
       if (n === 2) updateModeHint();
@@ -394,11 +407,16 @@
     }
     // زرار الرجوع في الموبايل/المتصفح يرجّع خطوة بدل ما يخرج من الصفحة
     try { history.replaceState({ savStage: 1 }, ''); } catch {}
-    window.addEventListener('popstate', (e) => { const n = e.state && e.state.savStage; if (n) goStage(n, false); });
+    window.addEventListener('popstate', (e) => {
+      const n = e.state && e.state.savStage; if (!n) return;
+      if (n >= 3 && window._savView) { goStage(3, false); window._savView(n === 4 ? 'invoice' : 'pick'); }
+      else goStage(n, false);
+    });
     // الضغط على الخطوات اللي فاتت
-    [1, 2, 3].forEach((n) => $('step' + n).addEventListener('click', () => {
-      if (!$('step' + n).classList.contains('on') || n === currentStage()) return;
-      if (n === 3 && !$('sav-result').innerHTML) return;
+    [1, 2, 3, 4].forEach((n) => $('step' + n).addEventListener('click', () => {
+      if (!$('step' + n).classList.contains('on')) return;
+      if (n >= 3) { if (!$('sav-result').innerHTML || !window._savView) return; goStage(3, false); window._savView(n === 4 ? 'invoice' : 'pick'); try { history.pushState({ savStage: n }, ''); } catch {} return; }
+      if (n === currentStage()) return;
       goStage(n);
     }));
     function currentStage() { return $('stage-reg').style.display !== 'none' ? 1 : $('stage-upload').style.display !== 'none' ? 2 : 3; }
@@ -465,6 +483,13 @@
             ${!l.exact && !l.pick ? `<div class="pick-hint">👆 ${L2('اختار القطعة المناسبة لعربيتك', 'Pick the right one for your car')}</div>` : ''}`}
         </div>`;
 
+      let view = 'pick'; // pick = اختيار القطع، invoice = الفاتورة النهائية
+      function stats() {
+        const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) }));
+        const cmp = chosen.filter((l) => l.theirUnit > 0);
+        const save = cmp.reduce((s, l) => s + (l.theirUnit - (l.p.price || 0)) * l.qty, 0);
+        return { n: chosen.length, pending: lines.filter((l) => !l.removed && !l.pick).length, save };
+      }
       function summaryHtml() {
         const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) }));
         const pending = lines.filter((l) => !l.removed && !l.pick).length;
@@ -492,6 +517,7 @@
           </div>`;
       }
 
+      let keepScroll = true;
       function draw() {
         let html = '';
         if (lines.length) {
@@ -504,10 +530,22 @@
             <div class="staff-box"><div class="staff-note">${t('sav_staff_note')}</div>
               <ul>${staff.map((u) => `<li>${esc(u.name || u.code || '—')} — <span style="opacity:.8">${esc(u.why)}</span></li>`).join('')}</ul></div>`;
         }
-        html += `<div id="inv-box">${summaryHtml()}</div>` + backBtn();
+        if (view === 'invoice') {
+          setStep(4);
+          html = `<button class="btn btn-outline btn-sm" id="to-pick">→ ${L2('رجوع لاختيار القطع', 'Back to choosing')}</button>
+            <div id="inv-box">${summaryHtml()}</div>` + backBtn();
+        } else {
+          setStep(3);
+          const st = stats();
+          html += backBtn() + `<div class="next-bar">
+            <div class="nb-info"><b>${L2(`اخترت ${st.n} قطعة`, `${st.n} selected`)}</b>${st.save > 0 ? `<span>💰 ${L2('هتوفّر', 'You save')} ${money(st.save)}</span>` : st.pending ? `<span>${L2(`فاضل ${st.pending} بند`, `${st.pending} left`)}</span>` : ''}</div>
+            <button class="btn" id="to-invoice" ${st.n ? '' : 'disabled'}>${L2('التالي: فاتورتك ←', 'Next: invoice →')}</button></div>`;
+        }
         const y = window.scrollY;
         $('sav-result').innerHTML = html;
-        window.scrollTo(0, y);
+        document.body.classList.toggle('has-nextbar', view === 'pick');
+        if (!keepScroll) window.scrollTo({ top: $('step1').getBoundingClientRect().top + window.scrollY - 90 }); else window.scrollTo(0, y);
+        keepScroll = true;
         remember();
         wire();
       }
@@ -527,6 +565,11 @@
         $('sav-result').querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
           const l = lines[Number(b.dataset.toggle)]; l.removed = !l.removed; draw();
         }));
+        const ti = $('to-invoice');
+        if (ti) ti.addEventListener('click', () => { view = 'invoice'; keepScroll = false; try { history.pushState({ savStage: 4 }, ''); } catch {} draw(); });
+        const tp = $('to-pick');
+        if (tp) tp.addEventListener('click', () => history.back());
+        window._savView = (v) => { view = v; keepScroll = false; draw(); };
         const cartBtn = $('inv-cart');
         if (cartBtn) cartBtn.addEventListener('click', () => {
           const chosen = lines.filter((l) => !l.removed && l.pick);
