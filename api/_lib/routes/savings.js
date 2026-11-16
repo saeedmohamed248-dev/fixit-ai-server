@@ -173,13 +173,14 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!rateLimit(req, res, 'savings', 4)) return;
-  if (!aiEnabled()) {
+  const isManual = (req.body || {}).mode === 'manual';
+  if (!isManual && !aiEnabled()) {
     return res.status(503).json({ error: 'الحاسبة غير مفعّلة مؤقتاً — جرّب لاحقاً.' });
   }
 
   try {
     const body = req.body || {};
-    const mode = body.mode === 'quote' ? 'quote' : 'invoice';
+    const mode = body.mode === 'quote' ? 'quote' : body.mode === 'manual' ? 'manual' : 'invoice';
     const customer = body.customer || {};
     const name = String(customer.name || '').trim().slice(0, 80);
     const phone = String(customer.phone || '').trim();
@@ -189,16 +190,37 @@ export default async function handler(req, res) {
     if (!validPhone(phone)) return res.status(400).json({ error: 'اكتب رقم موبايل صحيح (11 رقم يبدأ بـ 01)' });
     if (!car) return res.status(400).json({ error: 'اكتب نوع عربيتك (مثال: BMW F30 2016)' });
 
-    let images = body.images;
+    const cd = customer.carDetails || {};
+    const carDetails = {
+      model: String(cd.model || '').trim().slice(0, 60),
+      year: String(cd.year || '').replace(/\D/g, '').slice(0, 4),
+      engine: String(cd.engine || '').trim().slice(0, 30),
+      vin: String(cd.vin || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17),
+    };
+
+    // ✍️ العميل كتب القطع بإيده — من غير صور ولا ذكاء اصطناعي
+    let manualItems = null;
+    if (mode === 'manual') {
+      manualItems = (Array.isArray(body.items) ? body.items : []).slice(0, 30).map((i) => ({
+        name: String(i.name || '').trim().slice(0, 120),
+        code: String(i.code || '').trim().slice(0, 40),
+        oem: '',
+        qty: Math.min(99, Math.max(1, Number(i.qty) || 1)),
+        unit_price: Math.max(0, Number(i.unit_price) || 0),
+      })).filter((i) => i.name || i.code.length >= 4);
+      if (!manualItems.length) return res.status(400).json({ error: 'اكتب قطعة واحدة على الأقل (الاسم أو رقم القطعة)' });
+    }
+
+    let images = manualItems ? [] : body.images;
     if (typeof images === 'string') images = [images];
-    if (!Array.isArray(images) || !images.length) return res.status(400).json({ error: 'ارفع صورة الفاتورة/المقايسة الأول' });
+    if (!manualItems && (!Array.isArray(images) || !images.length)) return res.status(400).json({ error: 'ارفع صورة الفاتورة/المقايسة الأول' });
     images = images.slice(0, 4).filter((u) => typeof u === 'string' && /^(data:image\/|https?:\/\/)/i.test(u));
-    if (!images.length) return res.status(400).json({ error: 'صيغة الصورة غير مدعومة — ارفع صورة (JPG/PNG)' });
+    if (!manualItems && !images.length) return res.status(400).json({ error: 'صيغة الصورة غير مدعومة — ارفع صورة (JPG/PNG)' });
 
     // نرفع الصور لـ Cloudinary بالتوازي (روابط دائمة للإدارة) — الفشل ما يوقفش العملية
     const imageUrls = (await Promise.all(images.map(uploadImage))).filter(Boolean);
 
-    const { currency, items } = await extractInvoice(images);
+    const { currency, items } = manualItems ? { currency: 'EGP', items: manualItems } : await extractInvoice(images);
     const result = compareInvoice(items, await getProducts());
     const needsStaff = result.unsure.length > 0 || result.unmatched.length > 0;
 
@@ -206,7 +228,8 @@ export default async function handler(req, res) {
     const lead = {
       id: 's' + Date.now() + Math.random().toString(36).slice(2, 5),
       at: new Date().toISOString(),
-      mode, name, phone, car,
+      mode, name, phone, car, carDetails,
+      manualItems: manualItems || undefined,
       imageUrls,
       currency,
       lineCount: items.length,
@@ -223,7 +246,7 @@ export default async function handler(req, res) {
       await saveSavingsLeads(list.slice(0, 500));
     } catch { /* التخزين ما يوقفش الرد */ }
 
-    await logActivity('savings', `🧾 ${mode === 'quote' ? 'تسعير مقايسة' : 'حساب توفير'} — ${name} (${phone})${needsStaff ? ' · محتاج مراجعة موظف' : ''}`);
+    await logActivity('savings', `🧾 ${mode === 'quote' ? 'تسعير مقايسة' : mode === 'manual' ? 'قطع مكتوبة يدوي' : 'حساب توفير'} — ${name} (${phone})${needsStaff ? ' · محتاج مراجعة موظف' : ''}`);
     // إشعار للإدارة بالبريد (لو Resend مضبوط) — غير معطّل للعملية
     try { await sendSavingsLeadEmail(lead, null); } catch { /* تجاهل */ }
 

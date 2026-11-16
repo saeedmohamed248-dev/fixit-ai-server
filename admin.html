@@ -491,7 +491,7 @@
           return;
         }
         const money = (n) => new Intl.NumberFormat('ar-EG').format(Math.round(n || 0)) + ' ج.م';
-        const modeLabel = (m) => m === 'quote' ? '📋 مقايسة' : '🧾 فاتورة';
+        const modeLabel = (m) => m === 'quote' ? '📋 مقايسة' : m === 'manual' ? '✍️ مكتوب يدوي' : '🧾 فاتورة';
         const partList = (arr, why) => arr && arr.length
           ? `<ul style="margin:4px 0 0;padding-inline-start:18px;color:var(--muted);font-size:13px;">${arr.map((x) => `<li>${esc(x.name || x.code || '—')}${x.qty>1?` ×${x.qty}`:''}${why?` <span style="color:#b54708;">(${why})</span>`:''}</li>`).join('')}</ul>`
           : '';
@@ -504,6 +504,8 @@
                 <div>
                   <b style="font-size:16px;">${esc(l.name)}</b> · <span dir="ltr">${esc(l.phone)}</span>
                   <div style="color:var(--muted);font-size:13px;">🚗 ${esc(l.car || '—')} · ${modeLabel(l.mode)} · ${new Date(l.at).toLocaleString('ar-EG')}</div>
+                  ${l.carDetails && Object.values(l.carDetails).some(Boolean) ? `<div style="font-size:12.5px;margin-top:2px;">🔩 ${[l.carDetails.model, l.carDetails.year, l.carDetails.engine].filter(Boolean).map(esc).join(' · ')}${l.carDetails.vin ? ` · VIN: <b dir="ltr">${esc(l.carDetails.vin)}</b>` : ''}</div>` : ''}
+                  ${Array.isArray(l.manualItems) && l.manualItems.length ? `<div style="font-size:12.5px;margin-top:4px;">✍️ ${l.manualItems.map((i) => esc(i.name || '') + (i.code ? ` <span dir="ltr">(${esc(i.code)})</span>` : '') + ` ×${i.qty}` + (i.unit_price ? ` — ${money(i.unit_price)}` : '')).join(' · ')}</div>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;">
                   ${l.status === 'new' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🆕 جديد</span>' : '<span style="color:#067647;font-size:12px;">✅ تمّت المتابعة</span>'}

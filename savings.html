@@ -61,6 +61,23 @@
     .staff-box ul { margin: 0; padding-inline-start: 18px; color: #7c2d12; font-size: 13.5px; }
     .sav-cta { text-align: center; margin-top: 22px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
     .sav-err { text-align: center; color: var(--red,#d92d20); padding: 14px; }
+    .mode-toggle { flex-wrap: wrap; }
+    .mode-toggle button { min-width: 150px; }
+    .car-box { background: var(--bg,#f5f7fc); border: 1px solid var(--line,#e4e8f2); border-radius: 12px; padding: 12px; }
+    .mb-h { font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+    .car-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 2fr; gap: 8px; }
+    .mi-head, .mi-row { display: grid; grid-template-columns: 2.2fr 1.6fr .7fr 1.3fr 34px; gap: 6px; align-items: center; }
+    .mi-head { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+    .mi-row { margin-bottom: 6px; }
+    .mi-row input { padding: 9px 10px; font-size: 14px; }
+    .mi-row .rm { border: 0; background: #fee4e2; color: #b42318; border-radius: 8px; height: 38px; font-size: 18px; }
+    @media (max-width: 640px){
+      .car-grid { grid-template-columns: 1fr 1fr; }
+      .mi-head { display: none; }
+      .mi-row { grid-template-columns: 1fr 1fr 34px; padding: 8px; border: 1px solid var(--line,#e4e8f2); border-radius: 10px; }
+      .mi-row { grid-template-columns: 70px 1fr 38px; }
+      .mi-row .n, .mi-row .c { grid-column: 1 / -1; }
+    }
     @media (max-width: 520px){ .reg-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -97,8 +114,26 @@
           <div class="mode-toggle">
             <button id="mode-invoice" class="on" data-mode="invoice" data-i18n="sav_mode_invoice">🧾 عندي فاتورة</button>
             <button id="mode-quote" data-mode="quote" data-i18n="sav_mode_quote">📋 عندي مقايسة أسعار</button>
+            <button id="mode-manual" data-mode="manual">✍️ <span class="ar-en" data-ar="هكتب القطع بإيدي" data-en="Type my parts"></span></button>
           </div>
           <div class="mode-hint" id="mode-hint"></div>
+          <!-- ✍️ كتابة القطع بند بند -->
+          <div id="manual-box" style="display:none;">
+            <div class="car-box">
+              <div class="mb-h">🚗 <span class="ar-en" data-ar="تفاصيل العربية (اختياري — بتساعدنا نحدد القطعة الصح)" data-en="Car details (optional — helps us find the exact part)"></span></div>
+              <div class="car-grid">
+                <input id="cd-model" class="ph" data-ar="الموديل/الشاسيه (مثال: F30 320i)" data-en="Model / chassis (e.g. F30 320i)">
+                <input id="cd-year" class="ph" inputmode="numeric" maxlength="4" data-ar="سنة الصنع" data-en="Year">
+                <input id="cd-engine" class="ph" data-ar="المحرك (مثال: N20)" data-en="Engine (e.g. N20)">
+                <input id="cd-vin" class="ph" dir="ltr" maxlength="17" data-ar="رقم الشاسيه VIN (١٧ حرف)" data-en="VIN (17 chars)">
+              </div>
+            </div>
+            <div class="mb-h" style="margin-top:14px;">🔧 <span class="ar-en" data-ar="القطع المطلوبة" data-en="Parts"></span></div>
+            <div class="mi-head"><span class="ar-en" data-ar="اسم القطعة *" data-en="Part name *"></span><span class="ar-en" data-ar="رقم القطعة (اختياري)" data-en="Part no. (optional)"></span><span class="ar-en" data-ar="الكمية" data-en="Qty"></span><span class="ar-en" data-ar="السعر اللي اتقالك (اختياري)" data-en="Price you were quoted (optional)"></span><span></span></div>
+            <div id="mi-rows"></div>
+            <button type="button" class="btn btn-outline btn-sm" id="mi-add" style="margin-top:8px;">＋ <span class="ar-en" data-ar="ضيف قطعة" data-en="Add part"></span></button>
+          </div>
+
           <label class="drop" id="drop">
             <div class="big">🧾</div>
             <div><b data-i18n="sav_upload">📷 ارفع الصورة</b></div>
@@ -146,11 +181,45 @@
       if (saved.car) $('c-car').value = saved.car;
     } catch {}
 
+    // نصوص عربي/إنجليزي للجزء الجديد
+    document.querySelectorAll('.ar-en').forEach((e) => { e.textContent = LANG === 'en' ? e.dataset.en : e.dataset.ar; });
+    document.querySelectorAll('input.ph').forEach((e) => { e.placeholder = LANG === 'en' ? e.dataset.en : e.dataset.ar; });
+    const L = (ar, en) => (LANG === 'en' ? en : ar);
+
+    // ✍️ صفوف القطع اليدوية
+    function addRow(v = {}) {
+      const r = document.createElement('div'); r.className = 'mi-row';
+      r.innerHTML = `<input class="n" placeholder="${L('مثال: تيل فرامل أمامي', 'e.g. Front brake pads')}" value="${esc(v.name || '')}">
+        <input class="c" dir="ltr" placeholder="${L('مثال: 34116850568', 'e.g. 34116850568')}" value="${esc(v.code || '')}">
+        <input class="q" type="number" min="1" value="${v.qty || 1}">
+        <input class="p" type="number" min="0" placeholder="${L('ج.م', 'EGP')}" value="${v.price || ''}">
+        <button type="button" class="rm" title="${L('حذف', 'Remove')}">×</button>`;
+      r.querySelector('.rm').addEventListener('click', () => { r.remove(); if (!$('mi-rows').children.length) addRow(); syncBtn(); });
+      r.querySelectorAll('input').forEach((i) => i.addEventListener('input', syncBtn));
+      $('mi-rows').appendChild(r);
+    }
+    $('mi-add').addEventListener('click', () => { if ($('mi-rows').children.length >= 30) return; addRow(); $('mi-rows').lastChild.querySelector('.n').focus(); });
+    addRow(); addRow();
+    function manualItems() {
+      return [...$('mi-rows').children].map((r) => ({
+        name: r.querySelector('.n').value.trim(),
+        code: r.querySelector('.c').value.trim(),
+        qty: Math.max(1, Number(r.querySelector('.q').value) || 1),
+        unit_price: Number(r.querySelector('.p').value) || 0,
+      })).filter((i) => i.name || i.code);
+    }
+
     function setStep(n) {
       [1, 2, 3].forEach((i) => $('step' + i).classList.toggle('on', i <= n));
     }
     function updateModeHint() {
-      $('mode-hint').textContent = mode === 'quote' ? t('sav_mode_quote_hint') : t('sav_mode_invoice_hint');
+      $('mode-hint').textContent = mode === 'manual'
+        ? L('اكتب كل قطعة في سطر — رقم القطعة اختياري، ولو اتقالك سعر في مكان تاني اكتبه ونقولك هتوفّر كام.', 'One part per line — part number is optional. Add the price you were quoted elsewhere and we\'ll show your savings.')
+        : mode === 'quote' ? t('sav_mode_quote_hint') : t('sav_mode_invoice_hint');
+      $('manual-box').style.display = mode === 'manual' ? '' : 'none';
+      $('drop').style.display = mode === 'manual' ? 'none' : '';
+      $('previews').style.display = mode === 'manual' ? 'none' : '';
+      syncBtn();
       $('drop').querySelector('.hint').textContent = t('sav_upload_hint');
     }
 
@@ -180,10 +249,9 @@
     });
 
     // اختيار الوضع
-    ['invoice', 'quote'].forEach((m) => $('mode-' + m).addEventListener('click', () => {
+    ['invoice', 'quote', 'manual'].forEach((m) => $('mode-' + m).addEventListener('click', () => {
       mode = m;
-      $('mode-invoice').classList.toggle('on', m === 'invoice');
-      $('mode-quote').classList.toggle('on', m === 'quote');
+      ['invoice', 'quote', 'manual'].forEach((x) => $('mode-' + x).classList.toggle('on', x === m));
       updateModeHint();
     }));
 
@@ -209,7 +277,7 @@
       $('previews').querySelectorAll('[data-rm]').forEach((b) =>
         b.addEventListener('click', () => { images.splice(Number(b.dataset.rm), 1); renderPreviews(); syncBtn(); }));
     }
-    function syncBtn() { $('go').disabled = images.length === 0; }
+    function syncBtn() { $('go').disabled = mode === 'manual' ? !manualItems().some((i) => i.name || i.code) : images.length === 0; }
     async function addFiles(files) {
       for (const f of Array.from(files).slice(0, 4 - images.length)) {
         if (!f.type.startsWith('image/')) continue;
@@ -226,6 +294,7 @@
     $('go').addEventListener('click', analyze);
 
     async function analyze() {
+      if (mode === 'manual' && manualItems().some((i) => !i.name && i.code.length < 4)) return toast(L('اكتب اسم القطعة أو رقمها', 'Enter a part name or number'));
       $('stage-upload').style.display = 'none';
       $('sav-result').style.display = 'none';
       $('sav-loading').style.display = '';
@@ -233,7 +302,9 @@
       try {
         const data = await api('/savings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, customer, images }),
+          body: JSON.stringify(mode === 'manual'
+            ? { mode, customer: { ...customer, carDetails: { model: $('cd-model').value.trim(), year: $('cd-year').value.trim(), engine: $('cd-engine').value.trim(), vin: $('cd-vin').value.trim() } }, items: manualItems() }
+            : { mode, customer, images }),
         });
         trackEvent('savings_lead');
         renderResult(data);
