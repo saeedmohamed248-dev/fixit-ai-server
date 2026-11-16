@@ -1455,3 +1455,57 @@ body.has-cartbar .toast{bottom:92px}
 .scroll-top{bottom:calc(156px + var(--safe-bottom,0px)) !important}
 body.has-cartbar .call-float{bottom:calc(152px + var(--safe-bottom,0px))}
 body.has-cartbar .scroll-top{bottom:calc(220px + var(--safe-bottom,0px)) !important}
+
+/* ====== 🏪 هيرو واجهة المحل ====== */
+.store-hero{text-align:start;padding:56px 0 64px}
+.sh-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center}
+.store-hero h1{font-size:clamp(30px,4.6vw,52px)}
+.store-hero p{margin:0 0 22px;max-width:560px}
+.sh-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;font-weight:700}
+.sh-badges>span{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#dbe0f2}
+.sh-open i{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 0 rgba(18,183,106,.6);animation:shPulse 1.8s infinite}
+.sh-open.closed i{background:#f59e0b;animation:none}
+@keyframes shPulse{70%{box-shadow:0 0 0 9px rgba(18,183,106,0)}100%{box-shadow:0 0 0 0 rgba(18,183,106,0)}}
+.sh-counter{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:14px;backdrop-filter:blur(8px);box-shadow:0 24px 50px rgba(0,0,0,.3)}
+.sh-tabs{display:flex;gap:6px;margin-bottom:12px}
+.sh-tabs button{flex:1;border:0;border-radius:12px;padding:10px;font-weight:800;font-size:14.5px;background:transparent;color:#c8cfe6;transition:.15s}
+.sh-tabs button.on{background:#fff;color:var(--accent-dark)}
+.sh-pane{display:none}.sh-pane.on{display:flex}
+.sh-counter .sbc-form{width:100%;gap:8px}
+.sh-counter .sbc-form select{flex:1;min-width:0;padding:12px 14px;border:0;border-radius:12px}
+.sh-counter .search-box{max-width:none;margin:0;width:100%}
+.sh-counter .brand-chips{justify-content:flex-start;margin-top:12px;gap:8px}
+.sh-counter .chip{padding:6px 15px;font-size:13px}
+.store-hero .hero-stats{justify-content:flex-start;margin-top:18px}
+/* الرف */
+.sh-wall{position:relative;background:linear-gradient(180deg,#1a2152,#0f1438);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:18px 18px 22px;box-shadow:0 30px 60px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)}
+.sh-sign{font-family:Archivo,sans-serif;font-style:italic;letter-spacing:2px;font-size:12px;color:#aab0d6;text-align:center;padding:6px;margin:-4px auto 12px;width:max-content;border-radius:8px;background:#0b1030;border:1px solid rgba(139,143,255,.35);box-shadow:0 0 18px rgba(139,143,255,.35)}
+.sh-sign b{color:#fff;font-size:15px;margin-inline-end:4px}
+.sh-shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px;padding:6px 6px 0;position:relative;margin-bottom:22px}
+.sh-shelf::after{content:'';position:absolute;inset-inline:-8px;bottom:-12px;z-index:0;height:12px;border-radius:3px;background:linear-gradient(180deg,#5d6580,#2b3150);box-shadow:0 8px 14px rgba(0,0,0,.45)}
+.sh-item{position:relative;z-index:1;display:flex;flex-direction:column;border-radius:12px;background:#fff;padding:6px 6px 8px;box-shadow:0 8px 16px rgba(0,0,0,.35);transition:transform .25s ease}
+.sh-item:hover{transform:translateY(-4px)}
+.sh-img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:#f5f7fc;display:grid;place-items:center;font-size:30px}
+.sh-name{font-size:11.5px;font-weight:700;color:var(--text);line-height:1.35;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
+.sh-item .tag{position:absolute;top:8px;inset-inline-start:2px;background:#ffd54a;color:#1a1a1a;font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:4px;transform:rotate(-4deg);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.sh-receipt{position:absolute;inset-inline-end:-18px;bottom:-22px;background:#fff;color:var(--text);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow-lg);font-size:13px;min-width:210px;animation:shFloat 4s ease-in-out infinite}
+.sh-receipt .r-row{display:flex;justify-content:space-between;gap:10px;font-weight:800}
+.sh-receipt .r-row b{color:var(--green)}
+.sh-receipt .r-sub{color:var(--muted);font-size:12px}
+@keyframes shFloat{50%{transform:translateY(-6px)}}
+/* الفئات كممرات في المحل */
+.cat-card.aisle{position:relative;padding-top:34px}
+.cat-card.aisle::before{content:attr(data-aisle);position:absolute;top:0;inset-inline:0;padding:4px;font-size:11px;font-weight:800;letter-spacing:1px;color:#fff;background:linear-gradient(90deg,var(--accent-deep),var(--accent));border-radius:var(--radius) var(--radius) 0 0}
+main .sh-grid:has(#sh-wall[style*="none"]){grid-template-columns:1fr}
+@media(max-width:900px){
+  .sh-grid{grid-template-columns:1fr;gap:34px}
+  .store-hero{padding:34px 0 50px}
+  .sh-wall{max-width:440px;margin-inline:auto;width:100%}
+  .sh-receipt{inset-inline-end:8px}
+}
+@media(max-width:520px){
+  .sh-counter .sbc-form{flex-wrap:wrap}
+  .sh-counter .sbc-form .btn{flex-basis:100%}
+  .sh-shelf{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){.sh-open i,.sh-receipt{animation:none}}

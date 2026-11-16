@@ -29,25 +29,57 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- الهيرو -->
-    <section class="hero">
-      <div class="container">
-        <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
-        <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
-        <form class="search-box" action="/shop.html" method="get">
-          <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
-          <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
-        </form>
-        <div class="brand-chips">
-          <a class="chip" href="/shop.html?brand=BMW">BMW</a>
-          <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
-          <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
-          <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
+    <!-- 🏪 الهيرو — واجهة محل حقيقية: يمين الكلام والبحث، شمال رف القطع -->
+    <section class="hero store-hero">
+      <div class="container sh-grid">
+        <div class="sh-copy">
+          <div class="sh-badges">
+            <span class="sh-open" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
+            <span class="sh-loc">📍 <span data-i18n="sh_loc">المحل: الحي العاشر، مدينة نصر</span></span>
+          </div>
+          <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
+          <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
+
+          <!-- كاونتر المحل: بحث أو اختار عربيتك -->
+          <div class="sh-counter">
+            <div class="sh-tabs" role="tablist">
+              <button type="button" class="on" data-tab="car">🚗 <span data-i18n="sbc_title">دوّر بعربيتك</span></button>
+              <button type="button" data-tab="q">🔍 <span data-i18n="search_btn">بحث</span></button>
+            </div>
+            <div class="sh-pane on" data-pane="car">
+              <div class="sbc-form">
+                <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
+                <select id="sbc-model" aria-label="Model"></select>
+                <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
+              </div>
+            </div>
+            <form class="sh-pane search-box" data-pane="q" action="/shop.html" method="get">
+              <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
+              <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
+            </form>
+            <div class="brand-chips">
+              <a class="chip" href="/shop.html?brand=BMW">BMW</a>
+              <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
+              <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
+              <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
+            <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
+            <span data-i18n="stat3">✓ استيراد مباشر</span>
+          </div>
         </div>
-        <div class="hero-stats">
-          <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
-          <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
-          <span data-i18n="stat3">✓ استيراد مباشر</span>
+
+        <!-- رف القطع: منتجات حقيقية بصورها — بتتحدد من لوحة التحكم (إعدادات ← قطع واجهة الرئيسية) -->
+        <div class="sh-wall" id="sh-wall" style="display:none">
+          <div class="sh-sign"><b>FIXIT</b> PARTS · BMW &amp; MINI</div>
+          <div class="sh-shelf" id="sh-shelf"></div>
+          <div class="sh-receipt">
+            <div class="r-row"><span>🧾 <span data-i18n="sh_rcpt">طلب جاهز للتسليم</span></span><b>✓</b></div>
+            <div class="r-sub" data-i18n="sh_rcpt_sub">فحص · تغليف · شحن لكل المحافظات</div>
+          </div>
         </div>
       </div>
     </section>
@@ -71,23 +103,6 @@
           <span class="sb-text" data-i18n="sav_home_cta">عندك فاتورة أو مقايسة قطع غيار؟ اعرف كنت هتوفّر كام مع فيكس إت 💰</span>
           <span class="sb-go" data-i18n="nav_savings">احسب توفيرك 💰</span>
         </a>
-      </div>
-    </section>
-
-    <!-- دوّر بعربيتك -->
-    <section class="section">
-      <div class="container">
-        <div class="sbc-card">
-          <div class="sbc-head">
-            <span class="sbc-ic">🚗</span>
-            <div><h2 data-i18n="sbc_title">دوّر بعربيتك</h2><p data-i18n="sbc_sub">اختار الماركة والموديل، وهنوريك القطع اللي تناسبها</p></div>
-          </div>
-          <div class="sbc-form">
-            <select id="sbc-brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
-            <select id="sbc-model"></select>
-            <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -237,6 +252,26 @@
       location.href = '/shop.html?brand=' + encodeURIComponent(brand) + (model ? '&model=' + encodeURIComponent(model) : '');
     });
 
+
+    // 🏪 تبويبات كاونتر الهيرو + حالة المحل (مفتوح ١٢ الظهر – ١١ بالليل بتوقيت القاهرة، الجمعة إجازة)
+    document.querySelectorAll('.sh-tabs button').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.sh-tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      document.querySelectorAll('.sh-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === b.dataset.tab));
+      if (b.dataset.tab === 'q') document.querySelector('.sh-pane[data-pane="q"] input').focus();
+    }));
+    (function storeStatus() {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date());
+        const h = +parts.find((x) => x.type === 'hour').value % 24, wd = parts.find((x) => x.type === 'weekday').value;
+        const open = wd !== 'Fri' && h >= 12 && h < 23;
+        const el = document.getElementById('sh-open');
+        el.classList.toggle('closed', !open);
+        document.getElementById('sh-open-txt').textContent = open
+          ? (LANG === 'en' ? 'Open now · till 11 PM' : 'مفتوح دلوقتي · لحد ١١ بالليل')
+          : (LANG === 'en' ? 'Closed · opens 12 PM' : 'مقفول · بنفتح ١٢ الظهر');
+      } catch {}
+    })();
+
     // ⭐ آراء العملاء
     (function renderReviews() {
       const list = (window.SITE && SITE.reviews) || [];
@@ -251,8 +286,8 @@
     })();
 
     const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
-    document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
-      <a class="cat-card" href="/shop.html?category=${encodeURIComponent(c)}">
+    document.getElementById('cats-grid').innerHTML = CATS.map((c, i) => `
+      <a class="cat-card aisle" data-aisle="${(LANG === 'en' ? 'AISLE ' : 'ممر ') + String(i + 1).padStart(2, '0')}" href="/shop.html?category=${encodeURIComponent(c)}">
         <span class="icon">${categoryIcon(c)}</span>
         <span class="name">${catName(c)}</span>
       </a>`).join('');
@@ -260,6 +295,22 @@
     api('/products').then((products) => {
       // 🐛 [FIX]: الرئيسية كانت بتعرض قطع الفرعين — دلوقتي قطع فرع العرض الحالي بس (قطاعي مصر / جملة الإمارات)
       products = wsCatalogFilter(products);
+      // 🏪 رف الواجهة: القطع اللي اختارها الأدمن، ولو مفيش → الأكثر مبيعاً اللي ليها صور
+      (function renderShelf() {
+        const withImg = products.filter((p) => firstImage(p) && p.stock > 0);
+        const picked = ((window.SETTINGS || {}).heroProducts || []).map((id) => products.find((p) => p.id === id)).filter((p) => p && firstImage(p));
+        const list = (picked.length ? picked : [...withImg].sort((a, b) => (b.sold || 0) - (a.sold || 0))).slice(0, 6);
+        if (list.length < 3) return;
+        const n = list.length >= 6 ? 6 : 3;
+        document.getElementById('sh-shelf').innerHTML = list.slice(0, n).map((p) => `
+          <a class="sh-item" href="${productUrl(p)}">
+            ${productImage(p, 'sh-img')}
+            <span class="sh-name">${esc(pname(p))}</span>
+            <span class="tag">${money(p.price)}</span>
+          </a>`).join('');
+        document.getElementById('sh-wall').style.display = '';
+      })();
+
       // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
       const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       document.getElementById('featured-grid').innerHTML =
