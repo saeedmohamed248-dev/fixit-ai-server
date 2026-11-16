@@ -126,6 +126,8 @@
               ? `<div class="note" style="margin:8px 0;">${t('ws_login_required')}<br><a class="btn btn-sm" style="margin-top:8px;" href="/account.html?mode=register&next=${encodeURIComponent(location.pathname + location.search)}">${t('ws_login_cta')}</a></div>`
               : (isWholesale() && wsConf().minOrderNote ? `<div class="note" style="margin:8px 0;">${t('ws_min_note')}</div>` : '')}
             ${deliveryBadge(p)}
+            ${!isWholesale() && !out ? cashbackBadge(p, true) : ''}
+            ${!isWholesale() && !out ? (() => { const w = deliveryWindow(); return `<div class="eta-box">🚚 ${LANG === 'en' ? `Arrives <b>${w.from} – ${w.to}</b>` : `يوصلك من <b>${w.from}</b> لـ <b>${w.to}</b>`}${w.cutoff ? `<small>${LANG === 'en' ? `Order within ${w.cutoff}h to ship from today` : `اطلب خلال ${w.cutoff} ساعة عشان يتجهز النهارده`}</small>` : ''}</div>`; })() : ''}
             ${tierTableHtml(p)}
             ${isWholesale() ? '' : compatBadge(p)}
             ${!isWholesale() && !getGarage() ? `<button class="btn btn-outline btn-sm" onclick="openGarageModal()" style="margin: 4px 0;">${t('garage_btn')} — ${t('garage_sub').split('—')[0].slice(0, 40)}...</button>` : ''}
@@ -172,9 +174,55 @@
                    href="${waLink(t('wa_part') + ': ' + pname(p) + ' (' + p.sku + ')')}">${t('ask_wa')}</a>
                 <button class="btn btn-outline" id="share-btn" title="${t('share')}">↗️</button>
               </div>
+              ${isWholesale() ? '' : `<div class="guarantee-box">
+                <div>🛡️ <b>${LANG === 'en' ? (p.condition === 'used' ? '1-month warranty' : '1-year warranty') : (p.condition === 'used' ? 'ضمان شهر' : 'ضمان سنة')}</b><small>${LANG === 'en' ? (p.condition === 'used' ? 'fully inspected before sale' : 'against manufacturing defects') : (p.condition === 'used' ? 'متفحصة بالكامل قبل البيع' : 'ضد عيوب الصناعة')}</small></div>
+                <div>↩️ <b>${LANG === 'en' ? '14-day returns' : 'استرجاع ١٤ يوم'}</b><small>${LANG === 'en' ? 'if not as described' : 'لو مش مطابقة للوصف'}</small></div>
+                <div>👀 <b>${LANG === 'en' ? 'Inspect on delivery' : 'عاين وانت بتستلم'}</b><small>${LANG === 'en' ? 'before you pay the rest' : 'قبل ما تدفع الباقي'}</small></div>
+                <div>🔧 <b>${LANG === 'en' ? 'Fitment check' : 'نتأكد إنها تركب'}</b><small>${LANG === 'en' ? 'send us your VIN' : 'ابعت رقم الشاسيه'}</small></div>
+                <a href="/policies.html">${LANG === 'en' ? 'Details' : 'التفاصيل'} ←</a>
+              </div>`}
             `}
           </div>
         </div>`;
+
+        // 📱 شريط شراء ثابت على الموبايل (بيظهر لما زرار «أضف للسلة» يخرج من الشاشة)
+        document.getElementById('sticky-buy')?.remove();
+        if (!out && !wsLocked() && dispPrice(p) !== null) {
+          const bar = document.createElement('div');
+          bar.id = 'sticky-buy'; bar.className = 'sticky-buy';
+          bar.innerHTML = `<div class="sb-info"><b>${esc(pname(p))}</b>${priceBlock(p)}</div><button class="btn" type="button">${t('add_cart')}</button>`;
+          document.body.appendChild(bar);
+          bar.querySelector('button').addEventListener('click', () => document.getElementById('add-cart').click());
+          const target = document.getElementById('add-cart');
+          if (target && 'IntersectionObserver' in window) new IntersectionObserver(([e]) => {
+            const on = !e.isIntersecting && e.boundingClientRect.top < 0;
+            bar.classList.toggle('show', on); document.body.classList.toggle('sb-on', on);
+          }).observe(target);
+        }
+
+        // 🔍 تكبير الصورة (لمس/ضغط)
+        const mainImg = document.getElementById('main-img');
+        if (mainImg) {
+          mainImg.style.cursor = 'zoom-in';
+          mainImg.addEventListener('click', () => {
+            const all = [...container.querySelectorAll('.gallery-thumbs img')].map((x) => x.dataset.src);
+            const list = all.length ? all : [mainImg.src];
+            let i = Math.max(0, list.indexOf(mainImg.getAttribute('src')));
+            const lb = document.createElement('div'); lb.className = 'lightbox';
+            const draw = () => { lb.innerHTML = `<button class="lb-x" aria-label="close">×</button>${list.length > 1 ? '<button class="lb-n lb-prev">‹</button><button class="lb-n lb-next">›</button>' : ''}<img src="${esc(list[i])}" alt=""><div class="lb-c">${list.length > 1 ? (i + 1) + ' / ' + list.length : ''}</div>`; };
+            draw(); document.body.appendChild(lb); document.body.style.overflow = 'hidden'; document.body.classList.add('lb-open');
+            const close = () => { lb.remove(); document.body.style.overflow = ''; document.body.classList.remove('lb-open'); document.removeEventListener('keydown', key); };
+            const go = (d) => { i = (i + d + list.length) % list.length; draw(); };
+            const key = (e) => { if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') go(1); if (e.key === 'ArrowRight') go(-1); };
+            document.addEventListener('keydown', key);
+            lb.addEventListener('click', (e) => {
+              if (e.target.classList.contains('lb-prev')) return go(-1);
+              if (e.target.classList.contains('lb-next')) return go(1);
+              if (e.target.tagName === 'IMG') return e.target.classList.toggle('zoomed');
+              close();
+            });
+          });
+        }
 
         // معرض الصور
         container.querySelectorAll('.gallery-thumbs img').forEach((thumb) => {
@@ -362,6 +410,7 @@
     });
 
     load();
+    document.addEventListener("cb-offers", () => { if (product) load(); });
   </script>
 </body>
 </html>

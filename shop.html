@@ -255,6 +255,7 @@
       fields.forEach((f) => (document.getElementById('f-' + f).value = ''));
       load();
     });
+    document.addEventListener('cb-offers', () => { try { renderPage(); } catch {} });
   </script>
 </body>
 </html>
