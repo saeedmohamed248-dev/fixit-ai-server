@@ -116,6 +116,43 @@
     body.has-nextbar .mtw-b { transform: translateY(-76px); transition: transform .25s; }
     body.has-nextbar .ct-float { display: none; }
     #to-pick { margin-bottom: 6px; }
+    .vs-hero { margin-top: 6px; text-align: center; padding: 18px 14px; border-radius: 18px; background: linear-gradient(160deg,#0b1030,#1d2370); color: #fff; box-shadow: 0 16px 36px rgba(11,16,48,.25); }
+    .vs-k { color: #c8cfe6; font-weight: 700; font-size: 14px; }
+    .vs-amount { font-size: clamp(36px, 10vw, 54px); font-weight: 900; color: #5ef0a8; line-height: 1.15; }
+    .vs-pct { display: inline-block; margin-top: 4px; background: rgba(94,240,168,.15); color: #5ef0a8; font-weight: 800; padding: 4px 14px; border-radius: 999px; font-size: 13.5px; }
+    .vs-bars { margin-top: 16px; display: grid; gap: 10px; text-align: start; }
+    .vs-bar .lbl { display: block; font-size: 12.5px; color: #c8cfe6; margin-bottom: 3px; font-weight: 700; }
+    .vs-bar .fill { height: 34px; border-radius: 9px; display: flex; align-items: center; padding: 0 10px; min-width: 110px; transition: width .6s ease; }
+    .vs-bar.them .fill { background: repeating-linear-gradient(45deg,#ef4444,#ef4444 8px,#dc3d3d 8px,#dc3d3d 16px); }
+    .vs-bar.us .fill { background: linear-gradient(90deg,#12b76a,#5ef0a8); color: #053d24; }
+    .vs-bar b { font-size: 15px; white-space: nowrap; }
+    .cmp-head, .cmp-row { display: grid; grid-template-columns: 2.2fr 1fr 1fr 1fr; gap: 8px; align-items: center; }
+    .cmp-head { font-size: 11.5px; color: var(--muted); font-weight: 800; padding-bottom: 6px; border-bottom: 2px solid var(--line,#e4e8f2); }
+    .cmp-head span:not(:first-child), .cmp-row span:not(.cn) { text-align: end; white-space: nowrap; }
+    .cmp-row { padding: 9px 0; border-bottom: 1px dashed var(--line,#e4e8f2); font-size: 13.5px; }
+    .cmp-row .cn { font-weight: 700; line-height: 1.35; }
+    .cmp-row .ct { color: #b42318; }
+    .cmp-row .ct s { text-decoration-color: rgba(180,35,24,.6); }
+    .cmp-row .co { font-weight: 800; }
+    .cmp-row .cs.pos { color: #067647; font-weight: 900; }
+    .cmp-total { border-bottom: 0; font-size: 15px; background: #f6fef9; border-radius: 10px; padding: 10px 6px; margin-top: 4px; }
+    .cmp-total .cn { font-weight: 900; }
+    .inv-cb { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(135deg,#fff8e1,#fff0b3); border: 1px solid #f5d76e; color: #5c4400; font-size: 13.5px; }
+    .inv-cb b { color: #067647; }
+    .perks { margin-top: 14px; border-radius: 16px; padding: 14px; background: var(--accent-soft,#eef0ff); }
+    .perks-h { font-weight: 900; margin-bottom: 10px; }
+    .perks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .perks-grid > div { background: #fff; border-radius: 12px; padding: 10px; font-size: 13px; line-height: 1.35; }
+    .perks-grid span { font-size: 22px; display: block; }
+    .perks-grid small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+    @media (max-width: 600px) {
+      .perks-grid { grid-template-columns: 1fr 1fr; }
+      .cmp-head { display: none; }
+      .cmp-row { grid-template-columns: 1fr 1fr 1fr; row-gap: 4px; }
+      .cmp-row .cn { grid-column: 1 / -1; }
+      .cmp-row span:not(.cn) { text-align: center; font-size: 13px; }
+      .cmp-row span:not(.cn)::before { content: attr(data-l); display: block; font-size: 10.5px; color: var(--muted); font-weight: 700; text-decoration: none; }
+    }
     .inv-empty { margin-top: 18px; text-align: center; padding: 16px; border: 2px dashed var(--line,#d0d5dd); border-radius: 14px; color: var(--muted); font-weight: 700; }
     .inv { margin-top: 14px; border: 1px solid var(--line,#e4e8f2); border-radius: 16px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
     .inv-h { font-weight: 900; font-size: 17px; margin-bottom: 8px; }
@@ -505,27 +542,65 @@
       function summaryHtml() {
         const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) }));
         const pending = lines.filter((l) => !l.removed && !l.pick).length;
+        if (!chosen.length) return `<div class="inv-empty">🧾 ${L2('اختار القطع اللي عاوزها وهتظهرلك فاتورتك والتوفير هنا', 'Choose your parts and your invoice and savings will show here')}${pending ? ` · ${L2('فاضل', 'left')} ${pending}` : ''}</div>`;
+        const bought = data.mode === 'invoice';
+        const theirLbl = bought ? L2('اشتريتها بـ', 'You paid') : L2('اتسعّرتلك بـ', 'You were quoted');
         const ours = chosen.reduce((s, l) => s + (l.p.price || 0) * l.qty, 0);
-        const cmp = chosen.filter((l) => l.theirUnit > 0);
+        const cmp = chosen.filter((l) => l.theirUnit > 0 && l.p.price > 0);
         const theirs = cmp.reduce((s, l) => s + l.theirUnit * l.qty, 0);
-        const oursCmp = cmp.reduce((s, l) => s + (l.p.price || 0) * l.qty, 0);
-        const save = theirs - oursCmp;
-        if (!chosen.length) return `<div class="inv-empty">🧾 ${L2('اختار القطع اللي عاوزها من فوق وهتظهرلك فاتورتك والتوفير هنا', 'Choose your parts above and your invoice and savings will show here')}${pending ? ` · ${L2('فاضل', 'left')} ${pending}` : ''}</div>`;
+        const oursCmp = cmp.reduce((s, l) => s + l.p.price * l.qty, 0);
+        const save = Math.max(0, theirs - oursCmp);
+        const pct = theirs ? Math.round(save / theirs * 100) : 0;
+        // 🎁 كاش باك هيكسبه على الطلب ده (من العروض الشغالة)
+        const cb = chosen.reduce((s, l) => { const c = typeof cashbackFor === 'function' ? cashbackFor(l.p) : null; return s + (c ? c.amount * l.qty : 0); }, 0);
+        const W = (n) => Math.max(8, Math.round(n / Math.max(theirs, oursCmp, 1) * 100));
         return `
-          ${theirs > 0 && save > 0 ? `<div class="sav-hero-num"><div style="color:var(--muted);font-weight:700;">${t('sav_result_save')}</div>
-            <div class="amount">${money(save)}</div><div class="pct">${t('sav_result_pct')} ${Math.round(save / theirs * 100)}%</div></div>` : ''}
-          <div class="inv">
-            <div class="inv-h">🧾 ${L2('فاتورتك مع فيكس إت', 'Your FixIt invoice')}</div>
-            ${chosen.map((l) => `<div class="inv-row"><span>${esc(l.p.name)}${l.qty > 1 ? ` <small>×${l.qty}</small>` : ''}</span>
-              <span class="inv-n">${l.theirUnit ? `<s>${money(l.theirUnit * l.qty)}</s>` : ''}<b>${l.p.price ? money(l.p.price * l.qty) : L2('عند الطلب', 'on request')}</b></span></div>`).join('')}
-            ${theirs > 0 ? `<div class="inv-row inv-sub"><span>${t('sav_their_total')}</span><span class="inv-n"><s>${money(theirs)}</s></span></div>` : ''}
-            <div class="inv-row inv-total"><span>${L2('الإجمالي عندنا', 'Our total')}</span><span class="inv-n"><b>${money(ours)}</b></span></div>
-            ${theirs > 0 ? `<div class="inv-row inv-save"><span>💰 ${L2('وفّرت', 'You save')}</span><span class="inv-n"><b>${money(Math.max(0, save))}</b></span></div>` : ''}
-            ${pending ? `<div class="inv-warn">⚠️ ${L2(`لسه فيه ${pending} بند ماخترتش ليه قطعة`, `${pending} line(s) still need a choice`)}</div>` : ''}
-            <div class="inv-actions">
-              <button class="btn" id="inv-cart">🛒 ${L2('أضف المختار للسلة وكمّل الطلب', 'Add selected to cart & checkout')}</button>
-              <a class="btn btn-green" target="_blank" rel="noopener" id="inv-wa">💬 ${L2('ابعت الفاتورة واتساب', 'Send on WhatsApp')}</a>
+          ${theirs > 0 && save > 0 ? `
+          <div class="vs-hero">
+            <div class="vs-k">${bought ? L2('لو كنت اشتريتها من فيكس إت كنت وفّرت', 'Had you bought from FixIt you would have saved') : L2('مع فيكس إت هتوفّر', 'With FixIt you save')}</div>
+            <div class="vs-amount">${money(save)}</div>
+            <div class="vs-pct">${L2(`يعني ${pct}% أقل من`, `${pct}% less than`)} ${bought ? L2('اللي دفعته', 'what you paid') : L2('السعر اللي اتقالك', 'your quote')}</div>
+            <div class="vs-bars">
+              <div class="vs-bar them"><span class="lbl">${bought ? L2('دفعت برّه', 'Paid elsewhere') : L2('اتسعّرلك برّه', 'Quoted elsewhere')}</span><div class="fill" style="width:${W(theirs)}%"><b>${money(theirs)}</b></div></div>
+              <div class="vs-bar us"><span class="lbl">${L2('مع فيكس إت', 'With FixIt')}</span><div class="fill" style="width:${W(oursCmp)}%"><b>${money(oursCmp)}</b></div></div>
             </div>
+          </div>` : ''}
+
+          <div class="inv">
+            <div class="inv-h">🧾 ${L2('مقارنة الأسعار بند بند', 'Line-by-line comparison')}</div>
+            <div class="cmp-head"><span>${L2('القطعة', 'Part')}</span><span>${theirLbl}</span><span>${L2('فيكس إت', 'FixIt')}</span><span>${L2('وفّرت', 'Saved')}</span></div>
+            ${chosen.map((l) => {
+              const t1 = l.theirUnit ? l.theirUnit * l.qty : 0, o1 = (l.p.price || 0) * l.qty, d = t1 && o1 ? t1 - o1 : 0;
+              return `<div class="cmp-row">
+                <span class="cn">${esc(l.p.name)}${l.qty > 1 ? ` <small>×${l.qty}</small>` : ''}</span>
+                <span class="ct" data-l="${theirLbl}">${t1 ? `<s>${money(t1)}</s>` : '—'}</span>
+                <span class="co" data-l="${L2('فيكس إت', 'FixIt')}">${o1 ? money(o1) : L2('عند الطلب', 'on request')}</span>
+                <span class="cs ${d > 0 ? 'pos' : ''}" data-l="${L2('وفّرت', 'Saved')}">${d > 0 ? money(d) : d < 0 ? '—' : '—'}</span></div>`;
+            }).join('')}
+            <div class="cmp-row cmp-total">
+              <span class="cn">${L2('الإجمالي', 'Total')}</span>
+              <span class="ct" data-l="${theirLbl}">${theirs ? `<s>${money(theirs)}</s>` : '—'}</span>
+              <span class="co" data-l="${L2('فيكس إت', 'FixIt')}">${money(ours)}</span>
+              <span class="cs pos" data-l="${L2('وفّرت', 'Saved')}">${save ? money(save) : '—'}</span></div>
+            ${cb > 0 ? `<div class="inv-cb">🎁 ${L2(`وكمان هتكسب <b>${money(cb)}</b> كاش باك على الطلب ده تشتري بيهم المرة الجاية`, `Plus you earn <b>${money(cb)}</b> cashback on this order for next time`)}</div>` : ''}
+            ${pending ? `<div class="inv-warn">⚠️ ${L2(`لسه فيه ${pending} بند ماخترتش ليه قطعة`, `${pending} line(s) still need a choice`)}</div>` : ''}
+          </div>
+
+          <div class="perks">
+            <div class="perks-h">✨ ${L2('ومش بس السعر — مع فيكس إت كمان', 'Not just price — with FixIt you also get')}</div>
+            <div class="perks-grid">
+              <div><span>🛡️</span><b>${L2('ضمان على كل قطعة', 'Warranty on every part')}</b><small>${L2('سنة للجديد · شهر للمستعمل', '1 year new · 1 month used')}</small></div>
+              <div><span>🔍</span><b>${L2('متفحصة قبل البيع', 'Inspected before sale')}</b><small>${L2('مش هتشتري سمك في مية', 'no surprises')}</small></div>
+              <div><span>👀</span><b>${L2('عاين وانت بتستلم', 'Inspect on delivery')}</b><small>${L2('عربون بسيط والباقي بعد ما تشوفها', 'small deposit, rest after you see it')}</small></div>
+              <div><span>↩️</span><b>${L2('استرجاع ١٤ يوم', '14-day returns')}</b><small>${L2('لو مش مطابقة', 'if not as described')}</small></div>
+              <div><span>🚚</span><b>${L2('توصيل لباب البيت', 'Delivered to your door')}</b><small>${L2('كل المحافظات · ٢-٤ أيام', 'nationwide · 2-4 days')}</small></div>
+              <div><span>🔧</span><b>${L2('نتأكدلك إنها تركب', 'Fitment check')}</b><small>${L2('برقم الشاسيه قبل الشحن', 'by VIN before shipping')}</small></div>
+            </div>
+          </div>
+
+          <div class="inv-actions">
+            <button class="btn" id="inv-cart">🛒 ${L2(`اطلبهم دلوقتي بـ ${money(ours)}`, `Order now for ${money(ours)}`)}</button>
+            <a class="btn btn-green" target="_blank" rel="noopener" id="inv-wa">💬 ${L2('ابعت الفاتورة واتساب', 'Send on WhatsApp')}</a>
           </div>`;
       }
 
