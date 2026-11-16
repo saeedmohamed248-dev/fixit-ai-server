@@ -136,6 +136,7 @@
               ${(p.partNumbers && p.partNumbers.length > 1) ? `<tr><td>${t('part_no_options')}</td><td dir="ltr" style="text-align: start;">${p.partNumbers.map((pn) => esc(pn)).join('، ')}</td></tr>` : ''}
               <tr><td>${t('oem')}</td><td dir="ltr" style="text-align: start;">${esc(p.oem) || '—'}</td></tr>
               ${p.supplier ? `<tr><td>${t('supplier')}</td><td dir="ltr" style="text-align: start;">${esc(p.supplier)}</td></tr>` : ''}
+              ${warrantyText(p) ? `<tr><td>${LANG === 'en' ? 'Warranty' : 'الضمان'}</td><td>🛡️ ${esc(warrantyText(p))}</td></tr>` : ''}
               <tr><td>${t('condition')}</td><td>${p.condition === 'used' ? t('used_checked') : t('cond_new')}</td></tr>
               <tr><td>${t('fits')}</td><td>${p.models.map((m) => `<span class="model-chip">${esc(m)}</span>`).join('')}</td></tr>
               <tr><td>${t('available')}</td><td>${out ? `<span style="color: var(--red);">${t('out_stock')}</span>` : p.stock <= 2 ? `<span style="color: var(--amber);">${t('low_stock', { n: p.stock })}</span>` : p.stock + ' ' + t('pieces')}</td></tr>
@@ -175,7 +176,8 @@
                 <button class="btn btn-outline" id="share-btn" title="${t('share')}">↗️</button>
               </div>
               ${isWholesale() ? '' : `<div class="guarantee-box">
-                <div>🛡️ <b>${LANG === 'en' ? (p.condition === 'used' ? '1-month warranty' : '1-year warranty') : (p.condition === 'used' ? 'ضمان شهر' : 'ضمان سنة')}</b><small>${LANG === 'en' ? (p.condition === 'used' ? 'fully inspected before sale' : 'against manufacturing defects') : (p.condition === 'used' ? 'متفحصة بالكامل قبل البيع' : 'ضد عيوب الصناعة')}</small></div>
+                ${warrantyText(p) ? `<div>🛡️ <b>${LANG === 'en' ? 'Warranty: ' : 'ضمان '}${esc(warrantyText(p))}</b><small>${LANG === 'en' ? 'on this part' : 'على القطعة دي'}</small></div>` : ''}
+                <div>🔍 <b>${LANG === 'en' ? 'Inspected' : 'متفحصة'}</b><small>${LANG === 'en' ? 'before sale' : 'قبل البيع'}</small></div>
                 <div>↩️ <b>${LANG === 'en' ? '14-day returns' : 'استرجاع ١٤ يوم'}</b><small>${LANG === 'en' ? 'if not as described' : 'لو مش مطابقة للوصف'}</small></div>
                 <div>👀 <b>${LANG === 'en' ? 'Inspect on delivery' : 'عاين وانت بتستلم'}</b><small>${LANG === 'en' ? 'before you pay the rest' : 'قبل ما تدفع الباقي'}</small></div>
                 <div>🔧 <b>${LANG === 'en' ? 'Fitment check' : 'نتأكد إنها تركب'}</b><small>${LANG === 'en' ? 'send us your VIN' : 'ابعت رقم الشاسيه'}</small></div>

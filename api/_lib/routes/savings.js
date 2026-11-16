@@ -123,7 +123,7 @@ export function compareInvoice(items, products, cars = []) {
       options: (res.options || []).map(slim),
       product: {
         id: res.product.id, name: res.product.name, sku: res.product.sku || '',
-        price: our, image: res.product.image || '',
+        price: our, image: res.product.image || '', warranty: res.product.warranty || '', warrantyEn: res.product.warrantyEn || '', condition: res.product.condition || '',
         brand: productBrand(res.product), supplier: productSupplier(res.product),
       },
     };
@@ -151,7 +151,7 @@ export function compareInvoice(items, products, cars = []) {
 }
 
 function slim(p) {
-  return { id: p.id, name: p.name, sku: p.sku || '', price: Number(p.price) || 0, image: p.image || (Array.isArray(p.images) && p.images[0]) || '' };
+  return { id: p.id, name: p.name, sku: p.sku || '', price: Number(p.price) || 0, image: p.image || (Array.isArray(p.images) && p.images[0]) || '', warranty: p.warranty || '', warrantyEn: p.warrantyEn || '', condition: p.condition || '' };
 }
 
 // ---------- استخراج البنود بالذكاء الاصطناعي ----------

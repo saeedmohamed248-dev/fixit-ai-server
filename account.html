@@ -132,6 +132,7 @@
       ` : `
       <div class="note" id="points-box" style="display: none;"></div>
       <div class="note" id="credit-box" style="display: none; background: #ecfdf3; border-color: #a6f4c5; color: #067647;"></div>
+      <div id="saved-box" class="svw" style="display: none;"></div>
       <div id="cashback-box" class="cbw" style="display: none;"></div>
 
       <h2 style="margin: 6px 0 14px;">${t('maint_title')}</h2>
@@ -177,6 +178,33 @@
           cb.style.display = '';
           cb.innerHTML = `${t('credit_balance', { v: moneyEGP(me.credit) })}<br><small>${t('credit_hint')}</small>`;
         }
+      }).catch(() => {});
+
+      // 💚 وفّرت كام إجمالي من أول ما بقيت عميل
+      const svBox = document.getElementById('saved-box');
+      if (svBox) api('/orders?mine=1', { headers: userHeaders() }).then((orders) => {
+        const L = (ar, en) => (LANG === 'en' ? en : ar);
+        const ok = (orders || []).filter((o) => o.status !== 'cancelled');
+        const sum = (f) => ok.reduce((s, o) => s + (Number(f(o)) || 0), 0);
+        const parts = [
+          ['🏷️', L('أرخص من السوق', 'Below market price'), sum((o) => o.marketSaving)],
+          ['🎟️', L('خصومات وكوبونات', 'Discounts & coupons'), sum((o) => o.discount)],
+          ['⭐', L('نقاط', 'Points'), sum((o) => o.pointsUsed)],
+          ['💰', L('كاش باك', 'Cashback'), sum((o) => o.cashbackUsed)],
+        ].filter((x) => x[2] > 0);
+        const total = parts.reduce((s, x) => s + x[2], 0);
+        const spent = sum((o) => o.total);
+        if (!ok.length) return;
+        svBox.style.display = '';
+        svBox.innerHTML = total > 0 ? `
+          <div class="svw-top"><div><div class="svw-l">💚 ${L('وفّرت مع فيكس إت لحد دلوقتي', 'You have saved with FixIt so far')}</div>
+            <div class="svw-v">${money(total)}</div>
+            <div class="svw-s">${L(`في ${ok.length} طلب · اشتريت بـ ${money(spent)}`, `across ${ok.length} orders · spent ${money(spent)}`)}</div></div>
+            <a class="btn btn-sm" href="/savings.html">🧾 ${L('احسب توفير فاتورة تانية', 'Check another invoice')}</a></div>
+          <div class="svw-parts">${parts.map(([i, n, v]) => `<div><span>${i} ${n}</span><b>${money(v)}</b></div>`).join('')}</div>`
+          : `<div class="svw-top"><div><div class="svw-l">💚 ${L('عاوز تعرف كنت هتوفّر كام؟', 'Curious how much you save?')}</div>
+            <div class="svw-s">${L('ارفع فاتورة أو مقايسة من أي مكان وقارنها بأسعارنا', 'Upload any invoice or quote and compare')}</div></div>
+            <a class="btn btn-sm" href="/savings.html">🧾 ${L('احسب توفيرك', 'Calculate savings')}</a></div>`;
       }).catch(() => {});
 
       // 💰 محفظة الكاش باك + العروض الشغالة

@@ -161,6 +161,17 @@ export default async function handler(req, res) {
         source: 'website',
       };
 
+      // 💚 «وفّرت مع فيكس إت»: السعر اللي العميل اتقاله برّه (من حاسبة التوفير) — نحسب الفرق ونخزّنه على الطلب
+      try {
+        const cmp = body.compare && typeof body.compare === 'object' ? body.compare : {};
+        let ms = 0;
+        for (const it of orderItems) {
+          const theirs = Number(cmp[it.id]) || 0;
+          if (theirs > it.price && theirs <= it.price * 5) { it.marketPrice = theirs; ms += (theirs - it.price) * it.qty; }
+        }
+        order.marketSaving = Math.round(ms);
+      } catch {}
+
       // 💰 كاش باك: استخدام الرصيد (للعميل المسجّل بس، برقم حسابه) + تسجيل الكاش باك المكتسب (معلّق لحد التسليم)
       try {
         const cb = await applyToNewOrder(order, { redeem: Boolean(user && user.phone && body.useCashback), phone: user && user.phone });

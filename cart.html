@@ -589,10 +589,12 @@
               usePoints: usePoints ? myPoints : 0,
               useCredit: useCredit,
               useCashback: useCashback,
+              compare: (() => { try { return JSON.parse(localStorage.getItem('sav_compare') || '{}'); } catch { return {}; } })(),
               items: Object.entries(c).map(([id, qty]) => ({ id, qty, partNumber: getPartChoices()[id] || '' })),
             }),
           });
           setCart({});
+          try { localStorage.removeItem('sav_compare'); } catch {}
           formDraft['c-notes'] = '';
           // 💳 الدفع بالبطاقة: تحويل مباشر لصفحة Paymob الآمنة
           if (order.payment === 'card') {

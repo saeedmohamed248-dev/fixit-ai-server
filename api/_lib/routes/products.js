@@ -76,6 +76,9 @@ export default async function handler(req, res) {
         name: body.name,
         nameEn: body.nameEn || '',
         descriptionEn: body.descriptionEn || '',
+        // 🛡️ الضمان بيتكتب لكل قطعة (من اللوحة أو من مزامنة موس تك) — مثال: «٦ شهور»
+        warranty: String(body.warranty || '').trim().slice(0, 60),
+        warrantyEn: String(body.warrantyEn || '').trim().slice(0, 60),
         deliveryNote: body.deliveryNote || '',
         deliveryNoteEn: body.deliveryNoteEn || '',
         brand: body.brand || 'BMW',

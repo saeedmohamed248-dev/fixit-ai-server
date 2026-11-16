@@ -153,6 +153,8 @@
       .cmp-row span:not(.cn) { text-align: center; font-size: 13px; }
       .cmp-row span:not(.cn)::before { content: attr(data-l); display: block; font-size: 10.5px; color: var(--muted); font-weight: 700; text-decoration: none; }
     }
+    .wbadge { display: inline-block; font-style: normal; font-size: 11px; font-weight: 800; color: #3538cd; background: #eef4ff; padding: 1px 8px; border-radius: 999px; margin-inline-start: 6px; }
+    .share-btn { width: 100%; margin-top: 10px; justify-content: center; background: linear-gradient(90deg,#f59e0b,#f97316); color: #fff; font-size: 16px; }
     .inv-empty { margin-top: 18px; text-align: center; padding: 16px; border: 2px dashed var(--line,#d0d5dd); border-radius: 14px; color: var(--muted); font-weight: 700; }
     .inv { margin-top: 14px; border: 1px solid var(--line,#e4e8f2); border-radius: 16px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
     .inv-h { font-weight: 900; font-size: 17px; margin-bottom: 8px; }
@@ -440,6 +442,65 @@
         wireBack();
       }
     }
+    // 📸 صورة «شارك توفيرك» — بتترسم على canvas وتتبعت واتساب/أي تطبيق
+    async function shareSavings(chosen, bought) {
+      const L3 = (ar, en) => (LANG === 'en' ? en : ar);
+      const cmp = chosen.filter((l) => l.theirUnit > 0 && l.p.price > 0);
+      const theirs = cmp.reduce((s, l) => s + l.theirUnit * l.qty, 0);
+      const ours = cmp.reduce((s, l) => s + l.p.price * l.qty, 0);
+      const save = theirs - ours, pct = Math.round(save / theirs * 100);
+      const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      try { await document.fonts.load('900 40px Tajawal'); await document.fonts.load('700 30px Tajawal'); await document.fonts.load('italic 900 64px Archivo'); } catch {}
+      const F = (w, sz) => `${w} ${sz}px Tajawal, sans-serif`;
+      const rtl = LANG !== 'en';
+      const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#10163d'); g.addColorStop(1, '#1d2370');
+      x.fillStyle = g; x.fillRect(0, 0, W, H);
+      x.strokeStyle = 'rgba(255,255,255,.04)';
+      for (let i = 0; i < W; i += 54) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, H); x.stroke(); }
+      for (let i = 0; i < H; i += 54) { x.beginPath(); x.moveTo(0, i); x.lineTo(W, i); x.stroke(); }
+      const S0 = rtl ? W - 70 : 70, E0 = rtl ? 70 : W - 70;
+      const txt = (t, px, py, font, color, align, dir) => { x.font = font; x.fillStyle = color; x.textAlign = align; x.direction = dir || (rtl ? 'rtl' : 'ltr'); x.fillText(t, px, py); };
+      txt('FIXIT', S0, 120, 'italic 900 70px Archivo, sans-serif', '#fff', rtl ? 'right' : 'left', 'ltr');
+      txt(L3('قطع غيار BMW & MINI', 'BMW & MINI parts'), S0, 165, F(700, 28), '#aab0d6', rtl ? 'right' : 'left');
+      txt(bought ? L3('لو كنت اشتريتها من فيكس إت كنت وفّرت', 'Had I bought from FixIt I would have saved') : L3('وفّرت مع فيكس إت', 'I saved with FixIt'), W / 2, 280, F(700, 40), '#c8cfe6', 'center');
+      txt(money(save), W / 2, 420, F(900, 130), '#5ef0a8', 'center');
+      txt(L3(`أقل بـ ${pct}%`, `${pct}% less`), W / 2, 545, F(800, 42), '#5ef0a8', 'center');
+      const bar = (y, label, val, w, fill) => {
+        txt(label, S0, y, F(700, 30), '#c8cfe6', rtl ? 'right' : 'left');
+        const bw = Math.max(300, (W - 140) * w), bx = rtl ? W - 70 - bw : 70;
+        x.fillStyle = fill; x.beginPath(); if (x.roundRect) x.roundRect(bx, y + 16, bw, 74, 16); else x.rect(bx, y + 16, bw, 74); x.fill();
+        txt(money(val), rtl ? W - 96 : 96, y + 68, F(900, 40), '#fff', rtl ? 'right' : 'left');
+      };
+      bar(640, bought ? L3('دفعت برّه', 'Paid elsewhere') : L3('اتسعّرلي برّه', 'Quoted elsewhere'), theirs, 1, '#dc3d3d');
+      bar(780, L3('مع فيكس إت', 'With FixIt'), ours, ours / theirs, '#12b76a');
+      let y = 960;
+      cmp.slice(0, 5).forEach((l) => {
+        x.font = F(700, 30); let n = l.p.name;
+        while (x.measureText(n).width > 640 && n.length > 8) n = n.slice(0, -2);
+        if (n !== l.p.name) n += '…';
+        txt(n, S0, y, F(700, 30), '#fff', rtl ? 'right' : 'left');
+        txt(L3('وفّرت ', 'saved ') + money((l.theirUnit - l.p.price) * l.qty), E0, y, F(800, 30), '#5ef0a8', rtl ? 'left' : 'right');
+        y += 56;
+      });
+      if (cmp.length > 5) txt(L3(`و ${cmp.length - 5} قطع كمان`, `+${cmp.length - 5} more`), W / 2, y, F(700, 28), '#aab0d6', 'center');
+      x.fillStyle = 'rgba(255,255,255,.08)'; x.fillRect(0, H - 170, W, 170);
+      txt(L3('احسب توفيرك انت كمان 👇', 'Calculate your savings 👇'), W / 2, H - 100, F(800, 40), '#fff', 'center');
+      txt('fixitauto.parts/savings', W / 2, H - 45, F(700, 36), '#ffd54a', 'center', 'ltr');
+      const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+      window._lastShareBlob = blob;
+      const file = new File([blob], 'fixit-savings.png', { type: 'image/png' });
+      const text = L3(`وفّرت ${money(save)} على قطع عربيتي مع فيكس إت 🔧💚 احسب توفيرك:`, `I saved ${money(save)} on my car parts with FixIt 🔧💚 Calculate yours:`) + ' ' + location.origin + '/savings.html';
+      try { trackEvent('share_savings', { v: save }); } catch {}
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      // بديل: نحمّل الصورة ونفتح واتساب بالنص
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'fixit-savings.png'; document.body.appendChild(a); a.click(); a.remove();
+      toast(L3('✅ الصورة اتحملت — ابعتها لصحابك على واتساب', '✅ Image saved — send it on WhatsApp'));
+      setTimeout(() => window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'), 600);
+    }
+
     function backBtn() { return `<div class="sav-cta">
       <button class="btn btn-outline" id="edit-back">→ ${L('رجوع وتعديل القطع', 'Back & edit parts')}</button>
       <button class="btn btn-outline" id="again" data-i18n="sav_again">${t('sav_again')}</button></div>`; }
@@ -572,7 +633,7 @@
             ${chosen.map((l) => {
               const t1 = l.theirUnit ? l.theirUnit * l.qty : 0, o1 = (l.p.price || 0) * l.qty, d = t1 && o1 ? t1 - o1 : 0;
               return `<div class="cmp-row">
-                <span class="cn">${esc(l.p.name)}${l.qty > 1 ? ` <small>×${l.qty}</small>` : ''}</span>
+                <span class="cn">${esc(l.p.name)}${l.qty > 1 ? ` <small>×${l.qty}</small>` : ''}${warrantyText(l.p) ? `<em class="wbadge">🛡️ ${L2('ضمان', 'Warranty')} ${esc(warrantyText(l.p))}</em>` : ''}</span>
                 <span class="ct" data-l="${theirLbl}">${t1 ? `<s>${money(t1)}</s>` : '—'}</span>
                 <span class="co" data-l="${L2('فيكس إت', 'FixIt')}">${o1 ? money(o1) : L2('عند الطلب', 'on request')}</span>
                 <span class="cs ${d > 0 ? 'pos' : ''}" data-l="${L2('وفّرت', 'Saved')}">${d > 0 ? money(d) : d < 0 ? '—' : '—'}</span></div>`;
@@ -589,9 +650,9 @@
           <div class="perks">
             <div class="perks-h">✨ ${L2('ومش بس السعر — مع فيكس إت كمان', 'Not just price — with FixIt you also get')}</div>
             <div class="perks-grid">
-              <div><span>🛡️</span><b>${L2('ضمان على كل قطعة', 'Warranty on every part')}</b><small>${L2('سنة للجديد · شهر للمستعمل', '1 year new · 1 month used')}</small></div>
+              ${(() => { const w = chosen.filter((l) => warrantyText(l.p)).length; return w ? `<div><span>🛡️</span><b>${L2(`${w} من ${chosen.length} قطع بضمان`, `${w} of ${chosen.length} parts under warranty`)}</b><small>${L2('مدة الضمان مكتوبة جنب كل قطعة', 'period shown next to each part')}</small></div>` : ''; })()}
               <div><span>🔍</span><b>${L2('متفحصة قبل البيع', 'Inspected before sale')}</b><small>${L2('مش هتشتري سمك في مية', 'no surprises')}</small></div>
-              <div><span>👀</span><b>${L2('عاين وانت بتستلم', 'Inspect on delivery')}</b><small>${L2('عربون بسيط والباقي بعد ما تشوفها', 'small deposit, rest after you see it')}</small></div>
+              ${SITE.depositOff ? '' : `<div><span>👀</span><b>${L2('عاين وانت بتستلم', 'Inspect on delivery')}</b><small>${L2('عربون بسيط والباقي بعد ما تشوفها', 'small deposit, rest after you see it')}</small></div>`}
               <div><span>↩️</span><b>${L2('استرجاع ١٤ يوم', '14-day returns')}</b><small>${L2('لو مش مطابقة', 'if not as described')}</small></div>
               <div><span>🚚</span><b>${L2('توصيل لباب البيت', 'Delivered to your door')}</b><small>${L2('كل المحافظات · ٢-٤ أيام', 'nationwide · 2-4 days')}</small></div>
               <div><span>🔧</span><b>${L2('نتأكدلك إنها تركب', 'Fitment check')}</b><small>${L2('برقم الشاسيه قبل الشحن', 'by VIN before shipping')}</small></div>
@@ -601,7 +662,8 @@
           <div class="inv-actions">
             <button class="btn" id="inv-cart">🛒 ${L2(`اطلبهم دلوقتي بـ ${money(ours)}`, `Order now for ${money(ours)}`)}</button>
             <a class="btn btn-green" target="_blank" rel="noopener" id="inv-wa">💬 ${L2('ابعت الفاتورة واتساب', 'Send on WhatsApp')}</a>
-          </div>`;
+          </div>
+          ${save > 0 ? `<button class="btn share-btn" id="inv-share">📸 ${L2('شارك توفيرك مع صحابك', 'Share your savings')}</button>` : ''}`;
       }
 
       let keepScroll = true;
@@ -661,11 +723,15 @@
         if (cartBtn) cartBtn.addEventListener('click', () => {
           const chosen = lines.filter((l) => !l.removed && l.pick);
           const cart = getCart();
-          chosen.forEach((l) => { const p = l.options.find((o) => o.id === l.pick); if (p && p.price) cart[p.id] = (cart[p.id] || 0) + l.qty; });
+          let cmpMap = {}; try { cmpMap = JSON.parse(localStorage.getItem('sav_compare') || '{}'); } catch {}
+          chosen.forEach((l) => { const p = l.options.find((o) => o.id === l.pick); if (p && p.price) { cart[p.id] = (cart[p.id] || 0) + l.qty; if (l.theirUnit > p.price) cmpMap[p.id] = l.theirUnit; } });
           setCart(cart);
+          try { localStorage.setItem('sav_compare', JSON.stringify(cmpMap)); } catch {} // 💚 عشان «وفّرت كام» في حساب العميل
           trackEvent('add_cart', { pid: 'savings', n: chosen.length });
           location.href = '/cart.html';
         });
+        const sh = $('inv-share');
+        if (sh) sh.addEventListener('click', () => shareSavings(lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) })), data.mode === 'invoice'));
         const wa = $('inv-wa');
         if (wa) {
           const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ l, p: l.options.find((o) => o.id === l.pick) }));
