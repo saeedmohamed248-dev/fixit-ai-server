@@ -57,6 +57,13 @@ function makeCollection(key) {
 }
 
 const ordersCol = makeCollection('orders');
+// 💰 كاش باك: العروض + دفتر حركات العملاء
+const cbCampaignsCol = makeCollection('cashback_campaigns');
+const cbLedgerCol = makeCollection('cashback_ledger');
+export const getCashbackCampaigns = cbCampaignsCol.get;
+export const saveCashbackCampaigns = cbCampaignsCol.save;
+export const getCashbackLedger = cbLedgerCol.get;
+export const saveCashbackLedger = cbLedgerCol.save;
 const usersCol = makeCollection('users');
 const reviewsCol = makeCollection('reviews');
 const couponsCol = makeCollection('coupons');

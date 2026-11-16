@@ -127,6 +127,7 @@
       { tab: 'missing', ic: '🛒', label: 'قائمة الشراء' },
       { tab: 'customers', ic: '👥', label: 'العملاء' },
       { tab: 'coupons', ic: '🎟️', label: 'خصومات وهدايا' },
+      { tab: 'cashback', ic: '💰', label: 'كاش باك وحسابات العملاء' },
       { sep: '⚙️ النظام' },
       { tab: 'sync', ic: '🔄', label: 'المزامنة مع موس تك' },
       { tab: 'activity', ic: '📝', label: 'سجل العمليات' },
@@ -283,7 +284,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, missing: loadMissing, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, cashback: loadCashback, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, missing: loadMissing, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -1190,6 +1191,209 @@
     });
 
     /* ==================== 🎟️ خصومات وهدايا ==================== */
+    /* ==================== 💰 كاش باك + كشف حساب العميل ==================== */
+    async function loadCashback() {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      let data, products;
+      try {
+        [data, products] = await Promise.all([
+          api('/cashback', { headers: authHeaders() }),
+          api('/products').catch(() => []),
+        ]);
+      } catch (e) { box.innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
+      const today = new Date().toISOString().slice(0, 10);
+      const fmtD = (d) => d ? new Date(d).toLocaleDateString('ar-EG') : '';
+      const ruleText = (c) => {
+        const val = c.amountType === 'percent' ? `${c.value}%` : money(c.value);
+        return `${val} ${c.amountType === 'percent' ? 'من قيمة القطع' : c.per === 'order' ? 'للطلب' : 'لكل قطعة'}`
+          + (c.minPrice ? ` · القطعة ${money(c.minPrice)} أو أكتر` : '')
+          + (c.productIds && c.productIds.length ? ` · ${c.productIds.length} قطعة محددة` : ' · كل القطع')
+          + (c.maxPerOrder ? ` · أقصى ${money(c.maxPerOrder)} للطلب` : '')
+          + ` · الاستخدام: الفاتورة ≥ ${c.multiplier}× الكاش باك`
+          + (c.validDays ? ` · صالح ${c.validDays} يوم` : ' · صلاحية مفتوحة');
+      };
+      const status = (c) => !c.active ? '<span class="badge" style="background:#f2f4f7;color:#667085;">⏸ متوقف</span>'
+        : c.end && c.end < today ? '<span class="badge" style="background:#fee4e2;color:#b42318;">انتهى</span>'
+        : c.start && c.start > today ? '<span class="badge" style="background:#eef4ff;color:#3538cd;">لسه مبدأش</span>'
+        : '<span class="badge" style="background:#ecfdf3;color:#067647;">● شغال</span>';
+
+      box.innerHTML = `
+        <div class="summary">
+          <h3>💰 عروض الكاش باك</h3>
+          <p style="color:var(--muted);font-size:13px;">العميل بيكسب رصيد لما يشتري (بيتفعّل بعد ما الطلب يتسلّم)، ويستخدمه في طلب جاي بشرط إن الفاتورة تكون أضعاف الكاش باك اللي هيستخدمه.</p>
+          <div id="cb-list" style="display:grid;gap:10px;margin:12px 0;">
+            ${data.campaigns.length ? data.campaigns.map((c) => `
+              <div style="border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+                <div><b>${esc(c.name)}</b> ${status(c)}
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;">📅 ${c.start ? fmtD(c.start) : 'من دلوقتي'} ← ${c.end ? fmtD(c.end) : 'مفتوح'}</div>
+                  <div style="font-size:13px;margin-top:3px;">${ruleText(c)}</div></div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-sm btn-outline" data-cbedit="${esc(c.id)}">تعديل</button>
+                  <button class="btn btn-sm btn-outline" data-cbtoggle="${esc(c.id)}">${c.active ? '⏸ إيقاف' : '▶ تشغيل'}</button>
+                  <button class="btn btn-sm btn-danger" data-cbdel="${esc(c.id)}">حذف</button>
+                </div>
+              </div>`).join('') : '<div class="note">مفيش عروض لسه — اعمل أول عرض من تحت 👇</div>'}
+          </div>
+
+          <h4 id="cb-form-title" style="margin-top:18px;">➕ عرض جديد</h4>
+          <div class="form-grid">
+            <div class="full"><label>اسم العرض</label><input id="cb-name" placeholder="مثال: اشتري بـ ٦٠٠٠ وخد ١٠٠٠ كاش باك"></div>
+            <div><label>📅 من تاريخ</label><input id="cb-start" type="date" value="${today}"></div>
+            <div><label>📅 إلى تاريخ (فاضي = مفتوح)</label><input id="cb-end" type="date"></div>
+            <div><label>نوع الكاش باك</label><select id="cb-type"><option value="fixed">مبلغ ثابت (ج.م)</option><option value="percent">نسبة % من سعر القطع</option></select></div>
+            <div><label>القيمة</label><input id="cb-value" type="number" min="0" placeholder="1000"></div>
+            <div><label>يتحسب</label><select id="cb-per"><option value="item">لكل قطعة (× الكمية)</option><option value="order">مرة واحدة للطلب</option></select></div>
+            <div><label>أقل سعر للقطعة عشان تاخد كاش باك (ج.م)</label><input id="cb-min" type="number" min="0" placeholder="6000"></div>
+            <div><label>أقصى كاش باك للطلب الواحد (0 = مفتوح)</label><input id="cb-max" type="number" min="0" value="0"></div>
+            <div><label>شرط الاستخدام: الفاتورة الجاية ≥ كام ضعف الكاش باك؟</label><input id="cb-mult" type="number" min="1" step="0.5" value="2"></div>
+            <div><label>صلاحية الرصيد (أيام من الاستلام — 0 = مفتوح)</label><input id="cb-days" type="number" min="0" value="60"></div>
+            <div class="full">
+              <label>القطع المشمولة <small style="color:var(--muted);">(ماتختارش حاجة = كل القطع)</small></label>
+              <input id="cb-q" placeholder="🔍 دوّر باسم القطعة أو الكود...">
+              <div id="cb-sel" style="font-size:13px;font-weight:700;margin:6px 0;"></div>
+              <div id="cb-prods" style="max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;"></div>
+            </div>
+          </div>
+          <div id="cb-example" class="note" style="margin-top:10px;"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn" id="cb-save">💾 حفظ العرض</button>
+            <button class="btn btn-outline" id="cb-reset" style="display:none;">إلغاء التعديل</button>
+          </div>
+        </div>
+
+        <div class="summary" style="margin-top:18px;">
+          <h3>📒 حسابات العملاء</h3>
+          <p style="color:var(--muted);font-size:13px;">اكتب رقم الموبايل تشوف كشف حساب العميل كامل: كل طلباته، الكاش باك اللي كسبه واستخدمه، ورصيده. وتقدر تضيف أو تخصم رصيد يدوي.</p>
+          <div style="display:flex;gap:8px;"><input id="cb-phone" dir="ltr" placeholder="01xxxxxxxxx"><button class="btn" id="cb-find">📒 كشف حساب</button></div>
+          <div id="cb-statement" style="margin-top:12px;"></div>
+          <h4 style="margin-top:16px;">العملاء اللي ليهم رصيد</h4>
+          <div style="overflow:auto;"><table class="table">
+            <thead><tr><th>العميل</th><th>الموبايل</th><th>رصيد متاح</th><th>معلّق</th><th>كسب</th><th>استخدم</th><th></th></tr></thead>
+            <tbody>${data.customers.map((c) => `<tr><td>${esc(c.name || '—')}</td><td dir="ltr">${esc(c.phone)}</td>
+              <td style="color:#067647;font-weight:800;">${money(c.balance)}</td><td>${money(c.pending)}</td><td>${money(c.earned)}</td><td>${money(c.used)}</td>
+              <td><button class="btn btn-sm btn-outline" data-cbphone="${esc(c.phone)}">كشف</button></td></tr>`).join('') || '<tr><td colspan="7" style="color:var(--muted);">لسه مفيش</td></tr>'}</tbody>
+          </table></div>
+        </div>`;
+
+      // ---- فورم العرض ----
+      let editId = null, sel = [];
+      const $ = (id) => document.getElementById(id);
+      const withPrice = products.filter((p) => Number(p.price) > 0);
+      const drawProds = () => {
+        const q = $('cb-q').value.trim().toLowerCase();
+        const min = Number($('cb-min').value) || 0;
+        $('cb-sel').textContent = sel.length ? `✅ مختار ${sel.length} قطعة` : 'كل القطع (اللي سعرها فوق الحد الأدنى)';
+        const list = withPrice.filter((p) => !q || (p.name + ' ' + (p.sku || '') + ' ' + (p.oem || '')).toLowerCase().includes(q))
+          .sort((a, b) => sel.includes(b.id) - sel.includes(a.id) || b.price - a.price).slice(0, 150);
+        $('cb-prods').innerHTML = list.map((p) => `<label style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);font-size:13px;${p.price < min ? 'opacity:.45;' : ''}">
+            <input type="checkbox" data-pid="${esc(p.id)}" ${sel.includes(p.id) ? 'checked' : ''} style="width:auto;">
+            <span style="flex:1;">${esc(p.name)} <small style="color:var(--muted);" dir="ltr">${esc(p.sku || '')}</small></span><b>${money(p.price)}</b></label>`).join('');
+        $('cb-prods').querySelectorAll('[data-pid]').forEach((c) => c.addEventListener('change', () => {
+          sel = c.checked ? [...sel, c.dataset.pid] : sel.filter((x) => x !== c.dataset.pid); drawProds();
+        }));
+        drawExample();
+      };
+      const drawExample = () => {
+        const v = Number($('cb-value').value) || 0, min = Number($('cb-min').value) || 0, m = Number($('cb-mult').value) || 1;
+        const pct = $('cb-type').value === 'percent';
+        const price = min || 6000;
+        const earn = pct ? Math.round(price * v / 100) : v;
+        $('cb-example').innerHTML = v ? `💡 <b>مثال:</b> عميل اشترى قطعة بـ ${money(price)} ← ياخد <b style="color:#067647;">${money(earn)}</b> كاش باك بعد الاستلام.
+          المرة الجاية عشان يستخدمهم كلهم لازم فاتورته تكون <b>${money(earn * m)}</b> أو أكتر (يدفع ${money(earn * m - earn)} ويخصم ${money(earn)}).
+          ${Number($('cb-days').value) ? `الرصيد بيخلص بعد ${$('cb-days').value} يوم من الاستلام.` : ''}` : 'اكتب القيمة عشان تشوف مثال.';
+      };
+      ['cb-q', 'cb-min'].forEach((id) => $(id).addEventListener('input', drawProds));
+      ['cb-value', 'cb-mult', 'cb-days', 'cb-type'].forEach((id) => $(id).addEventListener('input', drawExample));
+      $('cb-type').addEventListener('change', () => { $('cb-per').disabled = $('cb-type').value === 'percent'; drawExample(); });
+      const fill = (c) => {
+        editId = c ? c.id : null; sel = c ? [...(c.productIds || [])] : [];
+        $('cb-name').value = c ? c.name : ''; $('cb-start').value = c ? c.start : today; $('cb-end').value = c ? c.end : '';
+        $('cb-type').value = c ? c.amountType : 'fixed'; $('cb-value').value = c ? c.value : ''; $('cb-per').value = c ? c.per : 'item';
+        $('cb-min').value = c ? c.minPrice || '' : ''; $('cb-max').value = c ? c.maxPerOrder || 0 : 0;
+        $('cb-mult').value = c ? c.multiplier : 2; $('cb-days').value = c ? c.validDays : 60;
+        $('cb-form-title').textContent = c ? '✏️ تعديل: ' + c.name : '➕ عرض جديد';
+        $('cb-reset').style.display = c ? '' : 'none'; drawProds();
+      };
+      drawProds();
+      $('cb-reset').addEventListener('click', () => fill(null));
+      box.querySelectorAll('[data-cbedit]').forEach((b) => b.addEventListener('click', () => {
+        fill(data.campaigns.find((c) => c.id === b.dataset.cbedit)); $('cb-form-title').scrollIntoView({ behavior: 'smooth' });
+      }));
+      const saveCampaign = async (campaign) => api('/cashback', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ action: 'campaign', campaign }) });
+      box.querySelectorAll('[data-cbtoggle]').forEach((b) => b.addEventListener('click', async () => {
+        const c = data.campaigns.find((x) => x.id === b.dataset.cbtoggle);
+        try { await saveCampaign({ ...c, active: !c.active }); loadCashback(); } catch (e) { toast('⚠️ ' + e.message); }
+      }));
+      box.querySelectorAll('[data-cbdel]').forEach((b) => b.addEventListener('click', async () => {
+        if (!confirm('تحذف العرض ده؟ (الرصيد اللي العملاء كسبوه منه هيفضل)')) return;
+        try { await api('/cashback?id=' + encodeURIComponent(b.dataset.cbdel), { method: 'DELETE', headers: authHeaders() }); loadCashback(); } catch (e) { toast('⚠️ ' + e.message); }
+      }));
+      $('cb-save').addEventListener('click', async () => {
+        const prev = editId ? data.campaigns.find((c) => c.id === editId) : {};
+        try {
+          await saveCampaign({ ...prev, id: editId || undefined, name: $('cb-name').value, start: $('cb-start').value, end: $('cb-end').value,
+            amountType: $('cb-type').value, value: $('cb-value').value, per: $('cb-per').value, minPrice: $('cb-min').value,
+            maxPerOrder: $('cb-max').value, multiplier: $('cb-mult').value, validDays: $('cb-days').value, productIds: sel,
+            active: editId ? prev.active : true });
+          toast('✅ العرض اتحفظ'); loadCashback();
+        } catch (e) { toast('⚠️ ' + e.message); }
+      });
+
+      // ---- كشف حساب العميل ----
+      const ST = { new: '🆕 جديد', confirmed: '✅ مؤكد', shipped: '🚚 شحن', delivered: '📦 اتسلّم', cancelled: '❌ ملغي' };
+      const entryText = (e) => e.kind === 'lot'
+        ? `${e.source === 'adjust' ? '➕ إضافة يدوي' : '🎁 كاش باك ' + esc(e.campaignName || '')} ${e.orderNumber ? '— ' + esc(e.orderNumber) : ''}`
+          + ` <small style="color:var(--muted);">(${e.status === 'pending' ? '⏳ معلّق لحد التسليم' : e.status === 'cancelled' ? '❌ اتلغى' : `متبقي ${money(e.remaining)}${e.validUntil ? ' · ينتهي ' + fmtD(e.validUntil) : ''}`} · شرط ×${e.multiplier || 1})</small>`
+        : e.kind === 'redeem' ? `🛒 استخدام في ${esc(e.orderNumber)} ${e.reversed ? '<small>(اترجع — الطلب اتلغى)</small>' : ''}`
+        : `➖ خصم يدوي`;
+      async function statement(phone) {
+        const out = $('cb-statement'); out.innerHTML = '<div class="spinner">...</div>';
+        try {
+          const s = await api('/cashback?phone=' + encodeURIComponent(phone), { headers: authHeaders() });
+          out.innerHTML = `
+            <div style="border:1px solid var(--line);border-radius:14px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div><b style="font-size:16px;">${esc(s.name || 'عميل')}</b> · <span dir="ltr">${esc(s.phone)}</span> ${s.hasAccount ? '<span class="badge" style="background:#eef4ff;color:#3538cd;">👤 ليه حساب</span>' : '<span class="badge" style="background:#fffaeb;color:#b54708;">من غير حساب — لازم يسجّل بنفس الرقم عشان يستخدم الرصيد</span>'}</div>
+                <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(s.phone)}">💬 واتساب</a>
+              </div>
+              <div class="totals-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0;">
+                ${[['💰 رصيد متاح', s.balance, '#067647'], ['⏳ معلّق', s.pending], ['🎁 إجمالي اللي كسبه', s.earned], ['🛒 استخدم', s.used], ['🧾 إجمالي مشترياته', s.totalSpent], ['📦 عدد الطلبات', null]]
+                  .map(([l, v, c]) => `<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:12px;color:var(--muted);">${l}</div><b style="font-size:17px;${c ? 'color:' + c : ''}">${v === null ? s.orders.length : money(v)}</b></div>`).join('')}
+              </div>
+              <h4>🧾 الطلبات</h4>
+              <div style="overflow:auto;"><table class="table" style="font-size:13px;"><thead><tr><th>رقم</th><th>التاريخ</th><th>الحالة</th><th>القطع</th><th>الإجمالي</th><th>كاش باك +/−</th></tr></thead><tbody>
+                ${s.orders.map((o) => `<tr><td>${esc(o.number)}</td><td>${fmtD(o.createdAt)}</td><td>${ST[o.status] || o.status}</td>
+                  <td style="font-size:12px;">${o.items.map((i) => esc(i.name) + ' ×' + i.qty).join('، ')}</td><td><b>${money(o.total)}</b></td>
+                  <td>${o.cashbackEarned ? `<span style="color:#067647;">+${money(o.cashbackEarned)}</span>` : ''} ${o.cashbackUsed ? `<span style="color:#b42318;">−${money(o.cashbackUsed)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" style="color:var(--muted);">مفيش طلبات</td></tr>'}
+              </tbody></table></div>
+              <h4 style="margin-top:12px;">💰 حركات الكاش باك</h4>
+              <div style="display:grid;gap:4px;font-size:13px;">${s.entries.map((e) => `<div style="display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:5px 0;">
+                <span>${entryText(e)}${e.note ? ` <small style="color:var(--muted);">— ${esc(e.note)}</small>` : ''}</span>
+                <span style="white-space:nowrap;"><b style="color:${e.kind === 'lot' ? '#067647' : '#b42318'};">${e.kind === 'lot' ? '+' : '−'}${money(e.amount)}</b> <small style="color:var(--muted);">${fmtD(e.at)}</small></span></div>`).join('') || '<div style="color:var(--muted);">مفيش حركات</div>'}</div>
+              <h4 style="margin-top:12px;">✏️ إضافة / خصم رصيد يدوي</h4>
+              <div class="form-grid">
+                <div><label>المبلغ (+ إضافة، − خصم)</label><input id="adj-amt" type="number" placeholder="مثال: 500 أو -200"></div>
+                <div><label>السبب</label><input id="adj-note" placeholder="مثال: تعويض تأخير"></div>
+                <div><label>شرط الاستخدام (× الفاتورة)</label><input id="adj-mult" type="number" min="1" step="0.5" value="2"></div>
+                <div><label>صلاحية (أيام — 0 مفتوح)</label><input id="adj-days" type="number" min="0" value="60"></div>
+              </div>
+              <button class="btn btn-sm" id="adj-go" style="margin-top:8px;">تنفيذ</button>
+            </div>`;
+          $('adj-go').addEventListener('click', async () => {
+            try {
+              await api('/cashback', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ action: 'adjust', phone: s.phone, name: s.name,
+                amount: $('adj-amt').value, note: $('adj-note').value, multiplier: $('adj-mult').value, validDays: $('adj-days').value }) });
+              toast('✅ اتنفذ'); statement(s.phone);
+            } catch (e) { toast('⚠️ ' + e.message); }
+          });
+        } catch (e) { out.innerHTML = `<div class="note">${esc(e.message)}</div>`; }
+      }
+      $('cb-find').addEventListener('click', () => { const p = $('cb-phone').value.trim(); if (p) statement(p); });
+      $('cb-phone').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('cb-find').click(); });
+      box.querySelectorAll('[data-cbphone]').forEach((b) => b.addEventListener('click', () => { $('cb-phone').value = b.dataset.cbphone; statement(b.dataset.cbphone); $('cb-statement').scrollIntoView({ behavior: 'smooth' }); }));
+    }
+
     async function loadCoupons() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';

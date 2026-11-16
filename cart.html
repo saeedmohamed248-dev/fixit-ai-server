@@ -38,6 +38,15 @@
     let myPoints = 0;
     let useCredit = false;
     let myCredit = 0;
+    // 💰 كاش باك
+    let useCashback = false;
+    let cbInfo = null; let cbKey = '';
+    function refreshCashback(items, cart, net) {
+      const key = JSON.stringify([items.map((p) => [p.id, cart[p.id]]), net, Boolean(userToken())]);
+      if (key === cbKey) return; cbKey = key;
+      api('/cashback', { method: 'POST', headers: userHeaders(), body: JSON.stringify({ action: 'preview', items: items.map((p) => ({ id: p.id, qty: cart[p.id] })), net }) })
+        .then((d) => { if (cbKey === key) { cbInfo = d; render(); } }).catch(() => {});
+    }
     let cardEnabled = false;
     let wsIncoterm = null; // 🚢 شرط التسليم المختار في الجملة
     let wsShipMode = 'sea'; // وسيلة الشحن: بحري/جوي
@@ -367,7 +376,12 @@
       // رصيد الاستبدال يُستخدم فقط لو الطلب أكبر من الرصيد (شرط الحد الأدنى)
       const creditEligible = myCredit > 0 && netBeforeCredit > myCredit;
       const creditDiscount = (useCredit && creditEligible) ? myCredit : 0;
-      const total = netBeforeCredit - creditDiscount;
+      const netBeforeCb = netBeforeCredit - creditDiscount;
+      refreshCashback(items, cart, netBeforeCb);
+      const cbR = cbInfo && cbInfo.redeem;
+      const cbUsable = cbR ? cbR.usable : 0;
+      const cashbackDiscount = useCashback ? cbUsable : 0;
+      const total = netBeforeCb - cashbackDiscount;
       const user = currentUser();
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
 
@@ -402,6 +416,7 @@
           ${discount ? `<div class="row" style="color: var(--green);"><span>${t('discount_row')} (${esc(appliedCoupon.code)})</span><b>- ${money(discount)}</b></div>` : ''}
           ${pointsDiscount ? `<div class="row" style="color: var(--green);"><span>${t('points_row')} ⭐</span><b>- ${money(pointsDiscount)}</b></div>` : ''}
           ${creditDiscount ? `<div class="row" style="color: var(--green);"><span>${t('credit_row')} 💳</span><b>- ${money(creditDiscount)}</b></div>` : ''}
+          ${cashbackDiscount ? `<div class="row" style="color: var(--green);"><span>${LANG === 'en' ? 'Cashback' : 'كاش باك'} 💰</span><b>- ${money(cashbackDiscount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
             <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
           </div>
@@ -426,6 +441,20 @@
             <input type="checkbox" id="use-credit" ${useCredit ? 'checked' : ''}>
             ${t('credit_use', { v: money(myCredit) })}
           </label>` : `<div style="font-size: 12px; color: var(--muted);">${t('credit_min', { v: money(myCredit) })}</div>`) : ''}
+
+          ${cbR && cbR.balance > 0 ? (cbUsable > 0 ? `
+          <label class="pay-option" style="margin: 0; border-color: #a6f4c5; background: #ecfdf3;">
+            <input type="checkbox" id="use-cashback" ${useCashback ? 'checked' : ''}>
+            💰 ${LANG === 'en' ? `Use ${money(cbUsable)} of my cashback (balance ${money(cbR.balance)})` : `استخدم ${money(cbUsable)} من رصيد الكاش باك (رصيدك ${money(cbR.balance)})`}
+          </label>
+          ${cbUsable < cbR.balance ? `<div style="font-size: 12px; color: var(--muted);">${LANG === 'en' ? `To use your full balance, the order must be at least ${money(cbR.needForFull)}` : `عشان تستخدم رصيدك كله، الفاتورة لازم تكون ${money(cbR.needForFull)} على الأقل`}</div>` : ''}` : `
+          <div class="cb-note">💰 ${LANG === 'en' ? `You have ${money(cbR.balance)} cashback — usable on orders of at least ${money(cbR.balance * cbR.multiplier)} (or ${cbR.multiplier}× the amount used)` : `عندك ${money(cbR.balance)} كاش باك — تقدر تستخدمه لما الفاتورة تكون ${cbR.multiplier} أضعاف المبلغ اللي هتستخدمه (يعني ${money(cbR.balance * cbR.multiplier)} عشان الرصيد كله)`}</div>`) : ''}
+          ${cbInfo && cbInfo.earn > 0 ? `
+          <div class="cb-earn">🎁 ${LANG === 'en'
+            ? `This order earns you <b>${money(cbInfo.earn)}</b> cashback to spend on your next order${cbInfo.validDays ? ` (valid ${cbInfo.validDays} days after delivery)` : ''}. ${!user ? 'Log in so it is saved to your account.' : ''}`
+            : `الطلب ده هيكسبك <b>${money(cbInfo.earn)}</b> كاش باك تشتري بيهم المرة الجاية${cbInfo.validDays ? ` (صالح ${cbInfo.validDays} يوم من الاستلام)` : ''}. ${!user ? 'سجّل دخول عشان يتسجل على حسابك.' : ''}`}
+            <small>${LANG === 'en' ? `Activated on delivery · next order must be at least ${cbInfo.multiplier}× the cashback used` : `بيتفعّل بعد استلام الطلب · الفاتورة الجاية لازم تكون ${cbInfo.multiplier} أضعاف الكاش باك المستخدم`}</small>
+          </div>` : ''}
 
           <hr style="border-color: var(--line);">
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
@@ -497,6 +526,7 @@
         usePoints = e.target.checked;
         render();
       });
+      document.getElementById('use-cashback')?.addEventListener('change', (e) => { useCashback = e.target.checked; render(); });
       document.getElementById('use-credit')?.addEventListener('change', (e) => {
         useCredit = e.target.checked;
         render();
@@ -558,6 +588,7 @@
               coupon: appliedCoupon ? appliedCoupon.code : '',
               usePoints: usePoints ? myPoints : 0,
               useCredit: useCredit,
+              useCashback: useCashback,
               items: Object.entries(c).map(([id, qty]) => ({ id, qty, partNumber: getPartChoices()[id] || '' })),
             }),
           });
@@ -577,6 +608,7 @@
               toast('⚠️ ' + payErr.message);
             }
           }
+          if (order.cashbackEarned) toast((LANG === 'en' ? '🎁 You earned cashback: ' : '🎁 كسبت كاش باك: ') + money(order.cashbackEarned));
           showSuccess(order);
         } catch (err) {
           errBox.textContent = err.message;
