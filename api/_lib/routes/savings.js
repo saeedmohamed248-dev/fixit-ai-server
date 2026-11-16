@@ -18,42 +18,68 @@ function normText(s) {
     .replace(/[ً-ٟ]/g, '')
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
-const STOP = new Set(['bmw', 'mini', 'امامي', 'خلفي', 'يمين', 'شمال', 'طقم', 'قطعه', 'set', 'front', 'rear', 'left', 'right']);
+// كلمات مالهاش وزن في المطابقة، وكلمات اتجاه لازم تتطابق لو اتكتبت، ومرادفات عامية
+const NOISE = new Set(['bmw', 'mini', 'طقم', 'قطعه', 'set', 'كامل', 'جديد', 'مستعمل', 'اصلي', 'original']);
+const POS_GROUPS = [['امامي', 'front', 'قدام'], ['خلفي', 'rear', 'ورا'], ['يمين', 'right'], ['شمال', 'left', 'يسار']];
+const POS = new Map(POS_GROUPS.flatMap((g, i) => g.map((w) => [w, i])));
+const OPPOSITE = { 0: 1, 1: 0, 2: 3, 3: 2 };
+const SYN = { 'فحمات': 'تيل', 'فحمة': 'تيل', 'باد': 'تيل', 'pads': 'تيل', 'pad': 'تيل', 'جيربوكس': 'فتيس', 'gearbox': 'فتيس', 'تنشنر': 'شداد', 'tensioner': 'شداد',
+  'كشاف': 'فانوس', 'headlight': 'فانوس', 'ابره': 'ابر', 'ابرة': 'ابر', 'radiator': 'رادياتير', 'رادياتر': 'رادياتير', 'مساعدين': 'مساعد', 'سيور': 'سير', 'belt': 'سير' };
 function tokens(s) {
-  return normText(s).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3 && !STOP.has(w));
+  return normText(s).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2).map((w) => SYN[w] || w);
 }
 function itemTokens(item) {
-  // ندعم الاسم كما كُتب + الاسم العربي المطبّع من البوت (عشان الإنجليزي/العامية يطابقوا كتالوجنا العربي)
   return [...new Set([...tokens(item.name), ...tokens(item.name_ar)])];
 }
+// أكواد الشاسيه/المحرك من كلام العميل (F30, E90, N20, X5 ...)
+export function carCodes(text) {
+  return [...new Set((String(text || '').toUpperCase().match(/\b([EFGR]\d{2}|X[1-7]|[NBS]\d{2})\b/g) || []))];
+}
+const tokHit = (w, have) => have.some((h) => h === w || (w.length >= 3 && h.length >= 3 && (h.startsWith(w) || w.startsWith(h))));
 
-export function matchProduct(item, products, indexes) {
+// نقيّم كل منتج قصاد البند: الكلمات الأساسية لازم تتطابق، الاتجاه لو اتكتب لازم يتطابق، وموديل العربية بيرفع الترتيب
+function scoreProduct(want, prod, have, cars) {
+  const core = want.filter((w) => !NOISE.has(w) && !POS.has(w) && !/^\d+$/.test(w));
+  if (!core.length) return 0;
+  const hits = core.filter((w) => tokHit(w, have)).length;
+  if (!hits || hits < Math.ceil(core.length * 0.6)) return 0;
+  let score = hits / core.length;
+  for (const w of want) {
+    if (!POS.has(w)) continue;
+    const g = POS.get(w);
+    if (have.some((h) => POS.get(h) === g)) score += 0.3;
+    else if (have.some((h) => POS.get(h) === OPPOSITE[g])) return 0; // كتب أمامي والمنتج خلفي
+  }
+  if (cars.length) {
+    const txt = (prod.name + ' ' + (prod.models || []).join(' ') + ' ' + (prod.fits || []).join(' ')).toUpperCase();
+    if (cars.some((c) => new RegExp('\\b' + c + '\\b').test(txt))) score += 1;
+  }
+  return score;
+}
+
+export function matchProduct(item, products, indexes, cars = []) {
   const codes = [item.code, item.oem].map(normCode).filter((c) => c.length >= 4);
-  for (const c of codes) { const hit = indexes.byCode.get(c); if (hit) return { product: hit, how: 'code' }; }
+  for (const c of codes) { const hit = indexes.byCode.get(c); if (hit) return { product: hit, how: 'code', options: [] }; }
   for (const c of codes) {
     for (const [code, prod] of indexes.byCode) {
-      if (code.length >= 6 && (code.includes(c) || c.includes(code))) return { product: prod, how: 'code' };
+      if (code.length >= 6 && (code.includes(c) || c.includes(code))) return { product: prod, how: 'code', options: [] };
     }
   }
   const want = itemTokens(item);
-  if (want.length) {
-    let best = null, bestScore = 0;
-    for (const prod of products) {
-      const have = indexes.tokensById.get(prod.id) || [];
-      if (!have.length) continue;
-      const overlap = want.filter((w) => have.includes(w)).length;
-      const score = overlap / Math.max(want.length, 1);
-      if (overlap >= 2 && score > bestScore) { bestScore = score; best = prod; }
-    }
-    if (best && bestScore >= 0.5) return { product: best, how: 'name' };
-  }
-  return null;
+  if (!want.length) return null;
+  const ranked = products
+    .map((prod) => ({ prod, score: scoreProduct(want, prod, (indexes.tokensOf && indexes.tokensOf.get(prod)) || indexes.tokensById.get(prod.id) || [], cars) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || (Number(b.prod.price) > 0) - (Number(a.prod.price) > 0));
+  if (!ranked.length) return null;
+  const options = ranked.slice(0, 4).map((x) => x.prod);
+  return { product: ranked[0].prod, how: 'name', options };
 }
 
 // نطابق البنود ونصنّفها: مؤكد (بالكود) / غير متأكد (بالاسم) / غير موجود
-export function compareInvoice(items, products) {
+export function compareInvoice(items, products, cars = []) {
   const inStock = products.filter((p) => Number(p.stock) > 0);
-  const indexes = { byCode: new Map(), tokensById: new Map() };
+  const indexes = { byCode: new Map(), tokensById: new Map(), tokensOf: new Map() };
   for (const p of inStock) {
     if (p.sku) indexes.byCode.set(normCode(p.sku), p);
     if (p.oem) for (const o of String(p.oem).split(/[,،/]/)) {
@@ -63,6 +89,7 @@ export function compareInvoice(items, products) {
       const c = normCode(pn); if (c.length >= 4 && !indexes.byCode.has(c)) indexes.byCode.set(c, p);
     }
     indexes.tokensById.set(p.id, tokens(p.name));
+    indexes.tokensOf.set(p, tokens(p.name));
   }
 
   const confident = [], unsure = [], unmatched = [];
@@ -70,7 +97,7 @@ export function compareInvoice(items, products) {
   for (const item of items) {
     const qty = Math.max(1, Number(item.qty) || 1);
     const theirUnit = Number(item.unit_price ?? item.unitPrice) || 0;
-    const res = matchProduct(item, inStock, indexes);
+    const res = matchProduct(item, inStock, indexes, cars);
     if (!res) { unmatched.push({ name: item.name || item.name_ar || '', code: item.code || '', qty, theirUnit }); continue; }
     const our = Number(res.product.price) || 0;
     const row = {
@@ -80,6 +107,7 @@ export function compareInvoice(items, products) {
       ourUnit: our, ourLine: our * qty,
       saving: theirUnit > 0 ? (theirUnit - our) * qty : 0,
       how: res.how,
+      options: (res.options || []).map(slim),
       product: {
         id: res.product.id, name: res.product.name, sku: res.product.sku || '',
         price: our, image: res.product.image || '',
@@ -107,6 +135,10 @@ export function compareInvoice(items, products) {
       savingPct: theirTotal > 0 ? Math.round((saving / theirTotal) * 100) : 0,
     },
   };
+}
+
+function slim(p) {
+  return { id: p.id, name: p.name, sku: p.sku || '', price: Number(p.price) || 0, image: p.image || (Array.isArray(p.images) && p.images[0]) || '' };
 }
 
 // ---------- استخراج البنود بالذكاء الاصطناعي ----------
@@ -221,7 +253,7 @@ export default async function handler(req, res) {
     const imageUrls = (await Promise.all(images.map(uploadImage))).filter(Boolean);
 
     const { currency, items } = manualItems ? { currency: 'EGP', items: manualItems } : await extractInvoice(images);
-    const result = compareInvoice(items, await getProducts());
+    const result = compareInvoice(items, await getProducts(), carCodes([car, carDetails.model, carDetails.engine].join(' ')));
     const needsStaff = result.unsure.length > 0 || result.unmatched.length > 0;
 
     // نخزّن الطلب (بيانات العميل + روابط الصور + النتيجة) — يظهر في لوحة التحكم
