@@ -29,25 +29,84 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- الهيرو -->
-    <section class="hero">
-      <div class="container">
-        <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
-        <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
-        <form class="search-box" action="/shop.html" method="get">
-          <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
-          <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
-        </form>
-        <div class="brand-chips">
-          <a class="chip" href="/shop.html?brand=BMW">BMW</a>
-          <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
-          <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
-          <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
+    <!-- 🏪 الهيرو — واجهة محل حقيقية: يمين الكلام والبحث، شمال رف القطع -->
+    <section class="hero store-hero">
+      <div class="container sh-grid">
+        <div class="sh-copy">
+          <div class="sh-badges">
+            <span class="sh-open" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
+            <span class="sh-loc">📍 <span data-i18n="sh_loc">المحل: الحي العاشر، مدينة نصر</span></span>
+          </div>
+          <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
+          <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
+
+          <!-- كاونتر المحل: بحث أو اختار عربيتك -->
+          <div class="sh-counter">
+            <div class="sh-tabs" role="tablist">
+              <button type="button" class="on" data-tab="car">🚗 <span data-i18n="sbc_title">دوّر بعربيتك</span></button>
+              <button type="button" data-tab="q">🔍 <span data-i18n="search_btn">بحث</span></button>
+            </div>
+            <div class="sh-pane on" data-pane="car">
+              <div class="sbc-form">
+                <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
+                <select id="sbc-model" aria-label="Model"></select>
+                <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
+              </div>
+            </div>
+            <form class="sh-pane search-box" data-pane="q" action="/shop.html" method="get">
+              <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
+              <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
+            </form>
+            <div class="brand-chips">
+              <a class="chip" href="/shop.html?brand=BMW">BMW</a>
+              <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
+              <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
+              <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
+            <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
+            <span data-i18n="stat3">✓ استيراد مباشر</span>
+          </div>
         </div>
-        <div class="hero-stats">
-          <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
-          <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
-          <span data-i18n="stat3">✓ استيراد مباشر</span>
+
+        <!-- رف القطع (رسومات SVG بدل صور) -->
+        <div class="sh-wall" aria-hidden="true">
+          <div class="sh-sign"><b>FIXIT</b> PARTS · BMW &amp; MINI</div>
+          <div class="sh-shelf">
+            <a class="sh-item" href="/shop.html?category=%D9%81%D8%B1%D8%A7%D9%85%D9%84" tabindex="-1">
+              <svg viewBox="0 0 100 100"><defs><radialGradient id="g-disc" cx="40%" cy="35%"><stop offset="0" stop-color="#f4f6fb"/><stop offset=".6" stop-color="#a9b0c4"/><stop offset="1" stop-color="#5d6580"/></radialGradient></defs><circle cx="50" cy="50" r="44" fill="url(#g-disc)"/><circle cx="50" cy="50" r="44" fill="none" stroke="#3b4260" stroke-width="2"/><g fill="#3b4260" opacity=".55"><circle cx="50" cy="16" r="2.6"/><circle cx="74" cy="26" r="2.6"/><circle cx="84" cy="50" r="2.6"/><circle cx="74" cy="74" r="2.6"/><circle cx="50" cy="84" r="2.6"/><circle cx="26" cy="74" r="2.6"/><circle cx="16" cy="50" r="2.6"/><circle cx="26" cy="26" r="2.6"/></g><circle cx="50" cy="50" r="20" fill="#2b3150"/><circle cx="50" cy="50" r="7" fill="#0d1230"/><path d="M14 40 A38 38 0 0 1 40 13 L44 22 A30 30 0 0 0 24 43 Z" fill="#e1251b"/></svg>
+              <span class="tag">فرامل</span>
+            </a>
+            <a class="sh-item" href="/shop.html?category=%D9%83%D9%87%D8%B1%D8%A8%D8%A7%D8%A1%20%D9%88%D8%A5%D8%B4%D8%B9%D8%A7%D9%84" tabindex="-1">
+              <svg viewBox="0 0 100 100"><path d="M18 56 Q20 28 52 26 L84 30 Q90 44 84 64 L52 72 Q22 72 18 56Z" fill="#1a2040" stroke="#5d6580" stroke-width="2"/><ellipse cx="40" cy="50" rx="13" ry="13" fill="#cfe3ff"/><ellipse cx="40" cy="50" rx="7" ry="7" fill="#fff"/><ellipse cx="68" cy="48" rx="9" ry="9" fill="#9fb8ff"/><path d="M24 64 Q50 70 80 60" stroke="#8b8fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+              <span class="tag">فوانيس</span>
+            </a>
+            <a class="sh-item" href="/shop.html?category=%D9%81%D9%84%D8%A7%D8%AA%D8%B1%20%D9%88%D8%B5%D9%8A%D8%A7%D9%86%D8%A9" tabindex="-1">
+              <svg viewBox="0 0 100 100"><rect x="28" y="20" width="44" height="64" rx="8" fill="#2f33bf"/><rect x="28" y="20" width="44" height="10" rx="5" fill="#1b1f7a"/><rect x="34" y="40" width="32" height="22" rx="3" fill="#fff"/><text x="50" y="55" text-anchor="middle" font-size="9" font-weight="900" fill="#2f33bf" font-family="Archivo,sans-serif">OIL</text><g stroke="#4c51e0" stroke-width="2"><line x1="32" y1="70" x2="68" y2="70"/><line x1="32" y1="76" x2="68" y2="76"/></g></svg>
+              <span class="tag">فلاتر</span>
+            </a>
+          </div>
+          <div class="sh-shelf">
+            <a class="sh-item" href="/shop.html?category=%D8%B9%D9%81%D8%B4%D8%A9%20%D9%88%D8%AA%D8%B9%D9%84%D9%8A%D9%82" tabindex="-1">
+              <svg viewBox="0 0 100 100"><rect x="44" y="8" width="12" height="20" rx="3" fill="#a9b0c4"/><path d="M38 28 h24 v6 h-24z" fill="#5d6580"/><g fill="none" stroke="#e1251b" stroke-width="5" stroke-linecap="round"><path d="M34 38 L66 44 M34 50 L66 56 M34 62 L66 68"/></g><rect x="43" y="34" width="14" height="50" rx="4" fill="#3b4260"/><circle cx="50" cy="90" r="6" fill="none" stroke="#a9b0c4" stroke-width="4"/></svg>
+              <span class="tag">عفشة</span>
+            </a>
+            <a class="sh-item" href="/shop.html?category=%D9%85%D8%AD%D8%B1%D9%83" tabindex="-1">
+              <svg viewBox="0 0 100 100"><rect x="18" y="34" width="64" height="40" rx="6" fill="#3b4260"/><rect x="24" y="22" width="52" height="16" rx="4" fill="#5d6580"/><g fill="#a9b0c4"><rect x="28" y="26" width="8" height="8" rx="2"/><rect x="40" y="26" width="8" height="8" rx="2"/><rect x="52" y="26" width="8" height="8" rx="2"/><rect x="64" y="26" width="8" height="8" rx="2"/></g><circle cx="34" cy="56" r="10" fill="#1a2040" stroke="#8b8fff" stroke-width="3"/><rect x="50" y="46" width="26" height="6" rx="3" fill="#8b8fff"/><rect x="50" y="58" width="20" height="6" rx="3" fill="#2f33bf"/><rect x="10" y="48" width="8" height="16" rx="2" fill="#5d6580"/><rect x="82" y="48" width="8" height="16" rx="2" fill="#5d6580"/></svg>
+              <span class="tag">محرك</span>
+            </a>
+            <a class="sh-item" href="/shop.html?category=%D8%AA%D8%A8%D8%B1%D9%8A%D8%AF" tabindex="-1">
+              <svg viewBox="0 0 100 100"><rect x="14" y="24" width="72" height="52" rx="5" fill="#1a2040" stroke="#5d6580" stroke-width="3"/><g stroke="#8b93b3" stroke-width="2"><line x1="22" y1="30" x2="22" y2="70"/><line x1="30" y1="30" x2="30" y2="70"/><line x1="38" y1="30" x2="38" y2="70"/><line x1="46" y1="30" x2="46" y2="70"/><line x1="54" y1="30" x2="54" y2="70"/><line x1="62" y1="30" x2="62" y2="70"/><line x1="70" y1="30" x2="70" y2="70"/><line x1="78" y1="30" x2="78" y2="70"/></g><rect x="80" y="14" width="10" height="14" rx="3" fill="#2f33bf"/></svg>
+              <span class="tag">تبريد</span>
+            </a>
+          </div>
+          <div class="sh-receipt">
+            <div class="r-row"><span>🧾 <span data-i18n="sh_rcpt">طلب جاهز للتسليم</span></span><b>✓</b></div>
+            <div class="r-sub" data-i18n="sh_rcpt_sub">فحص · تغليف · شحن لكل المحافظات</div>
+          </div>
         </div>
       </div>
     </section>
@@ -71,23 +130,6 @@
           <span class="sb-text" data-i18n="sav_home_cta">عندك فاتورة أو مقايسة قطع غيار؟ اعرف كنت هتوفّر كام مع فيكس إت 💰</span>
           <span class="sb-go" data-i18n="nav_savings">احسب توفيرك 💰</span>
         </a>
-      </div>
-    </section>
-
-    <!-- دوّر بعربيتك -->
-    <section class="section">
-      <div class="container">
-        <div class="sbc-card">
-          <div class="sbc-head">
-            <span class="sbc-ic">🚗</span>
-            <div><h2 data-i18n="sbc_title">دوّر بعربيتك</h2><p data-i18n="sbc_sub">اختار الماركة والموديل، وهنوريك القطع اللي تناسبها</p></div>
-          </div>
-          <div class="sbc-form">
-            <select id="sbc-brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
-            <select id="sbc-model"></select>
-            <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -237,6 +279,27 @@
       location.href = '/shop.html?brand=' + encodeURIComponent(brand) + (model ? '&model=' + encodeURIComponent(model) : '');
     });
 
+
+    // 🏪 تبويبات كاونتر الهيرو + حالة المحل (مفتوح ١٢ الظهر – ١١ بالليل بتوقيت القاهرة، الجمعة إجازة)
+    document.querySelectorAll('.sh-tabs button').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.sh-tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      document.querySelectorAll('.sh-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === b.dataset.tab));
+      if (b.dataset.tab === 'q') document.querySelector('.sh-pane[data-pane="q"] input').focus();
+    }));
+    (function storeStatus() {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date());
+        const h = +parts.find((x) => x.type === 'hour').value % 24, wd = parts.find((x) => x.type === 'weekday').value;
+        const open = wd !== 'Fri' && h >= 12 && h < 23;
+        const el = document.getElementById('sh-open');
+        el.classList.toggle('closed', !open);
+        document.getElementById('sh-open-txt').textContent = open
+          ? (LANG === 'en' ? 'Open now · till 11 PM' : 'مفتوح دلوقتي · لحد ١١ بالليل')
+          : (LANG === 'en' ? 'Closed · opens 12 PM' : 'مقفول · بنفتح ١٢ الظهر');
+      } catch {}
+    })();
+    if (LANG === 'en') document.querySelectorAll('.sh-item .tag').forEach((t, i) => { t.textContent = ['Brakes', 'Lights', 'Filters', 'Suspension', 'Engine', 'Cooling'][i]; });
+
     // ⭐ آراء العملاء
     (function renderReviews() {
       const list = (window.SITE && SITE.reviews) || [];
@@ -251,8 +314,8 @@
     })();
 
     const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
-    document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
-      <a class="cat-card" href="/shop.html?category=${encodeURIComponent(c)}">
+    document.getElementById('cats-grid').innerHTML = CATS.map((c, i) => `
+      <a class="cat-card aisle" data-aisle="${(LANG === 'en' ? 'AISLE ' : 'ممر ') + String(i + 1).padStart(2, '0')}" href="/shop.html?category=${encodeURIComponent(c)}">
         <span class="icon">${categoryIcon(c)}</span>
         <span class="name">${catName(c)}</span>
       </a>`).join('');
