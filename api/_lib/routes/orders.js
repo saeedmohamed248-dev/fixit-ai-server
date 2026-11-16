@@ -7,6 +7,7 @@ import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, 
 import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { generateFromOrder } from './maintenance.js';
+import { applyToNewOrder, onOrderStatus } from './cashback.js';
 import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
 import { cors, requireAdmin, rateLimit, validPhone, calcDeposit } from '../util.js';
 
@@ -160,6 +161,15 @@ export default async function handler(req, res) {
         source: 'website',
       };
 
+      // 💰 كاش باك: استخدام الرصيد (للعميل المسجّل بس، برقم حسابه) + تسجيل الكاش باك المكتسب (معلّق لحد التسليم)
+      try {
+        const cb = await applyToNewOrder(order, { redeem: Boolean(user && user.phone && body.useCashback), phone: user && user.phone });
+        order.cashbackUsed = cb.cashbackUsed;
+        order.cashbackEarned = cb.cashbackEarned;
+        order.cashbackCampaign = cb.cashbackCampaign;
+        order.total -= cb.cashbackUsed;
+      } catch { /* الكاش باك مايوقفش الطلب */ }
+
       // 💵 عربون والباقي عند الاستلام — المبلغ بيتحسب هنا (مش من المتصفح) عشان محدش يغيّره
       if (order.payment === 'deposit') {
         let settings = {};
@@ -279,6 +289,7 @@ export default async function handler(req, res) {
       }
       const STATUS_AR = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
       order.status = status;
+      try { await onOrderStatus(order, status); } catch {}
       if (typeof req.body.adminNote === 'string') order.adminNote = req.body.adminNote;
       await saveOrders(orders);
       await logActivity('status', `📦 الطلب ${order.number} اتغيرت حالته إلى "${STATUS_AR[status]}"`);
