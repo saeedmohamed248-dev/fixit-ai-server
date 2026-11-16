@@ -24,7 +24,8 @@ const POS_GROUPS = [['امامي', 'front', 'قدام'], ['خلفي', 'rear', '�
 const POS = new Map(POS_GROUPS.flatMap((g, i) => g.map((w) => [w, i])));
 const OPPOSITE = { 0: 1, 1: 0, 2: 3, 3: 2 };
 const SYN = { 'فحمات': 'تيل', 'فحمة': 'تيل', 'باد': 'تيل', 'pads': 'تيل', 'pad': 'تيل', 'جيربوكس': 'فتيس', 'gearbox': 'فتيس', 'تنشنر': 'شداد', 'tensioner': 'شداد',
-  'كشاف': 'فانوس', 'headlight': 'فانوس', 'ابره': 'ابر', 'ابرة': 'ابر', 'radiator': 'رادياتير', 'رادياتر': 'رادياتير', 'مساعدين': 'مساعد', 'سيور': 'سير', 'belt': 'سير' };
+  'كشاف': 'فانوس', 'headlight': 'فانوس', 'ابره': 'ابر', 'ابرة': 'ابر', 'radiator': 'رادياتير', 'طرمبه': 'طلمبه', 'طرمبة': 'طلمبه', 'طلمبة': 'طلمبه', 'مضخه': 'طلمبه', 'pump': 'طلمبه', 'ميه': 'مياه', 'مية': 'مياه', 'مايه': 'مياه', 'water': 'مياه',
+  'بوجيه': 'بوجيهات', 'بوجيهات': 'بوجيهات', 'بوجي': 'بوجيهات', 'شمعات': 'بوجيهات', 'plugs': 'بوجيهات', 'موتور': 'محرك', 'engine': 'محرك', 'رادياتر': 'رادياتير', 'مساعدين': 'مساعد', 'سيور': 'سير', 'belt': 'سير' };
 function tokens(s) {
   return normText(s).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2).map((w) => SYN[w] || w);
 }
@@ -41,6 +42,9 @@ const tokHit = (w, have) => have.some((h) => h === w || (w.length >= 3 && h.leng
 function scoreProduct(want, prod, have, cars) {
   const core = want.filter((w) => !NOISE.has(w) && !POS.has(w) && !/^\d+$/.test(w));
   if (!core.length) return 0;
+  // «بدون فتيس» = القطعة مش فتيس
+  const neg = have.flatMap((h, i) => (h === 'بدون' || h === 'without') && have[i + 1] ? [have[i + 1]] : []);
+  if (core.some((w) => neg.includes(w))) return 0;
   const hits = core.filter((w) => tokHit(w, have)).length;
   if (!hits || hits < Math.ceil(core.length * 0.6)) return 0;
   let score = hits / core.length;
@@ -51,8 +55,17 @@ function scoreProduct(want, prod, have, cars) {
     else if (have.some((h) => POS.get(h) === OPPOSITE[g])) return 0; // كتب أمامي والمنتج خلفي
   }
   if (cars.length) {
+    // كل كود مطابق (شاسيه F30 / محرك N20) بيرفع الترتيب، والمحرك أهم.
+    // ولو القطعة مكتوب عليها موديل/محرك تاني غير اللي العميل كتبه → تنزل لتحت
     const txt = (prod.name + ' ' + (prod.models || []).join(' ') + ' ' + (prod.fits || []).join(' ')).toUpperCase();
-    if (cars.some((c) => new RegExp('\\b' + c + '\\b').test(txt))) score += 1;
+    const its = carCodes(txt);
+    const isEngine = (c) => /^[NBS]\d{2}$/.test(c);
+    for (const kind of [isEngine, (c) => !isEngine(c)]) {
+      const mine = cars.filter(kind), theirs = its.filter(kind);
+      if (!mine.length || !theirs.length) continue;
+      const hit = mine.some((c) => theirs.includes(c));
+      score += hit ? (kind === isEngine ? 1.5 : 1) : (kind === isEngine ? -1.2 : -0.6);
+    }
   }
   return score;
 }
