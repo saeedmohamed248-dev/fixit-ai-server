@@ -7,7 +7,7 @@ import { cors, requireAdmin } from '../util.js';
 // المفاتيح المسموح تعديلها من اللوحة
 const KEYS = [
   'storeName', 'accent', 'whatsapp', 'phoneDisplay',
-  'instapay', 'wallet', 'depositPct', 'depositMin', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId',
+  'instapay', 'wallet', 'depositPct', 'depositMin', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId', 'heroProducts',
 ];
 
 export default async function handler(req, res) {
@@ -27,6 +27,7 @@ export default async function handler(req, res) {
       }
       if ('gaId' in body) current.gaId = String(body.gaId || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
       if ('metaPixel' in body) current.metaPixel = String(body.metaPixel || '').replace(/\D/g, '').slice(0, 20);
+      if ('heroProducts' in body) current.heroProducts = (Array.isArray(body.heroProducts) ? body.heroProducts : []).map(String).slice(0, 6);
       await saveSettings(current);
       await logActivity('settings', 'تعديل إعدادات المتجر (الاسم/الألوان/الأرقام)');
       return res.status(200).json(current);
