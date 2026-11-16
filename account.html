@@ -132,6 +132,7 @@
       ` : `
       <div class="note" id="points-box" style="display: none;"></div>
       <div class="note" id="credit-box" style="display: none; background: #ecfdf3; border-color: #a6f4c5; color: #067647;"></div>
+      <div id="cashback-box" class="cbw" style="display: none;"></div>
 
       <h2 style="margin: 6px 0 14px;">${t('maint_title')}</h2>
       <div id="my-maint"><div class="spinner">${t('loading')}</div></div>
@@ -177,6 +178,41 @@
           cb.innerHTML = `${t('credit_balance', { v: moneyEGP(me.credit) })}<br><small>${t('credit_hint')}</small>`;
         }
       }).catch(() => {});
+
+      // 💰 محفظة الكاش باك + العروض الشغالة
+      const cbBox = document.getElementById('cashback-box');
+      if (cbBox) Promise.all([
+        api('/cashback?mine=1', { headers: userHeaders() }).catch(() => null),
+        api('/cashback?offers=1').catch(() => []),
+      ]).then(([w, offers]) => {
+        const L = (ar, en) => (LANG === 'en' ? en : ar);
+        const d = (x) => new Date(x).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG');
+        const hist = (w && w.history) || [];
+        if (!(w && (w.balance || w.pending || hist.length)) && !offers.length) return;
+        const live = hist.filter((e) => e.kind === 'lot' && e.status === 'active' && e.remaining > 0 && (!e.validUntil || new Date(e.validUntil) > new Date()));
+        const mult = live.reduce((m, e) => Math.max(m, e.multiplier || 1), 1);
+        const soon = live.filter((e) => e.validUntil).sort((a, b) => new Date(a.validUntil) - new Date(b.validUntil))[0];
+        const line = (e) => {
+          const txt = e.kind === 'lot'
+            ? (e.source === 'adjust' ? L('➕ رصيد مضاف', '➕ Credit added') : `🎁 ${L('كاش باك', 'Cashback')} ${e.orderNumber ? '— ' + esc(e.orderNumber) : ''}`)
+              + ` <small>${e.status === 'pending' ? L('⏳ بيتفعّل بعد الاستلام', '⏳ activates on delivery') : e.status === 'cancelled' ? L('❌ اتلغى', '❌ cancelled') : e.validUntil ? L('صالح لحد ', 'valid until ') + d(e.validUntil) : ''}</small>`
+            : e.kind === 'redeem' ? `🛒 ${L('استخدمته في', 'Used on')} ${esc(e.orderNumber)}${e.reversed ? ' <small>' + L('(رجع لرصيدك)', '(refunded)') + '</small>' : ''}`
+            : `➖ ${L('خصم', 'Deduction')}`;
+          const plus = e.kind === 'lot';
+          return `<div class="cbw-row"><span>${txt}</span><b class="${plus ? 'p' : 'm'}">${plus ? '+' : '−'}${money(e.amount)}</b></div>`;
+        };
+        cbBox.style.display = '';
+        cbBox.innerHTML = `
+          <div class="cbw-top">
+            <div><div class="cbw-l">💰 ${L('رصيد الكاش باك', 'Cashback balance')}</div><div class="cbw-v">${money((w && w.balance) || 0)}</div>
+              ${w && w.pending ? `<div class="cbw-s">⏳ ${L('معلّق', 'Pending')}: ${money(w.pending)} — ${L('بيتفعّل لما طلبك يتسلّم', 'activates when your order is delivered')}</div>` : ''}</div>
+            ${w && w.balance ? `<a class="btn btn-sm" href="/shop.html">${L('اشتري بيه دلوقتي', 'Spend it now')} ←</a>` : ''}
+          </div>
+          ${w && w.balance ? `<div class="cbw-rule">📌 ${L(`تقدر تستخدمه في أي طلب، بشرط الفاتورة تكون ${mult} أضعاف المبلغ اللي هتستخدمه (عشان رصيدك كله: فاتورة ${money(w.balance * mult)} أو أكتر). بيتخصم تلقائي من السلة.`, `Use it on any order that is at least ${mult}× the amount you use (${money(w.balance * mult)}+ to use it all). Apply it at checkout.`)}
+            ${soon ? `<br>⏰ ${L(`${money(soon.remaining)} منه بينتهي يوم ${d(soon.validUntil)}`, `${money(soon.remaining)} expires on ${d(soon.validUntil)}`)}` : ''}</div>` : ''}
+          ${offers.length ? `<div class="cbw-offers">${offers.map((o) => `<div>🔥 <b>${esc(o.name)}</b> — ${o.amountType === 'percent' ? o.value + '%' : money(o.value)} ${L('كاش باك', 'cashback')}${o.minPrice ? ' ' + L('على القطع من', 'on parts from') + ' ' + money(o.minPrice) : ''}${o.end ? ` · ${L('لحد', 'until')} ${d(o.end + 'T12:00:00')}` : ''}</div>`).join('')}</div>` : ''}
+          ${hist.length ? `<details class="cbw-h"><summary>${L('حركات الرصيد', 'Balance history')} (${hist.length})</summary>${hist.map(line).join('')}</details>` : ''}`;
+      });
 
       // 🔧 مواعيد الصيانة
       const maintBox = document.getElementById('my-maint');
