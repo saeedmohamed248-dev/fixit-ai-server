@@ -78,6 +78,17 @@
       .mi-row { grid-template-columns: 70px 1fr 38px; }
       .mi-row .n, .mi-row .c { grid-column: 1 / -1; }
     }
+    .opt-group { margin-top: 10px; border: 1px solid var(--line,#e4e8f2); border-radius: 12px; padding: 10px; }
+    .opt-q { font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+    .opt-q small { color: var(--muted); font-weight: 600; }
+    .opt-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .opt { border: 1px solid var(--line,#e4e8f2); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
+    .opt-img { aspect-ratio: 1; border-radius: 8px; background: var(--bg,#f5f7fc); display: grid; place-items: center; font-size: 28px; overflow: hidden; }
+    .opt-img img { width: 100%; height: 100%; object-fit: cover; }
+    .opt-name { font-size: 12.5px; font-weight: 700; line-height: 1.35; flex: 1; }
+    .opt-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .opt-foot b { color: #067647; font-size: 14px; flex: 1; }
+    .opt-save { font-size: 11px; background: #ecfdf3; color: #067647; padding: 1px 6px; border-radius: 999px; font-weight: 800; }
     @media (max-width: 520px){ .reg-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -373,8 +384,23 @@
           </tbody></table>`;
       }
 
-      // القطع اللي محتاجة مراجعة موظف (غير متأكد + غير موجود)
-      const staff = [...(data.unsure || []).map((u) => ({ ...u, why: t('sav_why_unsure') })),
+      // 🔎 قطع لقيناها بالاسم — نعرض أقرب الاختيارات بأسعارها والعميل يختار
+      const L2 = (ar, en) => (LANG === 'en' ? en : ar);
+      const withOpts = (data.unsure || []).filter((u) => (u.options || []).length);
+      if (withOpts.length) {
+        html += `<div class="sav-section-h">🔎 ${L2('لقينا القطع دي عندنا — اختار المناسبة لعربيتك', 'Found in our store — pick the one for your car')} (${withOpts.length})</div>
+          ${withOpts.map((u) => `<div class="opt-group"><div class="opt-q">«${esc(u.name)}»${u.qty > 1 ? ' ×' + u.qty : ''}${u.theirUnit ? ` <small>${L2('اتقالك', 'quoted')} ${money(u.theirUnit)}</small>` : ''}</div>
+            <div class="opt-list">${u.options.map((o) => `<div class="opt">
+              <a href="${productUrl(o)}" class="opt-img">${o.image ? `<img src="${esc(fixMediaUrl(o.image))}" alt="" loading="lazy" onerror="this.remove()">` : '🔧'}</a>
+              <a href="${productUrl(o)}" class="opt-name">${esc(o.name)}</a>
+              <div class="opt-foot"><b>${o.price ? money(o.price) : L2('السعر عند الطلب', 'Ask for price')}</b>
+                ${u.theirUnit && o.price && o.price < u.theirUnit ? `<span class="opt-save">${L2('توفّر', 'Save')} ${money(u.theirUnit - o.price)}</span>` : ''}
+                ${o.price ? `<button class="btn btn-sm" data-add="${esc(o.id)}" data-q="${u.qty || 1}">🛒</button>` : ''}</div>
+            </div>`).join('')}</div></div>`).join('')}
+          <div style="font-size:12.5px;color:var(--muted);margin-top:6px;">${L2('مش متأكد أنهي تركب؟ ابعتلنا رقم الشاسيه على واتساب ونحددهالك.', 'Not sure which fits? Send us your VIN on WhatsApp.')}</div>`;
+      }
+      // القطع اللي محتاجة مراجعة موظف (مش موجودة + اللي مالقيناش ليها اختيارات)
+      const staff = [...(data.unsure || []).filter((u) => !(u.options || []).length).map((u) => ({ ...u, why: t('sav_why_unsure') })),
                      ...(data.unmatched || []).map((u) => ({ ...u, why: t('sav_why_missing') }))];
       if (staff.length) {
         html += `<div class="sav-section-h">📞 ${t('sav_staff_title')} (${staff.length})</div>
@@ -389,6 +415,7 @@
           <a class="btn btn-green" target="_blank" rel="noopener" href="${waLink(t('sav_wa_msg'))}">${t('sav_cta_wa')}</a>
         </div>` + backBtn();
       $('sav-result').innerHTML = html;
+      $('sav-result').querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => { addToCart(b.dataset.add, Number(b.dataset.q) || 1); b.textContent = '✓'; }));
       wireBack();
     }
   </script>
