@@ -799,6 +799,47 @@ function starsHtml(avg, count) {
   return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> <span class="stars-count">(${count})</span>`;
 }
 
+/* ====== 💰 عروض الكاش باك (كاش محلي + تحديث من السيرفر) ====== */
+let CB_OFFERS = [];
+try { CB_OFFERS = JSON.parse(localStorage.getItem('cb_offers') || '[]'); } catch {}
+if (typeof fetch === 'function') fetch(API + '/cashback?offers=1').then((r) => r.json()).then((l) => {
+  if (!Array.isArray(l)) return;
+  const changed = JSON.stringify(l) !== JSON.stringify(CB_OFFERS);
+  CB_OFFERS = l; try { localStorage.setItem('cb_offers', JSON.stringify(l)); } catch {}
+  if (changed) document.dispatchEvent(new Event('cb-offers'));
+}).catch(() => {});
+// كام كاش باك هتاخد على قطعة واحدة من المنتج ده (أفضل عرض)
+function cashbackFor(p) {
+  if (isWholesale() || !p || !(Number(p.price) > 0)) return null;
+  let best = null;
+  for (const c of CB_OFFERS) {
+    const ids = c.productIds || [];
+    if (ids.length && !ids.includes(p.id)) continue;
+    if (Number(p.price) < (Number(c.minPrice) || 0)) continue;
+    let a = c.amountType === 'percent' ? p.price * c.value / 100 : Number(c.value);
+    if (Number(c.maxPerOrder) > 0) a = Math.min(a, Number(c.maxPerOrder));
+    a = Math.round(a);
+    if (a > 0 && (!best || a > best.amount)) best = { amount: a, offer: c };
+  }
+  return best;
+}
+function cashbackBadge(p, big) {
+  const cb = cashbackFor(p);
+  if (!cb) return '';
+  return big
+    ? `<div class="cb-pbadge">🎁 <b>${LANG === 'en' ? `Get ${money(cb.amount)} cashback` : `خد ${money(cb.amount)} كاش باك`}</b> <span>${LANG === 'en' ? 'to spend on your next order' : 'تشتري بيهم المرة الجاية'}${cb.offer.end ? (LANG === 'en' ? ' · offer ends ' : ' · العرض لحد ') + new Date(cb.offer.end + 'T12:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'long' }) : ''}</span></div>`
+    : `<span class="cb-cbadge">🎁 +${money(cb.amount)} ${LANG === 'en' ? 'cashback' : 'كاش باك'}</span>`;
+}
+
+/* ====== 🚚 تاريخ التوصيل المتوقع (قطاعي) — ٢-٤ أيام عمل، الجمعة مفيش شحن، الطلب بعد ٦ مساءً يتحسب من بكرة ====== */
+function deliveryWindow() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
+  const d = new Date(now); if (now.getHours() >= 18) d.setDate(d.getDate() + 1);
+  const addWork = (from, n) => { const x = new Date(from); while (n > 0) { x.setDate(x.getDate() + 1); if (x.getDay() !== 5) n--; } return x; };
+  const f = (x) => x.toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+  return { from: f(addWork(d, 2)), to: f(addWork(d, 4)), cutoff: now.getHours() < 18 ? 18 - now.getHours() : 0 };
+}
+
 function productCard(p) {
   const out = p.stock <= 0;
   const discount = !isWholesale() && p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
@@ -815,6 +856,7 @@ function productCard(p) {
         <span class="badge badge-brand">${esc(p.brand)}</span>
         ${p.supplier ? `<span class="badge badge-supplier" title="${t('supplier')}">${esc(p.supplier)}</span>` : ''}
         ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-used">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
+        ${p.stock > 0 ? cashbackBadge(p) : ''}
       </div>
       <h3 class="card-title">${esc(pname(p))}</h3>
       ${fitsCar(p) === true ? `<div class="fit-badge">✅ ${t('fits_yours')}</div>` : ''}
