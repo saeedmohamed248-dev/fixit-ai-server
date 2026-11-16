@@ -247,16 +247,28 @@
     const L = (ar, en) => (LANG === 'en' ? en : ar);
 
     // ✍️ صفوف القطع اليدوية
+    let rowSeq = 0;
     function addRow(v = {}) {
       const r = document.createElement('div'); r.className = 'mi-row';
-      r.innerHTML = `<input class="n" placeholder="${L('مثال: تيل فرامل أمامي', 'e.g. Front brake pads')}" value="${esc(v.name || '')}">
-        <input class="c" dir="ltr" placeholder="${L('مثال: 34116850568', 'e.g. 34116850568')}" value="${esc(v.code || '')}">
-        <input class="q" type="number" min="1" value="${v.qty || 1}">
-        <input class="p" type="number" min="0" placeholder="${L('ج.م', 'EGP')}" value="${v.price || ''}">
+      const k = 'mi' + (++rowSeq) + '_' + Date.now().toString(36); // أسماء مختلفة عشان سفاري مايملاش الصف الجديد بقيم الصف اللي قبله
+      const off = 'autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other"';
+      r.innerHTML = `<input class="n" name="${k}n" ${off} placeholder="${L('مثال: تيل فرامل أمامي', 'e.g. Front brake pads')}">
+        <input class="c" name="${k}c" ${off} autocapitalize="characters" dir="ltr" placeholder="${L('مثال: 34116850568', 'e.g. 34116850568')}">
+        <input class="q" name="${k}q" ${off} type="number" inputmode="numeric" min="1">
+        <input class="p" name="${k}p" ${off} type="number" inputmode="decimal" min="0" placeholder="${L('ج.م', 'EGP')}">
         <button type="button" class="rm" title="${L('حذف', 'Remove')}">×</button>`;
+      const want = { n: v.name || '', c: v.code || '', q: String(v.qty || 1), p: v.price ? String(v.price) : '' };
+      const apply = () => { for (const [cls, val] of Object.entries(want)) r.querySelector('.' + cls).value = val; };
+      apply();
+      let touched = false;
       r.querySelector('.rm').addEventListener('click', () => { r.remove(); if (!$('mi-rows').children.length) addRow(); syncBtn(); saveDraft(); });
-      r.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => { syncBtn(); saveDraft(); }));
+      r.querySelectorAll('input').forEach((i) => {
+        ['keydown', 'paste', 'beforeinput'].forEach((ev) => i.addEventListener(ev, () => { touched = true; }));
+        i.addEventListener('input', () => { syncBtn(); saveDraft(); });
+      });
       $('mi-rows').appendChild(r);
+      // لو المتصفح ملا الصف لوحده قبل ما العميل يكتب حاجة → نرجّعه للقيم الصح
+      [0, 120, 400].forEach((ms) => setTimeout(() => { if (!touched) apply(); }, ms));
     }
     $('mi-add').addEventListener('click', () => { if ($('mi-rows').children.length >= 30) return; addRow(); $('mi-rows').lastChild.querySelector('.n').focus(); });
     // 💾 مسودة: القطع وتفاصيل العربية والاختيارات بتتحفظ — لو رجع خطوة أو قفل الصفحة ورجع، يلاقيها
