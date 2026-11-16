@@ -62,6 +62,8 @@
         <div class="full"><button type="button" class="btn btn-outline btn-sm" id="m-estimate">🤖 قدّر الأبعاد والوزن بالذكاء الاصطناعي</button>
           <button type="button" class="btn btn-outline btn-sm" id="m-describe" style="margin-inline-start:8px;">🤖 اكتب الاسم الإنجليزي والوصف</button>
           <span id="m-estimate-status" class="upload-status"></span></div>
+        <div><label>🛡️ الضمان (بيظهر للعميل) — فاضي = من غير ضمان مكتوب</label><input id="m-warranty" placeholder="مثال: ٦ شهور / سنة / ١٤ يوم تجربة"></div>
+        <div><label>🛡️ الضمان بالإنجليزي (اختياري)</label><input id="m-warrantyEn" dir="ltr" placeholder="e.g. 6 months"></div>
         <div class="full"><label>🚚 ملاحظة التوصيل/الوصول (بتظهر للتاجر)</label><input id="m-deliveryNote" placeholder="مثال: يوصل مصر خلال شهر و10 أيام"></div>
         <div class="full"><label>🚚 ملاحظة التوصيل بالإنجليزي (اختياري)</label><input id="m-deliveryNoteEn" dir="ltr" placeholder="e.g. Arrives to Egypt in ~40 days"></div>
         <div><label>الكمية المتاحة</label><input id="m-stock" type="number" min="0" value="1"></div>
@@ -1031,7 +1033,7 @@
         }));
     }
 
-    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'originBranch', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'customsPct', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'deliveryNote', 'deliveryNoteEn', 'stock', 'image', 'images', 'description', 'descriptionEn'];
+    const FIELDS = ['name', 'nameEn', 'sku', 'oem', 'brand', 'condition', 'originBranch', 'category', 'models', 'price', 'oldPrice', 'wholesalePrice', 'customsPct', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'deliveryNote', 'deliveryNoteEn', 'warranty', 'warrantyEn', 'stock', 'image', 'images', 'description', 'descriptionEn'];
     function openModal(p) {
       editingId = p ? p.id : null;
       document.getElementById('modal-title').textContent = p ? 'تعديل منتج' : 'إضافة منتج';

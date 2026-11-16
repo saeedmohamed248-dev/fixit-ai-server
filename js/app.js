@@ -799,6 +799,9 @@ function starsHtml(avg, count) {
   return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> <span class="stars-count">(${count})</span>`;
 }
 
+/* ====== 🛡️ ضمان القطعة (من بيانات المنتج — مش ثابت) ====== */
+function warrantyText(p) { return !p ? '' : (LANG === 'en' && p.warrantyEn ? p.warrantyEn : p.warranty || ''); }
+
 /* ====== 💰 عروض الكاش باك (كاش محلي + تحديث من السيرفر) ====== */
 let CB_OFFERS = [];
 try { CB_OFFERS = JSON.parse(localStorage.getItem('cb_offers') || '[]'); } catch {}

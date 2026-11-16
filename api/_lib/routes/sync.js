@@ -139,6 +139,9 @@ export default async function handler(req, res) {
             // نخزّن مصدر الصورة (بدون التوقيع المؤقّت) عشان نعرف نتخطّاها لو متغيّرتش
             imageSource: item.image ? _stripQuery(item.image) : (existing?.imageSource || ''),
             description: item.description || existing?.description || '',
+            // 🛡️ الضمان لو موس تك بعته، وإلا نسيب اللي متكتب في اللوحة
+            warranty: item.warranty != null && String(item.warranty).trim() ? String(item.warranty).trim().slice(0, 60) : (existing?.warranty || ''),
+            warrantyEn: item.warrantyEn != null && String(item.warrantyEn).trim() ? String(item.warrantyEn).trim().slice(0, 60) : (existing?.warrantyEn || ''),
             // 🔢 كل أرقام البارت لنفس القطعة (الأساسي + الإضافية) — العميل يختار رقمه
             partNumbers: Array.isArray(item.partNumbers)
               ? item.partNumbers.map((x) => String(x || '').trim()).filter(Boolean)
