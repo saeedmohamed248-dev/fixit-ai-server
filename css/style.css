@@ -1517,3 +1517,18 @@ main .sh-grid:has(#sh-wall[style*="none"]){grid-template-columns:1fr}
 .cb-note{font-size:12.5px;color:#067647;background:#ecfdf3;border-radius:10px;padding:8px 10px}
 
 .no-deposit .ts-deposit{display:none}
+
+/* 💰 محفظة الكاش باك في حساب العميل */
+.cbw{background:linear-gradient(135deg,#0b1030,#1d2370);color:#fff;border-radius:18px;padding:18px;margin-bottom:18px;box-shadow:var(--shadow-md)}
+.cbw-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.cbw-l{font-size:13px;color:#c8cfe6;font-weight:700}
+.cbw-v{font-size:34px;font-weight:900;color:#5ef0a8;line-height:1.2}
+.cbw-s{font-size:12.5px;color:#ffd54a}
+.cbw .btn{background:#fff;color:var(--accent-dark)}
+.cbw-rule{margin-top:12px;font-size:13px;background:rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;line-height:1.7}
+.cbw-offers{margin-top:10px;font-size:13px;display:grid;gap:4px;background:rgba(255,213,74,.12);border:1px solid rgba(255,213,74,.35);border-radius:10px;padding:10px 12px}
+.cbw-h{margin-top:10px;font-size:13px}
+.cbw-h summary{cursor:pointer;color:#c8cfe6;font-weight:700}
+.cbw-row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
+.cbw-row small{color:#aab0d6}
+.cbw-row .p{color:#5ef0a8}.cbw-row .m{color:#ff9b9b}
