@@ -22,6 +22,7 @@
     .sav-card { max-width: 760px; margin: 20px auto; background: var(--card, #fff); border: 1px solid var(--border, #e4e7ec); border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
     .sav-steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
     .sav-steps .st { font-size: 12px; color: var(--muted); background: var(--bg,#f9fafb); border: 1px solid var(--border,#eef0f3); border-radius: 999px; padding: 5px 12px; }
+    .sav-steps .st { cursor: pointer; }
     .sav-steps .st.on { background: var(--accent-dark,#c2410c); color: #fff; border-color: transparent; }
     .reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .reg-grid .full { grid-column: 1/-1; }
@@ -241,12 +242,34 @@
         <input class="q" type="number" min="1" value="${v.qty || 1}">
         <input class="p" type="number" min="0" placeholder="${L('ج.م', 'EGP')}" value="${v.price || ''}">
         <button type="button" class="rm" title="${L('حذف', 'Remove')}">×</button>`;
-      r.querySelector('.rm').addEventListener('click', () => { r.remove(); if (!$('mi-rows').children.length) addRow(); syncBtn(); });
-      r.querySelectorAll('input').forEach((i) => i.addEventListener('input', syncBtn));
+      r.querySelector('.rm').addEventListener('click', () => { r.remove(); if (!$('mi-rows').children.length) addRow(); syncBtn(); saveDraft(); });
+      r.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => { syncBtn(); saveDraft(); }));
       $('mi-rows').appendChild(r);
     }
     $('mi-add').addEventListener('click', () => { if ($('mi-rows').children.length >= 30) return; addRow(); $('mi-rows').lastChild.querySelector('.n').focus(); });
-    addRow(); addRow();
+    // 💾 مسودة: القطع وتفاصيل العربية والاختيارات بتتحفظ — لو رجع خطوة أو قفل الصفحة ورجع، يلاقيها
+    const CD = ['cd-model', 'cd-year', 'cd-engine', 'cd-vin'];
+    let picksByName = {}; // اسم البند → القطعة المختارة
+    let removedNames = {};
+    function saveDraft() {
+      try {
+        localStorage.setItem('sav_draft', JSON.stringify({
+          mode, car: Object.fromEntries(CD.map((id) => [id, $(id).value])),
+          rows: [...$('mi-rows').children].map((r) => ({ name: r.querySelector('.n').value, code: r.querySelector('.c').value, qty: r.querySelector('.q').value, price: r.querySelector('.p').value })),
+          picks: picksByName, removed: removedNames, at: Date.now(),
+        }));
+      } catch {}
+    }
+    let draft = null;
+    try { draft = JSON.parse(localStorage.getItem('sav_draft') || 'null'); } catch {}
+    if (draft && Date.now() - (draft.at || 0) > 30 * 86400000) draft = null; // أقدم من شهر → نبدأ جديد
+    if (draft && Array.isArray(draft.rows) && draft.rows.some((r) => r.name || r.code)) draft.rows.forEach((r) => addRow(r));
+    else { addRow(); addRow(); }
+    if (draft) {
+      CD.forEach((id) => { if (draft.car && draft.car[id]) $(id).value = draft.car[id]; });
+      picksByName = draft.picks || {}; removedNames = draft.removed || {};
+    }
+    CD.forEach((id) => $(id).addEventListener('input', saveDraft));
     function manualItems() {
       return [...$('mi-rows').children].map((r) => ({
         name: r.querySelector('.n').value.trim(),
@@ -282,25 +305,19 @@
       err.style.display = 'none';
       customer = { name, phone, car };
       try { localStorage.setItem('sav_customer', JSON.stringify(customer)); } catch {}
-      $('stage-reg').style.display = 'none';
-      $('stage-upload').style.display = '';
-      setStep(2);
-      updateModeHint();
+      goStage(2);
     });
     function showRegErr(m) { const e = $('reg-err'); e.textContent = m; e.style.display = ''; }
 
-    $('reg-back').addEventListener('click', () => {
-      $('stage-upload').style.display = 'none';
-      $('stage-reg').style.display = '';
-      setStep(1);
-    });
+    $('reg-back').addEventListener('click', () => goStage(1));
 
     // اختيار الوضع
     ['invoice', 'quote', 'manual'].forEach((m) => $('mode-' + m).addEventListener('click', () => {
-      mode = m;
+      mode = m; saveDraft();
       ['invoice', 'quote', 'manual'].forEach((x) => $('mode-' + x).classList.toggle('on', x === m));
       updateModeHint();
     }));
+    if (draft && ['invoice', 'quote', 'manual'].includes(draft.mode)) $('mode-' + draft.mode).click();
 
     // ضغط الصور قبل الرفع
     function compress(file) {
@@ -344,6 +361,7 @@
       if (mode === 'manual' && manualItems().some((i) => !i.name && i.code.length < 4)) return toast(L('اكتب اسم القطعة أو رقمها', 'Enter a part name or number'));
       $('stage-upload').style.display = 'none';
       $('sav-result').style.display = 'none';
+      try { history.pushState({ savStage: 3 }, ''); } catch {}
       $('sav-loading').style.display = '';
       setStep(3);
       try {
@@ -361,8 +379,39 @@
         wireBack();
       }
     }
-    function backBtn() { return `<div class="sav-cta"><button class="btn btn-outline" id="again" data-i18n="sav_again">${t('sav_again')}</button></div>`; }
-    function wireBack() { const b = $('again'); if (b) b.addEventListener('click', () => location.reload()); }
+    function backBtn() { return `<div class="sav-cta">
+      <button class="btn btn-outline" id="edit-back">→ ${L('رجوع وتعديل القطع', 'Back & edit parts')}</button>
+      <button class="btn btn-outline" id="again" data-i18n="sav_again">${t('sav_again')}</button></div>`; }
+    function goStage(n, push = true) {
+      $('stage-reg').style.display = n === 1 ? '' : 'none';
+      $('stage-upload').style.display = n === 2 ? '' : 'none';
+      $('sav-result').style.display = n === 3 && $('sav-result').innerHTML ? '' : 'none';
+      $('sav-loading').style.display = 'none';
+      setStep(n);
+      if (n === 2) updateModeHint();
+      if (push) try { history.pushState({ savStage: n }, ''); } catch {}
+      window.scrollTo({ top: $('step1').getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+    }
+    // زرار الرجوع في الموبايل/المتصفح يرجّع خطوة بدل ما يخرج من الصفحة
+    try { history.replaceState({ savStage: 1 }, ''); } catch {}
+    window.addEventListener('popstate', (e) => { const n = e.state && e.state.savStage; if (n) goStage(n, false); });
+    // الضغط على الخطوات اللي فاتت
+    [1, 2, 3].forEach((n) => $('step' + n).addEventListener('click', () => {
+      if (!$('step' + n).classList.contains('on') || n === currentStage()) return;
+      if (n === 3 && !$('sav-result').innerHTML) return;
+      goStage(n);
+    }));
+    function currentStage() { return $('stage-reg').style.display !== 'none' ? 1 : $('stage-upload').style.display !== 'none' ? 2 : 3; }
+    function wireBack() {
+      const b = $('again');
+      if (b) b.addEventListener('click', () => {
+        if (!confirm(L('هتبدأ فاتورة جديدة وتمسح القطع اللي كتبتها؟', 'Start over and clear your parts?'))) return;
+        try { localStorage.removeItem('sav_draft'); } catch {}
+        location.reload();
+      });
+      const e = $('edit-back');
+      if (e) e.addEventListener('click', () => goStage(2));
+    }
 
     function partCell(m) {
       const p = m.product || {};
@@ -388,7 +437,16 @@
       const lines = [
         ...conf.map((m) => ({ name: m.name, qty: m.qty || 1, theirUnit: m.theirUnit || 0, options: [m.product], pick: m.product.id, exact: true })),
         ...withOpts.map((u) => ({ name: u.name, qty: u.qty || 1, theirUnit: u.theirUnit || 0, options: u.options.filter((o) => o.price > 0).length ? u.options : u.options, pick: null })),
-      ].map((l, i) => ({ ...l, i, removed: false }));
+      ].map((l, i) => {
+        // نرجّع اختيارات العميل اللي فاتت لنفس البند (بالاسم)
+        const prev = picksByName[l.name];
+        const pick = l.exact ? l.pick : (prev && l.options.some((o) => o.id === prev) ? prev : l.pick);
+        return { ...l, i, pick, removed: Boolean(removedNames[l.name]) };
+      });
+      const remember = () => {
+        lines.forEach((l) => { if (!l.exact) { if (l.pick) picksByName[l.name] = l.pick; else delete picksByName[l.name]; } if (l.removed) removedNames[l.name] = 1; else delete removedNames[l.name]; });
+        saveDraft();
+      };
 
       const optCard = (l, o) => `<div class="opt ${l.pick === o.id ? 'on' : ''}" data-line="${l.i}" data-pick="${esc(o.id)}" role="button" tabindex="0">
           <span class="opt-check">${l.pick === o.id ? '✓' : ''}</span>
@@ -450,6 +508,7 @@
         const y = window.scrollY;
         $('sav-result').innerHTML = html;
         window.scrollTo(0, y);
+        remember();
         wire();
       }
 
