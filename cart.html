@@ -469,8 +469,8 @@
             <label>${t('pay_method')}</label>
             <div class="pay-options">
               ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
-              ${(() => { const dp = calcDeposit(total); return `<label class="pay-option"><input type="radio" name="pay" value="deposit" checked> ${t('pay_deposit', { d: money(dp.deposit), b: money(dp.balance) })}</label>`; })()}
-              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
+              ${SITE.depositOff ? '' : (() => { const dp = calcDeposit(total); return `<label class="pay-option"><input type="radio" name="pay" value="deposit" checked> ${t('pay_deposit', { d: money(dp.deposit), b: money(dp.balance) })}</label>`; })()}
+              <label class="pay-option"><input type="radio" name="pay" value="instapay" ${SITE.depositOff ? 'checked' : ''}> ${t('pay_instapay')}</label>
               <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
           </div>

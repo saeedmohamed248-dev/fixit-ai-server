@@ -2201,6 +2201,16 @@
             <div><label>💵 أقل عربون (ج.م)</label><input id="s-depositMin" type="number" min="0" value="${s.depositMin ?? (SITE.deposit || {}).min ?? 300}"></div>
             <div><label>شحن مجاني فوق (ج.م) — اكتب 0 للإلغاء</label><input id="s-freeShippingOver" type="number" min="0" value="${s.freeShippingOver ?? SITE.freeShippingOver}"></div>
             <div></div>
+            <div class="full" style="border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafbff;">
+              <b>🔀 إيقاف مؤقت</b> <small style="color:var(--muted);">— لو حطيت تاريخ رجوع، بيرجع يشتغل تلقائي بعده. سيبه فاضي = متوقف لحد ما ترجّعه بإيدك.</small>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                <div><label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="s-freeShipOn" style="width:auto;" ${s.freeShipOff === true ? '' : 'checked'}> 🚚 الشحن المجاني شغال</label>
+                  <label style="font-size:12px;margin-top:6px;">لو موقّفه — يرجع تلقائي بعد يوم:</label><input type="date" id="s-freeShipOffUntil" value="${esc(s.freeShipOffUntil || '')}"></div>
+                <div><label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="s-depositOn" style="width:auto;" ${s.depositOff === true ? '' : 'checked'}> 💵 العربون والباقي عند الاستلام شغال</label>
+                  <label style="font-size:12px;margin-top:6px;">لو موقّفه — يرجع تلقائي بعد يوم:</label><input type="date" id="s-depositOffUntil" value="${esc(s.depositOffUntil || '')}"></div>
+              </div>
+              <small style="color:var(--muted);display:block;margin-top:8px;">لما الشحن المجاني يقف: كلمة «مجاني» بتختفي من الشريط العلوي والسلة. لما العربون يقف: اختيار العربون بيختفي من الدفع ومن مميزات الصفحة الرئيسية، والعميل بيدفع بالتحويل أو البطاقة. (لو كاتب رسالة شريط علوي بنفسك فيها «مجاني» عدّلها برضه.)</small>
+            </div>
             <div class="full"><label>رسالة الشريط العلوي (عربي) — سيبها فاضية للافتراضي</label><input id="s-topbarAr" value="${esc(s.topbarAr || '')}" placeholder="🚚 شحن لجميع المحافظات — مجاني فوق ٥٬٠٠٠ ج.م"></div>
             <div class="full"><label>رسالة الشريط العلوي (إنجليزي)</label><input id="s-topbarEn" dir="ltr" value="${esc(s.topbarEn || '')}" placeholder="🚚 Delivery all over Egypt"></div>
           </div>
@@ -2292,6 +2302,10 @@
             ['storeName', 'accent', 'whatsapp', 'phoneDisplay', 'instapay', 'wallet', 'depositPct', 'depositMin', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId']
               .forEach((k) => { body[k] = document.getElementById('s-' + k).value.trim(); });
             body.heroProducts = heroSel;
+            body.freeShipOff = !document.getElementById('s-freeShipOn').checked;
+            body.depositOff = !document.getElementById('s-depositOn').checked;
+            body.freeShipOffUntil = document.getElementById('s-freeShipOffUntil').value;
+            body.depositOffUntil = document.getElementById('s-depositOffUntil').value;
             const saved = await api('/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
             localStorage.setItem('site_settings', JSON.stringify(saved));
             applySettings(saved);
