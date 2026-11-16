@@ -68,7 +68,7 @@
           return;
         }
         const currentIndex = STEPS.findIndex((s) => s.key === o.status);
-        const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[o.payment] || '';
+        const payLabel = { cod: t('pay_cod'), deposit: t('pay_deposit_short'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[o.payment] || '';
         result.innerHTML = `
         <div class="order-card">
           <div class="head">
@@ -87,6 +87,7 @@
             <b>${moneyEGP(o.total)}</b>
             <span style="color: var(--muted); font-size: 13px;">${payLabel}</span>
           </div>
+          ${o.payment === 'deposit' && o.deposit !== undefined ? `<div style="font-size: 13px; color: var(--muted); margin-top: 6px;">${t('deposit_label')}: <b>${moneyEGP(o.deposit)}</b> · ${t('balance_label')}: <b>${moneyEGP(o.balanceDue)}</b></div>` : ''}
         </div>
         ${o.status === 'delivered' && !window.Capacitor ? `<div class="order-card" style="margin-top:12px">
           <b>${LANG === 'en' ? 'Rate your parts ⭐' : 'قيّم القطع اللي اشتريتها ⭐'}</b>

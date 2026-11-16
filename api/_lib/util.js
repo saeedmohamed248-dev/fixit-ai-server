@@ -32,6 +32,22 @@ export function validPhone(phone) {
   return /^01\d{9}$/.test(String(phone || '').replace(/[\s-]/g, ''));
 }
 
+// 💵 العربون: العميل يحوّل جزء من قيمة الطلب (انستاباي/محفظة) والباقي كاش عند الاستلام.
+//    النسبة والحد الأدنى بيتغيروا من لوحة التحكم (depositPct / depositMin).
+//    العربون بيتقرّب لأعلى ١٠ جنيه، ومايزيدش عن قيمة الطلب.
+export const DEPOSIT_DEFAULTS = { pct: 20, min: 300 };
+export function calcDeposit(total, settings = {}) {
+  const t = Math.max(0, Math.round(Number(total) || 0));
+  let pct = Number(settings.depositPct);
+  if (!Number.isFinite(pct) || pct <= 0) pct = DEPOSIT_DEFAULTS.pct;
+  pct = Math.min(90, Math.max(5, pct));
+  let min = settings.depositMin === undefined || settings.depositMin === '' ? DEPOSIT_DEFAULTS.min : Number(settings.depositMin);
+  if (!Number.isFinite(min) || min < 0) min = DEPOSIT_DEFAULTS.min;
+  let deposit = Math.ceil((t * pct) / 100 / 10) * 10;
+  deposit = Math.min(t, Math.max(deposit, min));
+  return { deposit, balance: t - deposit, pct };
+}
+
 // رقم موبايل دولي صحيح (لتجار الجملة: الإمارات/روسيا/أي بلد) — 7 لـ 15 رقم مع + اختيارية
 export function validIntlPhone(phone) {
   return /^\+?\d{7,15}$/.test(String(phone || '').replace(/[\s-]/g, ''));

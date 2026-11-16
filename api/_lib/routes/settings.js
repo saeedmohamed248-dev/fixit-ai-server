@@ -7,7 +7,7 @@ import { cors, requireAdmin } from '../util.js';
 // المفاتيح المسموح تعديلها من اللوحة
 const KEYS = [
   'storeName', 'accent', 'whatsapp', 'phoneDisplay',
-  'instapay', 'wallet', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId',
+  'instapay', 'wallet', 'depositPct', 'depositMin', 'freeShippingOver', 'topbarAr', 'topbarEn', 'metaPixel', 'gaId',
 ];
 
 export default async function handler(req, res) {

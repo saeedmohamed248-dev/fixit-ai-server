@@ -440,7 +440,8 @@
             <label>${t('pay_method')}</label>
             <div class="pay-options">
               ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
-              <label class="pay-option"><input type="radio" name="pay" value="instapay" checked> ${t('pay_instapay')}</label>
+              ${(() => { const dp = calcDeposit(total); return `<label class="pay-option"><input type="radio" name="pay" value="deposit" checked> ${t('pay_deposit', { d: money(dp.deposit), b: money(dp.balance) })}</label>`; })()}
+              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
               <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
           </div>
@@ -588,12 +589,16 @@
     function showSuccess(order) {
       trackEvent('order_placed', { ord: order.number, val: order.total });
       const lines = order.items.map((i) => `• ${i.name} × ${i.qty}`).join('\n');
-      const payLabel = { cod: t('pay_cod'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[order.payment];
-      const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${LANG === 'en' ? 'EGP' : 'جنيه'}`;
+      const payLabel = { cod: t('pay_cod'), deposit: t('pay_deposit_short'), instapay: t('pay_instapay'), wallet: t('pay_wallet'), card: t('pay_card') }[order.payment];
+      const cur = LANG === 'en' ? 'EGP' : 'جنيه';
+      const depLine = order.payment === 'deposit' ? `\n${t('deposit_label')}: ${order.deposit} ${cur} — ${t('balance_label')}: ${order.balanceDue} ${cur}` : '';
+      const waText = `${LANG === 'en' ? 'New website order 🛒' : 'طلب جديد من الموقع 🛒'}\n${t('order_no')} ${order.number}\n${order.customer.name} — ${order.customer.phone}\n${lines}\n${payLabel}\n${t('total_due')}: ${order.total} ${cur}${depLine}`;
 
       let payBox = '';
       if (order.payment === 'card' && !order.paid) {
         payBox = `<button class="btn" onclick='payCard("${esc(order.number)}", "${esc(order.customer.phone)}")'>${t('pay_now')}</button>`;
+      } else if (order.payment === 'deposit') {
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_deposit', { d: money(order.deposit), b: money(order.balanceDue), n: esc(SITE.instapay) })}</div>`;
       } else if (order.payment === 'instapay') {
         payBox = `<div class="note" style="text-align: start;">${t('pay_step_instapay', { v: money(order.total), n: esc(SITE.instapay) })}</div>`;
       } else if (order.payment === 'wallet') {

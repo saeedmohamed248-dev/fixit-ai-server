@@ -1448,3 +1448,10 @@ body.has-cartbar .toast{bottom:92px}
 .toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:12px;white-space:nowrap}
 .toast-action{color:#fff;background:var(--accent);padding:6px 12px;border-radius:999px;font-weight:800;text-decoration:none}
 @media (prefers-reduced-motion: reduce){.cart-bar{animation:none}}
+
+/* 📞 زرار اتصال عائم — فوق زرار الواتساب (الناحية التانية فيها فقاعة الشات) */
+.call-float{position:fixed;bottom:calc(88px + var(--safe-bottom,0px));inset-inline-start:22px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:60;text-decoration:none;transition:.2s}
+.call-float:hover{transform:scale(1.08)}
+.scroll-top{bottom:calc(156px + var(--safe-bottom,0px)) !important}
+body.has-cartbar .call-float{bottom:calc(152px + var(--safe-bottom,0px))}
+body.has-cartbar .scroll-top{bottom:calc(220px + var(--safe-bottom,0px)) !important}
