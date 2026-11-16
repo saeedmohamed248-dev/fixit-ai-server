@@ -170,6 +170,14 @@ export default async function handler(req, res) {
         order.total -= cb.cashbackUsed;
       } catch { /* الكاش باك مايوقفش الطلب */ }
 
+      // 🔀 العربون متوقف مؤقتاً من الأدمن → نحوّل الطلب لتحويل كامل
+      if (order.payment === 'deposit') {
+        let st = {};
+        try { st = await getSettings(); } catch {}
+        const until = st.depositOffUntil;
+        if (st.depositOff === true && !(until && Date.now() > new Date(until + 'T23:59:59+02:00').getTime())) order.payment = 'instapay';
+      }
+
       // 💵 عربون والباقي عند الاستلام — المبلغ بيتحسب هنا (مش من المتصفح) عشان محدش يغيّره
       if (order.payment === 'deposit') {
         let settings = {};

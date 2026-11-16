@@ -339,6 +339,12 @@ function px(ev, data) {
 }
 function pxCurrency() { return isWholesale() ? (WCUR === 'usd' ? 'USD' : 'AED') : 'EGP'; }
 
+function featureOn(s, key) {
+  if (!s || s[key + 'Off'] !== true) return true;
+  const until = s[key + 'OffUntil'];
+  return Boolean(until && Date.now() > new Date(until + 'T23:59:59+02:00').getTime());
+}
+
 function applySettings(s) {
   if (!s || typeof s !== 'object') return;
   window.SETTINGS = s;
@@ -361,6 +367,10 @@ function applySettings(s) {
   if (s.freeShippingOver !== undefined && s.freeShippingOver !== '') {
     SITE.freeShippingOver = Number(s.freeShippingOver) || 0;
   }
+  // 🔀 مفاتيح مؤقتة من الأدمن: إيقاف الشحن المجاني / العربون (ولو فيه تاريخ رجوع، بيرجع تلقائي بعده)
+  if (!featureOn(s, 'freeShip')) SITE.freeShippingOver = 0;
+  SITE.depositOff = !featureOn(s, 'deposit');
+  document.documentElement.classList.toggle('no-deposit', SITE.depositOff);
 }
 
 // نطبق نسخة متخزنة فوراً (من غير وميض)، وبعدين نحدّث من السيرفر
@@ -1071,7 +1081,7 @@ function renderLayout(active = '') {
         <div>
           <div class="logo logo-brand">${SITE.name && SITE.name !== 'FixIt' ? `<span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span>` : fixitLogoMark(32)}</div>
           <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
-          <div class="pay-badges">${t('pay_badges')}</div>
+          <div class="pay-badges">${SITE.depositOff ? t('pay_badges').replace(/^[^&]*&nbsp;\s*/, '') : t('pay_badges')}</div>
         </div>
         <div>
           <h4>${t('footer_shop')}</h4>
