@@ -434,7 +434,7 @@
             ? { mode, customer: { ...customer, carDetails: { model: $('cd-model').value.trim(), year: $('cd-year').value.trim(), engine: $('cd-engine').value.trim(), vin: $('cd-vin').value.trim() } }, items: manualItems() }
             : { mode, customer, images }),
         });
-        trackEvent('savings_lead');
+        trackEvent('savings_lead'); // 📣 بيروح لفيسبوك كـ Lead (إعلان حاسبة التوفير)
         renderResult(data);
       } catch (e) {
         $('sav-result').innerHTML = `<div class="sav-err">${esc(e.message) || t('sav_err')}</div>` + backBtn();
