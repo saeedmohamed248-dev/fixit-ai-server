@@ -465,7 +465,7 @@ function trackPageview(extra = {}) {
 function trackEvent(ev, extra = {}) {
   track('event', { ev, ...extra });
   // 📣 نفس الأحداث بتروح لفيسبوك بالأسماء القياسية (للإعلانات والـ Retargeting)
-  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead' };
+  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
   if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
   else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
   else if (ev === 'wa_click') px('Contact', {});
