@@ -60,7 +60,7 @@ const I18N = {
   trust_title: { ar: 'ليه تشتري جملة من FixIt Trade', en: 'Why buy wholesale from FixIt Trade' },
   trust_countries: { ar: 'نصدّر لـ', en: 'We export to' },
   trust_lead: { ar: 'مدة التوريد', en: 'Lead time' },
-  trust_ship: { ar: 'الشحن', en: 'Shipping' },
+  trust_ship_ws: { ar: 'الشحن', en: 'Shipping' }, // 🐛 [FIX]: كان مكرر باسم trust_ship فبيتغطّى بنص القطاعي «شحن لكل المحافظات»
   trust_pay: { ar: 'شروط الدفع', en: 'Payment terms' },
   trust_carton: { ar: 'التغليف', en: 'Packing' },
   trust_moq: { ar: 'أقل كمية للطلب', en: 'Min. order qty' },
