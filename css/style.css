@@ -1576,3 +1576,33 @@ body.lb-open [class^="mtw-"]{display:none!important}
 .svw-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px}
 .svw-parts>div{background:#fff;border-radius:10px;padding:8px 10px;font-size:12.5px;display:flex;justify-content:space-between;gap:6px}
 .svw-parts b{color:#067647}
+
+/* ================= 🌐 كارت الجملة (ws-card) — تفاصيل التاجر ================= */
+[data-mode="wholesale"] .ws-card { border-radius: 16px; background: linear-gradient(180deg, #181d25, #13171e); }
+[data-mode="wholesale"] .ws-card:hover { transform: translateY(-3px); }
+.ws-media { background: #0f131a !important; }
+.ws-media .ws-img { aspect-ratio: 16/9; object-fit: contain; background: #fff; }
+.ws-plate { aspect-ratio: 16/8; width: 100%; position: relative; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; overflow: hidden;
+  background: radial-gradient(120% 90% at 85% 10%, rgba(242,181,60,.16), transparent 55%), linear-gradient(135deg, #1b2230, #10141b); }
+.ws-plate-mini { background: radial-gradient(120% 90% at 85% 10%, rgba(227,38,46,.18), transparent 55%), linear-gradient(135deg, #22191b, #10141b); }
+.ws-plate-brand { font-size: 12px; font-weight: 800; letter-spacing: 3px; color: var(--muted); }
+.ws-plate-model { font-size: 30px; font-weight: 900; letter-spacing: 1px; color: var(--text); direction: ltr; }
+.ws-plate-ic { position: absolute; inset-inline-end: 12px; bottom: 6px; font-size: 26px; opacity: .35; }
+.ws-low { position: absolute; top: 10px; inset-inline-end: 10px; background: rgba(245,158,11,.92); color: #1b1203;
+  font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+.ws-body { gap: 10px; padding: 14px 14px 14px; }
+.ws-specs { display: grid; gap: 4px; background: rgba(255,255,255,.03); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 10px; }
+.ws-spec { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.ws-spec span { color: var(--muted); white-space: nowrap; }
+.ws-spec b { color: var(--text); font-weight: 700; text-align: end; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-price { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.ws-price small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 700; }
+/* لون ثابت: إعدادات المتجر بتغيّر --accent للأزرق فبيضيع على الخلفية الداكنة */
+[data-mode="wholesale"] .ws-price .price { font-size: 22px; color: #f2b53c !important; font-family: inherit; letter-spacing: 0; }
+.ws-best { text-align: end; background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25); border-radius: 10px; padding: 4px 10px; }
+.ws-best b { color: #4ade80; font-size: 15px; }
+.ws-add { width: 100%; border: 0; cursor: pointer; border-radius: 10px; padding: 10px; font: inherit; font-weight: 800; font-size: 14px;
+  background: #f2b53c; color: #14110a; transition: .15s; }
+.ws-add:hover { filter: brightness(1.08); }
+.ws-out { text-align: center; padding: 8px; }
