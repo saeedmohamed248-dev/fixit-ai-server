@@ -43,8 +43,11 @@ export default async function handler(req, res) {
       if (req.query.oos && q) {
         const hits = list.filter((p) => !(Number(p.stock) > 0))
           .map((p) => [p, searchScore(p, q)]).filter(([, sc]) => sc >= 100)
-          .sort((a, b) => b[1] - a[1]).slice(0, 5)
-          .map(([p]) => ({ id: p.id, name: p.name, nameEn: p.nameEn, price: Number(p.price) || 0, image: (p.images && p.images[0]) || p.image || '' }));
+          .sort((a, b) => b[1] - a[1]).slice(0, 20)
+          // الفرع بيتبعت عشان الواجهة تفلتر بنفس wsCatalogFilter: قطع الإمارات ماتظهرش لعملاء مصر والعكس
+          .map(([p]) => ({ id: p.id, name: p.name, nameEn: p.nameEn, price: Number(p.price) || 0, image: (p.images && p.images[0]) || p.image || '',
+            originBranch: p.originBranch || '', originLocation: p.originLocation || '',
+            branches: (p.branches || []).map((b) => ({ name: b.name, location: b.location, stock: Number(b.stock) || 0 })) }));
         return res.status(200).json(hits);
       }
       // 🚫 إخفاء المنتجات اللي مخزونها صفر من المتجر تلقائياً (المتجر يعرض المتاح بس).

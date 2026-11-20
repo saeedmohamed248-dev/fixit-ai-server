@@ -219,7 +219,7 @@
         // 📦 البحث مالقاش حاجة متاحة؟ نشوف لو القطعة في كتالوجنا وخلصت — نعرضها في خانة "اطلبها"
         oosHits = [];
         if (qs.get('q') && (!lastResults.length || lastResults[0]._near) && !isWholesale()) {
-          try { oosHits = await api('/products?oos=1&q=' + encodeURIComponent(qs.get('q'))); } catch (_) { oosHits = []; }
+          try { oosHits = wsCatalogFilter(await api('/products?oos=1&q=' + encodeURIComponent(qs.get('q')))).slice(0, 5); } catch (_) { oosHits = []; } // 🇪🇬/🇦🇪 نفس فلتر الفرع
         }
         renderGarageBar();
         currentPage = 1;
