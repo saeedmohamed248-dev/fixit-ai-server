@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/product/:id",
+      "destination": "/shop.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",

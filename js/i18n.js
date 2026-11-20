@@ -55,6 +55,9 @@ const I18N = {
   trade_cta_browse: { ar: 'تصفّح الكتالوج', en: 'Browse Catalog' },
   trade_cta_quote: { ar: 'اطلب عرض سعر', en: 'Request a Quote' },
   trade_cta_join: { ar: 'افتح حساب تاجر', en: 'Open Trader Account' },
+  // 🐛 [FIX]: أكتر من نص زوار صفحة الجملة كانوا بيمشوا عند "سجّل الأول" — دلوقتي في طريق من غير تسجيل
+  trade_wa_pricelist: { ar: 'ابعتلي ليستة أسعار النهارده على واتساب (من غير تسجيل)', en: "WhatsApp me today's price list (no sign-up)" },
+  trade_wa_pricelist_msg: { ar: 'أهلاً FIXIT TRADE، ابعتلي ليستة أسعار الجملة النهارده', en: "Hi FIXIT TRADE, please send me today's wholesale price list" },
   trade_signedin: { ar: 'مسجّل دخول كتاجر', en: 'Signed in as trader' },
   /* لوحة الثقة */
   trust_title: { ar: 'ليه تشتري جملة من FixIt Trade', en: 'Why buy wholesale from FixIt Trade' },
