@@ -314,7 +314,25 @@
     const CD = ['cd-model', 'cd-year', 'cd-engine', 'cd-vin'];
     let picksByName = {}; // اسم البند → القطعة المختارة
     let removedNames = {};
+    // 🧭 تتبّع الخطوات (للإدارة: مين وقف فين)
+    let SID = '';
+    try { SID = localStorage.getItem('sav_sid') || ''; } catch {}
+    if (!SID) { SID = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { localStorage.setItem('sav_sid', SID); } catch {} }
+    function savTrack(stage, extra = {}) {
+      if (!customer || !customer.phone) return;
+      try {
+        const body = JSON.stringify({ action: 'track', sid: SID, stage, mode, customer, ...extra });
+        if (stage === 'left' && navigator.sendBeacon) navigator.sendBeacon(API + '/savings', new Blob([body], { type: 'application/json' }));
+        else fetch(API + '/savings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+      } catch {}
+    }
+    const draftRows = () => [...$('mi-rows').children].map((r) => ({ name: r.querySelector('.n').value, code: r.querySelector('.c').value, qty: r.querySelector('.q').value, price: r.querySelector('.p').value }));
+    let typingT = 0;
+    function trackTyping() { clearTimeout(typingT); typingT = setTimeout(() => { if ($('stage-upload').style.display !== 'none') savTrack('typing', { draft: draftRows() }); }, 3000); }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && customer.phone) savTrack('left', { draft: draftRows() }); });
+
     function saveDraft() {
+      trackTyping();
       try {
         localStorage.setItem('sav_draft', JSON.stringify({
           mode, car: Object.fromEntries(CD.map((id) => [id, $(id).value])),
@@ -367,6 +385,7 @@
       if (!car) return showRegErr(t('sav_err_car'));
       err.style.display = 'none';
       customer = { name, phone, car };
+      setTimeout(() => savTrack('registered'), 0);
       try { localStorage.setItem('sav_customer', JSON.stringify(customer)); } catch {}
       goStage(2);
     });
@@ -432,7 +451,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(mode === 'manual'
             ? { mode, customer: { ...customer, carDetails: { model: $('cd-model').value.trim(), year: $('cd-year').value.trim(), engine: $('cd-engine').value.trim(), vin: $('cd-vin').value.trim() } }, items: manualItems() }
-            : { mode, customer, images }),
+            : { mode, customer, images }).replace(/^\{/, '{"sid":' + JSON.stringify(SID) + ','),
         });
         trackEvent('savings_lead'); // 📣 بيروح لفيسبوك كـ Lead (إعلان حاسبة التوفير)
         renderResult(data);
@@ -534,11 +553,11 @@
       const b = $('again');
       if (b) b.addEventListener('click', () => {
         if (!confirm(L('هتبدأ فاتورة جديدة وتمسح القطع اللي كتبتها؟', 'Start over and clear your parts?'))) return;
-        try { localStorage.removeItem('sav_draft'); } catch {}
+        try { localStorage.removeItem('sav_draft'); localStorage.removeItem('sav_sid'); } catch {}
         location.reload();
       });
       const e = $('edit-back');
-      if (e) e.addEventListener('click', () => goStage(2));
+      if (e) e.addEventListener('click', () => { savTrack('edit'); goStage(2); });
     }
 
     function partCell(m) {
@@ -715,11 +734,19 @@
           const l = lines[Number(b.dataset.toggle)]; l.removed = !l.removed; draw();
         }));
         const ti = $('to-invoice');
+        const pickInfo = () => {
+          const ch = lines.filter((l) => !l.removed && l.pick).map((l) => ({ l, p: l.options.find((o) => o.id === l.pick) }));
+          const total = ch.reduce((s, x) => s + (x.p.price || 0) * x.l.qty, 0);
+          const save = ch.reduce((s, x) => s + (x.l.theirUnit > 0 && x.p.price ? (x.l.theirUnit - x.p.price) * x.l.qty : 0), 0);
+          return { picks: ch.map((x) => ({ line: x.l.name, name: x.p.name, price: x.p.price, theirs: x.l.theirUnit, qty: x.l.qty })), info: { total, save } };
+        };
+        if (ti) ti.addEventListener('click', () => savTrack('invoice', pickInfo()));
         if (ti) ti.addEventListener('click', () => { view = 'invoice'; keepScroll = false; try { history.pushState({ savStage: 4 }, ''); } catch {} draw(); });
         const tp = $('to-pick');
         if (tp) tp.addEventListener('click', () => history.back());
         window._savView = (v) => { view = v; keepScroll = false; draw(); };
         const cartBtn = $('inv-cart');
+        if (cartBtn) cartBtn.addEventListener('click', () => savTrack('cart', pickInfo()));
         if (cartBtn) cartBtn.addEventListener('click', () => {
           const chosen = lines.filter((l) => !l.removed && l.pick);
           const cart = getCart();
@@ -731,8 +758,10 @@
           location.href = '/cart.html';
         });
         const sh = $('inv-share');
+        if (sh) sh.addEventListener('click', () => savTrack('share', pickInfo()));
         if (sh) sh.addEventListener('click', () => shareSavings(lines.filter((l) => !l.removed && l.pick).map((l) => ({ ...l, p: l.options.find((o) => o.id === l.pick) })), data.mode === 'invoice'));
         const wa = $('inv-wa');
+        if (wa) wa.addEventListener('click', () => savTrack('whatsapp', pickInfo()));
         if (wa) {
           const chosen = lines.filter((l) => !l.removed && l.pick).map((l) => ({ l, p: l.options.find((o) => o.id === l.pick) }));
           const total = chosen.reduce((s, x) => s + (x.p.price || 0) * x.l.qty, 0);

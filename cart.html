@@ -595,6 +595,12 @@
           });
           setCart({});
           try { localStorage.removeItem('sav_compare'); } catch {}
+          // 🧭 لو جاي من حاسبة التوفير: نسجّل إن الرحلة انتهت بطلب
+          try {
+            const sid = localStorage.getItem('sav_sid'), sc = JSON.parse(localStorage.getItem('sav_customer') || 'null');
+            if (sid && sc && sc.phone) fetch(API + '/savings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+              body: JSON.stringify({ action: 'track', sid, stage: 'order', customer: sc, info: { total: order.total, save: order.marketSaving || 0 } }) }).catch(() => {});
+          } catch {}
           formDraft['c-notes'] = '';
           // 💳 الدفع بالبطاقة: تحويل مباشر لصفحة Paymob الآمنة
           if (order.payment === 'card') {
