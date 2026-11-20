@@ -350,7 +350,9 @@ function applySettings(s) {
   window.SETTINGS = s;
   if (s.metaPixel) initPixel(s.metaPixel);
   if (s.gaId) initGA(s.gaId);
-  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent)) {
+  // 🐛 [FIX]: لون المتجر من اللوحة كان بيتحط inline على :root فبيغطي ذهبي سكين الجملة (الأسعار والزراير
+  //    بقت أزرق غامق على خلفية سودا ومش مقروءة) — سكين الجملة له هويته الثابتة، فاللون للقطاعي بس.
+  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent) && !isWholesale()) {
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent);
     root.setProperty('--accent-dark', shadeColor(s.accent, -14));
@@ -465,7 +467,7 @@ function trackPageview(extra = {}) {
 function trackEvent(ev, extra = {}) {
   track('event', { ev, ...extra });
   // 📣 نفس الأحداث بتروح لفيسبوك بالأسماء القياسية (للإعلانات والـ Retargeting)
-  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead' };
+  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
   if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
   else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
   else if (ev === 'wa_click') px('Contact', {});
@@ -843,7 +845,67 @@ function deliveryWindow() {
   return { from: f(addWork(d, 2)), to: f(addWork(d, 4)), cutoff: now.getHours() < 18 ? 18 - now.getHours() : 0 };
 }
 
+/* ====== 🌐 كارت الجملة (FixIt Trade) — كارت تاجر فيه التفاصيل اللي بيقرر بيها ======
+   صورة أصغر (أو لوحة موديل بدل الأيقونة الكبيرة)، جدول مواصفات (الموديلات/الكود/المتاح/التوريد)،
+   سعر الوحدة واضح + أحسن سعر بالكمية، وزرار "أضف للطلب" عريض. */
+function wsCard(p) {
+  const out = p.stock <= 0;
+  const fits = ((p.fits && p.fits.length) ? p.fits : (p.models || []).filter((m) => m && m !== '—'));
+  const src = firstImage(p);
+  const brand = String(p.brand || '').toUpperCase().includes('MINI') ? 'MINI' : 'BMW';
+  const plate = `<div class="ws-plate ws-plate-${brand.toLowerCase()}">
+      <span class="ws-plate-brand">${brand}</span>
+      <span class="ws-plate-model">${esc((fits[0] || '').toUpperCase())}</span>
+      <span class="ws-plate-ic">${categoryIcon(p.category)}</span>
+    </div>`;
+  const media = src
+    ? `<img class="card-img ws-img" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy" decoding="async" onerror="this.outerHTML=this.nextElementSibling.innerHTML">`
+      + `<template>${plate}</template>`
+    : plate;
+  const tiers = wsTiers();
+  const best = tiers.length > 1 && !wsLocked() ? tiers[tiers.length - 1] : null;
+  const bestUnit = best && dispPrice(p) !== null ? tierUnit(p, best.min) : null;
+  const note = deliveryNote(p);
+  const en = LANG === 'en';
+  const row = (k, v) => v ? `<div class="ws-spec"><span>${k}</span><b>${v}</b></div>` : '';
+  const cbm = (p.lengthCm && p.widthCm && p.heightCm) ? (p.lengthCm * p.widthCm * p.heightCm / 1e6) : Number(p.cbm) || 0;
+  return `
+  <a class="card ws-card ${out ? 'card-out' : ''}" href="${productUrl(p)}">
+    <div class="card-img-wrap ws-media">
+      ${media}
+      ${isNewArrival(p) ? `<span class="new-ribbon">🆕 ${t('new_arrival')}</span>` : ''}
+      ${p.stock > 0 && p.stock <= 2 ? `<span class="ws-low">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
+    </div>
+    <div class="card-body ws-body">
+      <div class="card-badges">
+        ${conditionBadge(p)}
+        <span class="badge badge-brand">${esc(p.brand)}</span>
+        ${p.category ? `<span class="badge badge-supplier">${esc(p.category)}</span>` : ''}
+      </div>
+      <h3 class="card-title">${esc(pname(p))}</h3>
+      <div class="ws-specs">
+        ${row(en ? 'Fits' : 'بتركب على', fits.slice(0, 4).map((m) => esc(String(m).toUpperCase())).join(' · '))}
+        ${row('SKU', p.sku ? `<span class="mono">${esc(p.sku)}</span>` : '')}
+        ${row(en ? 'In stock' : 'المتاح', p.stock > 0 ? (en ? `${p.stock} pcs` : `${p.stock} قطعة`) : '')}
+        ${row(en ? 'Lead time' : 'التوريد', note ? esc(note) : (p.stock > 0 ? (en ? 'Ready to ship' : 'جاهز للشحن') : ''))}
+        ${row('CBM', cbm > 0 ? `<span class="mono">${cbm.toFixed(3)} م³</span>` : '')}
+      </div>
+      <div class="ws-price">
+        <div>
+          <small>${en ? 'Unit price' : 'سعر القطعة'}</small>
+          ${priceBlock(p)}
+        </div>
+        ${bestUnit !== null && best.off > 0 ? `<div class="ws-best"><small>${en ? `${best.min}+ pcs` : `من ${best.min} قطع`}</small><b>${money(bestUnit)}</b></div>` : ''}
+      </div>
+      ${out
+        ? `<span class="stock-out ws-out">${t('out_stock')}</span>`
+        : `<button class="add-btn ws-add" data-id="${esc(p.id)}">${en ? '＋ Add to order' : '＋ أضف للطلب'}</button>`}
+    </div>
+  </a>`;
+}
+
 function productCard(p) {
+  if (isWholesale()) return wsCard(p);
   const out = p.stock <= 0;
   const discount = !isWholesale() && p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
   return `

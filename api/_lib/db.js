@@ -12,7 +12,7 @@ async function kvGet(key) {
   const r = await fetch(`${KV_URL}/get/${key}`, {
     headers: { Authorization: `Bearer ${KV_TOKEN}` },
   });
-  if (!r.ok) throw new Error(`KV get failed: ${r.status}`);
+  if (!r.ok) throw new Error(`KV get failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
   const data = await r.json();
   return data.result ? JSON.parse(data.result) : null;
 }
@@ -23,7 +23,7 @@ async function kvSet(key, value) {
     headers: { Authorization: `Bearer ${KV_TOKEN}` },
     body: JSON.stringify(value),
   });
-  if (!r.ok) throw new Error(`KV set failed: ${r.status}`);
+  if (!r.ok) throw new Error(`KV set failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
 }
 
 export async function getProducts() {
@@ -163,6 +163,6 @@ export async function kvPipeline(cmds) {
     headers: { Authorization: `Bearer ${KV_TOKEN}` },
     body: JSON.stringify(cmds),
   });
-  if (!r.ok) throw new Error(`KV pipeline failed: ${r.status}`);
+  if (!r.ok) throw new Error(`KV pipeline failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
   return (await r.json()).map((x) => x.result);
 }

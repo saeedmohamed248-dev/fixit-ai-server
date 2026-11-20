@@ -55,7 +55,7 @@ function memExec(cmds) {
   return cmds.map(([op, key, ...a]) => {
     switch (op) {
       case 'HINCRBY': { const h = mem.get(key) || new Map(); mem.set(key, h); h.set(a[0], (Number(h.get(a[0])) || 0) + Number(a[1])); return h.get(a[0]); }
-      case 'HSET': { const h = mem.get(key) || new Map(); mem.set(key, h); h.set(a[0], a[1]); return 1; }
+      case 'HSET': { const h = mem.get(key) || new Map(); mem.set(key, h); for (let i = 0; i < a.length; i += 2) h.set(a[i], a[i + 1]); return 1; }
       case 'HGETALL': { const h = mem.get(key); return h ? [...h].flat().map(String) : []; }
       case 'PFADD': { const s = mem.get(key) || new Set(); mem.set(key, s); const had = s.has(a[0]); s.add(a[0]); return had ? 0 : 1; }
       case 'PFCOUNT': { const u = new Set(); [key, ...a].forEach((k) => (mem.get(k) || []).forEach((v) => u.add(v))); return u.size; }
@@ -84,6 +84,8 @@ async function record(req, b) {
   const { date, hour } = cairoParts();
   const dk = `an:d:${date}`, uk = `an:u:${date}`;
   const cmds = [];
+  // 💸 توفير أوامر Redis: الـ EXPIRE/LTRIM بيتعملوا مع بداية الجلسة أو مرة كل ~10 طلبات بس
+  const housekeep = Boolean(b.ns) || Math.random() < 0.1;
   const inc = (f, n = 1) => cmds.push(['HINCRBY', dk, f, n]);
 
   if (b.t === 'event') {
@@ -137,15 +139,19 @@ async function record(req, b) {
       if (b.ord) step.ord = clean(b.ord, 20); if (b.val) step.val = Number(b.val) || 0;
     } else { step.p = clean(b.path, 80); step.d = Math.min(3600, Math.round(Number(b.dur) || 0)); step.sc = Math.min(100, Number(b.scroll) || 0); }
     const SESS_TTL = 45 * 86400;
-    cmds.push(['RPUSH', sk, JSON.stringify(step)], ['LTRIM', sk, -300, -1], ['EXPIRE', sk, SESS_TTL]);
-    cmds.push(['HSETNX', mk, 'start', now], ['HSETNX', mk, 'vid', vid], ['HSET', mk, 'last', now]);
-    if (b.br === 'ae' || b.br === 'eg') cmds.push(['HSET', mk, 'br', b.br]);
+    cmds.push(['RPUSH', sk, JSON.stringify(step)]);
+    if (housekeep) cmds.push(['LTRIM', sk, -300, -1], ['EXPIRE', sk, SESS_TTL]);
+    if (b.ns) cmds.push(['HSETNX', mk, 'start', now], ['HSETNX', mk, 'vid', vid]);
+    cmds.push(['HSET', mk, 'last', now]);
+    if (b.ns && (b.br === 'ae' || b.br === 'eg')) cmds.push(['HSET', mk, 'br', b.br]);
     if (step.t === 'v') {
-      cmds.push(['HINCRBY', mk, 'pages', 1], ['HSET', mk, 'exit', step.p], ['HSET', mk, 'exitPn', step.pn || '']);
-      cmds.push(['HSETNX', mk, 'land', step.p], ['HSETNX', mk, 'landPn', step.pn || ''], ['HSETNX', mk, 'dev', deviceOf(ua)]);
-      if (b.ns) cmds.push(['HSETNX', mk, 'src', sourceOf(b.ref, b.utm, req.headers.host)]);
-      const cc = clean(req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'], 2).toUpperCase();
-      if (/^[A-Z]{2}$/.test(cc)) cmds.push(['HSETNX', mk, 'cty', cc]);
+      cmds.push(['HINCRBY', mk, 'pages', 1], ['HSET', mk, 'exit', step.p, 'exitPn', step.pn || '']);
+      if (b.ns) {
+        cmds.push(['HSETNX', mk, 'land', step.p], ['HSETNX', mk, 'landPn', step.pn || ''], ['HSETNX', mk, 'dev', deviceOf(ua)]);
+        cmds.push(['HSETNX', mk, 'src', sourceOf(b.ref, b.utm, req.headers.host)]);
+        const cc = clean(req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'], 2).toUpperCase();
+        if (/^[A-Z]{2}$/.test(cc)) cmds.push(['HSETNX', mk, 'cty', cc]);
+      }
       if (step.pid) cmds.push(['HINCRBY', mk, 'prods', 1]);
       if (step.oos) cmds.push(['HSET', mk, 'oos', 1]);
       if (step.lk) cmds.push(['HSET', mk, 'locked', 1]);
@@ -156,20 +162,23 @@ async function record(req, b) {
       if (step.ev === 'search' && step.n === 0) cmds.push(['HINCRBY', mk, 'search0', 1]);
       if (step.ord) cmds.push(['HSET', mk, 'ord', step.ord]);
     } else if (step.d) cmds.push(['HINCRBY', mk, 'dur', step.d]);
-    cmds.push(['EXPIRE', mk, SESS_TTL], ['ZADD', `an:ss:${date}`, now, sid], ['EXPIRE', `an:ss:${date}`, SESS_TTL]);
+    cmds.push(['ZADD', `an:ss:${date}`, now, sid]);
+    if (housekeep) cmds.push(['EXPIRE', mk, SESS_TTL], ['EXPIRE', `an:ss:${date}`, SESS_TTL]);
   }
 
   // 🔥 نشاط تاجر الجملة المسجّل (بيتربط بحسابه عن طريق التوكن الموقّع)
   const tok = b.tk && verifyToken(String(b.tk));
   if (tok && tok.uid) {
     const tk = `an:tr:${clean(tok.uid, 30)}`, TR_TTL = 180 * 86400;
-    cmds.push(['HSET', tk, 'last', Date.now()], ['HSET', tk, 'day:' + date, 1], ['EXPIRE', tk, TR_TTL]);
+    cmds.push(['HSET', tk, 'last', Date.now(), 'day:' + date, 1]);
+    if (housekeep) cmds.push(['EXPIRE', tk, TR_TTL]);
     if (b.t === 'view') {
       cmds.push(['HINCRBY', tk, 'pages', 1]);
       if (b.pid) {
         cmds.push(['HINCRBY', tk, 'prods', 1]);
         const pl = `an:trp:${clean(tok.uid, 30)}`;
-        cmds.push(['RPUSH', pl, clean(b.pname || b.pid, 80)], ['LTRIM', pl, -15, -1], ['EXPIRE', pl, TR_TTL]);
+        cmds.push(['RPUSH', pl, clean(b.pname || b.pid, 80)]);
+        if (housekeep) cmds.push(['LTRIM', pl, -15, -1], ['EXPIRE', pl, TR_TTL]);
       }
     } else if (b.t === 'event') {
       const f = { add_cart: 'cart', whatsapp: 'wa', ws_order: 'order', rfq: 'rfq', container_request: 'rfq', part_request: 'rfq', search: 'search' }[clean(b.ev, 30)];
@@ -182,7 +191,7 @@ async function record(req, b) {
 
   if (!cmds.length) return;
   cmds.push(['ZADD', 'an:live', Date.now(), vid]);
-  cmds.push(['EXPIRE', dk, DAY_TTL], ['EXPIRE', uk, DAY_TTL]);
+  if (housekeep) cmds.push(['EXPIRE', dk, DAY_TTL], ['EXPIRE', uk, DAY_TTL]);
   await exec(cmds);
 }
 
