@@ -495,13 +495,54 @@
         }
         const money = (n) => new Intl.NumberFormat('ar-EG').format(Math.round(n || 0)) + ' ج.م';
         const modeLabel = (m) => m === 'quote' ? '📋 مقايسة' : m === 'manual' ? '✍️ مكتوب يدوي' : '🧾 فاتورة';
+        // 🧭 خطوات رحلة العميل في الحاسبة
+        const STG = { registered: ['1', 'سجّل بياناته'], typing: ['2', 'بيكتب القطع'], left: ['⏸', 'خرج من الصفحة'], edit: ['↩', 'رجع يعدّل'], analyzed: ['3', 'شاف النتيجة'],
+          invoice: ['4', 'شاف الفاتورة والتوفير'], share: ['📸', 'شارك توفيره'], whatsapp: ['💬', 'بعت واتساب'], cart: ['🛒', 'حط في السلة'], order: ['✅', 'عمل طلب'] };
+        const RANK = { registered: 1, typing: 2, left: 0, edit: 0, analyzed: 3, invoice: 4, share: 5, whatsapp: 5, cart: 6, order: 7 };
+        const furthest = (l) => (l.steps || []).reduce((b, x) => ((RANK[x.s] || 0) > (RANK[b] || 0) ? x.s : b), l.partial ? 'registered' : 'analyzed');
+        const stopMsg = (l) => {
+          const f = furthest(l);
+          return f === 'order' ? ['✅ كمّل وعمل طلب', '#ecfdf3', '#067647']
+            : f === 'cart' ? ['🛒 حط القطع في السلة بس ماطلبش', '#fff7ed', '#b54708']
+            : f === 'whatsapp' ? ['💬 بعت الفاتورة واتساب — تابعه', '#ecfdf3', '#067647']
+            : f === 'invoice' || f === 'share' ? ['🧾 شاف الفاتورة والتوفير وماطلبش', '#fff7ed', '#b54708']
+            : f === 'analyzed' ? ['🔎 شاف النتيجة وماكمّلش للفاتورة', '#fff7ed', '#b54708']
+            : f === 'typing' ? ['✍️ بدأ يكتب القطع وماحلّلش', '#fef3f2', '#b42318']
+            : ['👤 سجّل بياناته بس وماكمّلش', '#fef3f2', '#b42318'];
+        };
+        const tAgo = (d) => { const m = Math.round((Date.now() - new Date(d)) / 60000); return m < 60 ? `${m} د` : m < 1440 ? `${Math.round(m / 60)} س` : `${Math.round(m / 1440)} يوم`; };
+        const journey = (l) => {
+          const steps = (l.steps || []).filter((x, i, a) => !(x.s === 'left' && a[i + 1]));
+          if (!steps.length) return '';
+          const [txt, bg, fg] = stopMsg(l);
+          return `<div style="margin-top:10px;border:1px solid var(--line,#e4e8f2);border-radius:12px;padding:10px;">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center;">
+              <b style="font-size:13px;">🧭 رحلته في الحاسبة</b>
+              <span style="background:${bg};color:${fg};font-weight:800;font-size:12.5px;padding:3px 10px;border-radius:999px;">${txt}</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;align-items:center;">
+              ${steps.map((x, i) => `${i ? '<span style="color:var(--muted);">←</span>' : ''}<span title="${new Date(x.at).toLocaleString('ar-EG')}" style="font-size:12px;background:${x.s === 'order' ? '#ecfdf3' : x.s === 'left' ? '#f2f4f7' : '#eef0ff'};border-radius:8px;padding:3px 8px;">
+                <b>${(STG[x.s] || ['•'])[0]}</b> ${(STG[x.s] || ['', x.s])[1]} <small style="color:var(--muted);">${new Date(x.at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</small></span>`).join('')}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px;">آخر نشاط من ${tAgo(l.updatedAt || l.at)}${l.runs > 1 ? ` · حلّل ${l.runs} مرات` : ''}</div>
+            ${l.partial && l.draftItems?.length ? `<div style="font-size:12.5px;margin-top:6px;">✍️ <b>اللي كان بيكتبه:</b> ${l.draftItems.map((i) => esc(i.name || i.code) + (i.qty > 1 ? ` ×${i.qty}` : '') + (i.price ? ` — ${money(i.price)}` : '')).join(' · ')}</div>` : ''}
+            ${l.picks?.length ? `<div style="font-size:12.5px;margin-top:6px;">🛒 <b>القطع اللي اختارها:</b> ${l.picks.map((x) => `${esc(x.name)} (${money(x.price)}${x.theirs ? ` بدل ${money(x.theirs)}` : ''})`).join(' · ')}
+              ${l.lastInfo?.total ? ` · <b>الإجمالي ${money(l.lastInfo.total)}</b>${l.lastInfo.save ? ` · <span style="color:#067647;font-weight:800;">وفّر ${money(l.lastInfo.save)}</span>` : ''}` : ''}</div>` : ''}
+          </div>`;
+        };
+        const seg = window._leadSeg || 'all';
+        const segOf = (l) => { const f = furthest(l); return f === 'order' ? 'done' : ['cart', 'whatsapp', 'invoice', 'share', 'analyzed'].includes(f) ? 'hot' : 'stuck'; };
+        const counts = { all: leads.length, stuck: leads.filter((l) => segOf(l) === 'stuck').length, hot: leads.filter((l) => segOf(l) === 'hot').length, done: leads.filter((l) => segOf(l) === 'done').length };
+        const shown = seg === 'all' ? leads : leads.filter((l) => segOf(l) === seg);
         const partList = (arr, why) => arr && arr.length
           ? `<ul style="margin:4px 0 0;padding-inline-start:18px;color:var(--muted);font-size:13px;">${arr.map((x) => `<li>${esc(x.name || x.code || '—')}${x.qty>1?` ×${x.qty}`:''}${why?` <span style="color:#b54708;">(${why})</span>`:''}</li>`).join('')}</ul>`
           : '';
         box.innerHTML = `
-          <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">كل عميل استخدم الحاسبة — بياناته وصور فاتورته/مقايسته والقطع اللي محتاجة مراجعة. عدد الطلبات: ${leads.length}</p>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px;">كل عميل دخل الحاسبة — حتى اللي ماكمّلش — ورحلته خطوة بخطوة ووقف فين.</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+            ${[['all', '📋 الكل'], ['stuck', '🔴 وقفوا قبل النتيجة'], ['hot', '🟠 شافوا الأسعار وماطلبوش'], ['done', '✅ طلبوا']].map(([k, t]) => `<button class="btn btn-sm ${seg === k ? '' : 'btn-outline'}" data-seg="${k}">${t} (${counts[k]})</button>`).join('')}
+          </div>
           <div style="display:grid;gap:14px;">
-          ${leads.map((l) => `
+          ${shown.map((l) => `
             <div class="card-box" style="border:1px solid var(--border,#e4e7ec);border-radius:14px;padding:14px;${l.needsStaff ? 'border-inline-start:4px solid #f59e0b;' : ''}">
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
                 <div>
@@ -512,11 +553,13 @@
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;">
                   ${l.status === 'new' ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🆕 جديد</span>' : '<span style="color:#067647;font-size:12px;">✅ تمّت المتابعة</span>'}
-                  <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(l.phone)}?text=${encodeURIComponent('أهلاً ' + l.name + ' 👋 بخصوص القطع اللي رفعتها على موقع ' + SITE.name)}">💬 كلّمه</a>
+                  <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/2${esc(l.phone)}?text=${encodeURIComponent('أهلاً ' + l.name + ' 👋 ' + (l.partial ? 'شفنا إنك كنت بتدوّر على قطع لعربيتك ' + (l.car || '') + ' على موقع ' + SITE.name + ' — تحب نساعدك نلاقيها؟' : 'بخصوص القطع اللي رفعتها على موقع ' + SITE.name))}">💬 كلّمه</a>
                   ${l.status === 'new' ? `<button class="btn btn-sm btn-outline" data-done="${esc(l.id)}">تمّت المتابعة ✓</button>` : ''}
                   <button class="btn btn-sm btn-danger" data-ldel="${esc(l.id)}">حذف</button>
                 </div>
               </div>
+              ${journey(l)}
+              ${l.partial ? '' : `
               ${l.needsStaff ? '<div style="margin-top:8px;background:#fff7ed;color:#9a3412;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;">⚠️ فيه قطع محتاجة مراجعة والتواصل مع العميل</div>' : ''}
               <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;">
                 <span>✅ متطابق: <b>${l.totals?.matchedCount || 0}</b></span>
@@ -531,9 +574,10 @@
               </div>` : ''}
               ${l.imageUrls?.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
                 ${l.imageUrls.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border,#e4e7ec);"></a>`).join('')}
-              </div>` : '<div style="color:var(--muted);font-size:12px;margin-top:8px;">مفيش صور محفوظة</div>'}
-            </div>`).join('')}
+              </div>` : (l.mode === 'manual' ? '' : '<div style="color:var(--muted);font-size:12px;margin-top:8px;">مفيش صور محفوظة</div>')}`}
+            </div>`).join('') || '<div class="empty-state">مفيش حد في القسم ده</div>'}
           </div>`;
+        box.querySelectorAll('[data-seg]').forEach((b) => b.addEventListener('click', () => { window._leadSeg = b.dataset.seg; loadLeads(); }));
         // "تمّت المتابعة" — يحدّث الحالة ويقلّل عدّاد الإشعار
         box.querySelectorAll('[data-done]').forEach((b) => b.addEventListener('click', async () => {
           b.disabled = true;

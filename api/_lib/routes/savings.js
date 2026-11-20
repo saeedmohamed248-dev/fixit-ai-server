@@ -217,6 +217,42 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // 🧭 تتبّع رحلة العميل خطوة بخطوة (حتى لو ماكمّلش) — سجل واحد لكل زيارة (sid)
+  if ((req.body || {}).action === 'track') {
+    if (!rateLimit(req, res, 'savings_track', 40)) return;
+    try {
+      const b = req.body;
+      const sid = String(b.sid || '').replace(/[^a-z0-9]/gi, '').slice(0, 40);
+      const stage = String(b.stage || '').replace(/[^a-z_]/g, '').slice(0, 20);
+      const c = b.customer || {};
+      const phone = String(c.phone || '').replace(/[\s-]/g, '');
+      if (!sid || !stage || !validPhone(phone)) return res.status(200).json({ ok: false });
+      const list = await getSavingsLeads();
+      let lead = list.find((l) => l.sid === sid);
+      if (!lead) {
+        lead = { id: 's' + Date.now() + Math.random().toString(36).slice(2, 5), sid, at: new Date().toISOString(), partial: true, status: 'new', steps: [] };
+        list.unshift(lead);
+      }
+      lead.name = String(c.name || lead.name || '').trim().slice(0, 80);
+      lead.phone = phone;
+      lead.car = String(c.car || lead.car || '').trim().slice(0, 80);
+      if (b.mode) lead.mode = ['quote', 'manual', 'invoice'].includes(b.mode) ? b.mode : lead.mode;
+      if (Array.isArray(b.draft)) lead.draftItems = b.draft.slice(0, 30).map((i) => ({ name: String(i.name || '').slice(0, 120), code: String(i.code || '').slice(0, 40), qty: Math.max(1, Number(i.qty) || 1), price: Math.max(0, Number(i.price) || 0) })).filter((i) => i.name || i.code);
+      if (Array.isArray(b.picks)) lead.picks = b.picks.slice(0, 30).map((x) => ({ line: String(x.line || '').slice(0, 120), name: String(x.name || '').slice(0, 160), price: Number(x.price) || 0, theirs: Number(x.theirs) || 0, qty: Math.max(1, Number(x.qty) || 1) }));
+      if (b.info && typeof b.info === 'object') lead.lastInfo = { total: Number(b.info.total) || 0, save: Number(b.info.save) || 0 };
+      lead.steps = Array.isArray(lead.steps) ? lead.steps : [];
+      const last = lead.steps[lead.steps.length - 1];
+      if (!last || last.s !== stage) lead.steps.push({ s: stage, at: new Date().toISOString() });
+      else last.at = new Date().toISOString();
+      lead.steps = lead.steps.slice(-60);
+      lead.lastStage = stage; lead.updatedAt = new Date().toISOString();
+      if (['cart', 'order', 'whatsapp'].includes(stage)) lead.status = lead.status === 'handled' ? 'handled' : 'new';
+      await saveSavingsLeads(list.slice(0, 800));
+      return res.status(200).json({ ok: true });
+    } catch { return res.status(200).json({ ok: false }); }
+  }
+
   if (!rateLimit(req, res, 'savings', 4)) return;
   const isManual = (req.body || {}).mode === 'manual';
   if (!isManual && !aiEnabled()) {
@@ -287,8 +323,17 @@ export default async function handler(req, res) {
     };
     try {
       const list = await getSavingsLeads();
-      list.unshift(lead);
-      await saveSavingsLeads(list.slice(0, 500));
+      // لو الزيارة دي ليها سجل رحلة (sid) → نكمّل عليه بدل سجل جديد
+      const sid = String(body.sid || '').replace(/[^a-z0-9]/gi, '').slice(0, 40);
+      const prev = sid ? list.find((l) => l.sid === sid) : null;
+      if (prev) {
+        const steps = (prev.steps || []).concat([{ s: 'analyzed', at: new Date().toISOString() }]).slice(-60);
+        Object.assign(prev, lead, { id: prev.id, at: prev.at, sid, partial: false, steps, lastStage: 'analyzed', updatedAt: new Date().toISOString(), status: prev.status === 'handled' ? 'handled' : 'new', runs: (prev.runs || 1) + (prev.partial ? 0 : 1) });
+        lead.id = prev.id;
+      } else {
+        list.unshift({ ...lead, sid: sid || undefined, steps: [{ s: 'analyzed', at: lead.at }], lastStage: 'analyzed' });
+      }
+      await saveSavingsLeads(list.slice(0, 800));
     } catch { /* التخزين ما يوقفش الرد */ }
 
     await logActivity('savings', `🧾 ${mode === 'quote' ? 'تسعير مقايسة' : mode === 'manual' ? 'قطع مكتوبة يدوي' : 'حساب توفير'} — ${name} (${phone})${needsStaff ? ' · محتاج مراجعة موظف' : ''}`);
