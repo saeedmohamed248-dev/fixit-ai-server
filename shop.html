@@ -108,6 +108,7 @@
     const PER_PAGE = 12;
     let currentPage = 1;
     let lastResults = [];
+    let oosHits = []; // 📦 قطع في الكتالوج بتطابق البحث بس خلصت مؤقتاً
 
     function renderPage() {
       const pages = Math.max(1, Math.ceil(lastResults.length / PER_PAGE));
@@ -120,7 +121,11 @@
       const reqBox = (title) => `<form class="miss-form" style="grid-column:1/-1;max-width:520px;width:100%;margin:6px auto 14px;text-align:start;background:var(--card,#fff);border:2px solid var(--brand,#f5a524);border-radius:14px;padding:16px;">
           <b style="display:block;font-size:17px;margin-bottom:4px;">${title}</b>
           <small style="color:var(--muted);display:block;margin-bottom:12px;">${AR ? 'سيب رقمك واسم القطعة وهنوفّرهالك ونكلمك واتساب — من غير أي التزام.' : 'Leave your number and the part — we\'ll source it and WhatsApp you. No obligation.'}</small>
-          <input name="part" value="${esc(currentQ)}" placeholder="${AR ? 'اسم القطعة' : 'Part name'}" required style="margin-bottom:8px;">
+          ${oosHits.length ? `<div class="oos-hits" style="background:var(--bg,#f6f7f9);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px;">
+            <b style="display:block;margin-bottom:6px;">📦 ${AR ? 'بنتعامل فيها — بس خلصت مؤقتاً:' : 'We carry it — temporarily out of stock:'}</b>
+            ${oosHits.map((h) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;"><span>${esc(AR ? h.name : (h.nameEn || h.name))}</span>${h.price ? `<span style="white-space:nowrap;color:var(--muted);">${AR ? 'آخر سعر' : 'Last price'} <span dir="ltr">${money(h.price)}</span></span>` : ''}</div>`).join('')}
+          </div>` : ''}
+          <input name="part" value="${esc(oosHits.length && !near ? (AR ? oosHits[0].name : (oosHits[0].nameEn || oosHits[0].name)) : currentQ)}" placeholder="${AR ? 'اسم القطعة' : 'Part name'}" required style="margin-bottom:8px;">
           <input name="car" placeholder="${AR ? 'عربيتك وسنتها (مثلاً F30 2016)' : 'Car & year (e.g. F30 2016)'}" style="margin-bottom:8px;">
           <input name="name" placeholder="${AR ? 'اسمك' : 'Your name'}" value="${esc(currentUser()?.name || '')}" required style="margin-bottom:8px;">
           <input name="phone" type="tel" inputmode="tel" dir="ltr" placeholder="${isWholesale() ? '2010xxxxxxxx' : '01xxxxxxxxx'}" value="${esc(currentUser()?.phone || '')}" required style="margin-bottom:10px;text-align:start;">
@@ -210,6 +215,11 @@
         if (getGarage() && !/^price/.test(document.getElementById('f-sort').value)) {
           const rank = (p) => (fitsCar(p) === true ? 0 : fitsCar(p) === null ? 1 : 2);
           lastResults = [...lastResults].sort((a, b) => rank(a) - rank(b));
+        }
+        // 📦 البحث مالقاش حاجة متاحة؟ نشوف لو القطعة في كتالوجنا وخلصت — نعرضها في خانة "اطلبها"
+        oosHits = [];
+        if (qs.get('q') && (!lastResults.length || lastResults[0]._near) && !isWholesale()) {
+          try { oosHits = wsCatalogFilter(await api('/products?oos=1&q=' + encodeURIComponent(qs.get('q')))).slice(0, 5); } catch (_) { oosHits = []; } // 🇪🇬/🇦🇪 نفس فلتر الفرع
         }
         renderGarageBar();
         currentPage = 1;

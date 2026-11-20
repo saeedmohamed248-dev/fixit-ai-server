@@ -188,6 +188,7 @@
           <a class="btn btn-outline" href="#rfq">${t('trade_cta_quote')}</a>
           ${u ? '' : `<a class="btn btn-ghost" href="/account.html?mode=register">${t('trade_cta_join')}</a>`}
         </div>
+        ${u ? '' : `<a class="btn btn-green" data-wa-pricelist target="_blank" rel="noopener" style="margin-top:12px;" href="${waLink(t('trade_wa_pricelist_msg'))}">💬 ${t('trade_wa_pricelist')}</a>`}
         ${u ? `<div class="signed">✓ ${t('trade_signedin')}: ${esc(u.name)}${u.company ? ' — ' + esc(u.company) : ''}</div>` : ''}
       </section>`;
     }
@@ -200,6 +201,7 @@
           <h2>⚡ ${t('op_title')}</h2>
           <div class="panel-sub">${t('op_login_first')}</div>
           <a class="btn" href="/account.html?mode=register">${t('ws_login_cta')}</a>
+          <a class="btn btn-green" data-wa-pricelist target="_blank" rel="noopener" href="${waLink(t('trade_wa_pricelist_msg'))}">💬 ${t('trade_wa_pricelist')}</a>
         </section>`;
       }
       return `
@@ -362,6 +364,7 @@
       root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + alertBoxHtml() + trustGrid() + processSteps() +
         orderPadHtml() + shareHtml() + rfqHtml() + faqSection() +
         `<div id="catalog-teaser"></div>`;
+      root.querySelectorAll('[data-wa-pricelist]').forEach((a) => a.addEventListener('click', () => trackEvent('wa_click', { via: 'trade_pricelist' })));
       wireOrderPad();
       wireShare();
       wireRfq();
