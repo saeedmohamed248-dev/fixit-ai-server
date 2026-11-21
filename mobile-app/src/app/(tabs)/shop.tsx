@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductCard } from '../../components/ProductCard';
@@ -27,14 +27,17 @@ export default function Shop() {
   const [limit, setLimit] = useState(30);
 
   // 🔗 الفلاتر اللي جاية من الرئيسية
-  useEffect(() => {
+  const paramsKey = [params.category, params.brand, params.condition, params.model, params.sort].join('|');
+  const [lastParams, setLastParams] = useState<string | null>(null);
+  if (paramsKey !== lastParams) {
+    setLastParams(paramsKey);
     setCategory(params.category || '');
     setBrand(params.brand || '');
     setCondition(params.condition || '');
     setModel(params.model || '');
     setSort((params.sort as SortKey) || '');
     setLimit(30);
-  }, [params.category, params.brand, params.condition, params.model, params.sort]);
+  }
 
   const models = useMemo(() => {
     const set = new Set<string>();

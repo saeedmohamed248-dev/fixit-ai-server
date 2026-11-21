@@ -34,10 +34,10 @@ export default function Search() {
 
   useEffect(() => {
     const query = q.trim();
-    if (query.length < 2) { setRes(null); setOos([]); setErr(false); return; }
     const my = ++seq.current;
-    setBusy(true);
+    if (query.length < 2) return;
     const timer = setTimeout(async () => {
+      setBusy(true);
       try {
         const [list, out] = await Promise.all([api.search(query), api.outOfStock(query).catch(() => [])]);
         if (my !== seq.current) return;
@@ -81,13 +81,13 @@ export default function Search() {
             returnKeyType="search"
             style={{ flex: 1, fontFamily: F.regular, fontSize: 15, color: C.text, textAlign: align, paddingVertical: 0, ...noOutline }}
           />
-          {busy ? <ActivityIndicator size="small" color={C.primary} /> : q ? (
+          {busy && q.trim().length >= 2 ? <ActivityIndicator size="small" color={C.primary} /> : q ? (
             <Pressable onPress={() => setQ('')} hitSlop={8}><Icon name="close-circle" size={18} color={C.faint} /></Pressable>
           ) : null}
         </View>
       </View>
 
-      {res === null ? (
+      {q.trim().length < 2 || res === null ? (
         <View style={{ padding: S.lg }}>
           {hist.length ? (
             <>

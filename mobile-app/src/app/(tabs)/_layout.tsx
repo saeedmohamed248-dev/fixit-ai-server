@@ -9,9 +9,12 @@ import { C } from '../../lib/theme';
 export default function TabsLayout() {
   const { t, cartCount } = useApp();
   const insets = useSafeAreaInsets();
-  const icon = (on: IconName, off: IconName) => ({ focused, color }: { focused: boolean; color: unknown }) => (
-    <Icon name={focused ? on : off} size={25} color={String(color ?? C.faint)} />
-  );
+  const icon = (on: IconName, off: IconName) => {
+    function TabIcon({ focused, color }: { focused: boolean; color: unknown }) {
+      return <Icon name={focused ? on : off} size={25} color={String(color ?? C.faint)} />;
+    }
+    return TabIcon;
+  };
   return (
     <Tabs
       screenOptions={{

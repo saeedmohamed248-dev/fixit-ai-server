@@ -11,13 +11,8 @@ import { money, num } from '../../lib/format';
 import { useApp } from '../../lib/store';
 import { C, R, S, shadow } from '../../lib/theme';
 
-export default function Account() {
-  const { t, lang, user, signOut, setLang, wishlist, car, settings } = useApp();
-  const insets = useSafeAreaInsets();
-  const wa = settings.whatsapp || '201125157767';
-  const phone = settings.phoneDisplay || '01125157767';
-
-  const Item = ({ icon, label, onPress, value, color, testID }: { icon: IconName; label: string; onPress: () => void; value?: string; color?: string; testID?: string }) => (
+function MenuItem({ icon, label, onPress, value, color, testID }: { icon: IconName; label: string; onPress: () => void; value?: string; color?: string; testID?: string }): React.ReactElement {
+  return (
     <Pressable testID={testID} onPress={() => { tap(); onPress(); }} style={({ pressed }) => [styles.item, pressed && { backgroundColor: C.bg }]} accessibilityRole="button">
       <View style={[styles.itemIcon, color ? { backgroundColor: color + '1a' } : null]}><Icon name={icon} size={20} color={color || C.primary} /></View>
       <Txt w="semibold" size={14} style={{ flex: 1 }} color={color === C.red ? C.red : C.text}>{label}</Txt>
@@ -25,6 +20,14 @@ export default function Account() {
       <ChevronNext />
     </Pressable>
   );
+}
+
+export default function Account() {
+  const { t, lang, user, signOut, setLang, wishlist, car, settings } = useApp();
+  const insets = useSafeAreaInsets();
+  const wa = settings.whatsapp || '201125157767';
+  const phone = settings.phoneDisplay || '01125157767';
+
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingBottom: S.xl * 2 }}>
@@ -58,32 +61,32 @@ export default function Account() {
       </LinearGradient>
 
       <View style={styles.group}>
-        {user ? <Item testID="menu-orders" icon="package-variant-closed" label={t('my_orders')} onPress={() => router.push('/orders')} /> : null}
-        <Item icon="truck-delivery-outline" label={t('track_order')} onPress={() => router.push('/track')} />
-        <Item icon="heart-outline" label={t('wishlist')} value={wishlist.length ? String(wishlist.length) : undefined} onPress={() => router.push('/wishlist')} />
-        <Item icon="car-side" label={t('my_car')} value={car || undefined} onPress={() => router.push('/garage')} />
-        <Item icon="robot-outline" label={t('expert')} onPress={() => router.push('/expert')} />
-        <Item icon="clipboard-text-search-outline" label={t('req_title')} onPress={() => router.push('/request')} />
+        {user ? <MenuItem testID="menu-orders" icon="package-variant-closed" label={t('my_orders')} onPress={() => router.push('/orders')} /> : null}
+        <MenuItem icon="truck-delivery-outline" label={t('track_order')} onPress={() => router.push('/track')} />
+        <MenuItem icon="heart-outline" label={t('wishlist')} value={wishlist.length ? String(wishlist.length) : undefined} onPress={() => router.push('/wishlist')} />
+        <MenuItem icon="car-side" label={t('my_car')} value={car || undefined} onPress={() => router.push('/garage')} />
+        <MenuItem icon="robot-outline" label={t('expert')} onPress={() => router.push('/expert')} />
+        <MenuItem icon="clipboard-text-search-outline" label={t('req_title')} onPress={() => router.push('/request')} />
       </View>
 
       <View style={styles.group}>
-        <Item testID="lang-toggle" icon="translate" label={t('language')} value={t('lang_name')} onPress={() => setLang(lang === 'ar' ? 'en' : 'ar')} />
-        {user ? <Item icon="account-edit-outline" label={t('edit_profile')} onPress={() => router.push('/profile')} /> : null}
+        <MenuItem testID="lang-toggle" icon="translate" label={t('language')} value={t('lang_name')} onPress={() => setLang(lang === 'ar' ? 'en' : 'ar')} />
+        {user ? <MenuItem icon="account-edit-outline" label={t('edit_profile')} onPress={() => router.push('/profile')} /> : null}
       </View>
 
       <View style={styles.group}>
-        <Item icon="whatsapp" color={C.whatsapp} label={t('whatsapp')} value={phone} onPress={() => openWhatsApp(wa, lang === 'ar' ? 'أهلاً FixIt' : 'Hi FixIt')} />
-        <Item icon="phone-outline" label={t('call_us')} onPress={() => Linking.openURL('tel:' + phone).catch(() => {})} />
-        <Item icon="map-marker-outline" label={t('our_location')} value={t('address_store')} onPress={() => Linking.openURL('https://share.google/InODxiIyOGIAOBHaM').catch(() => {})} />
-        <Item icon="earth" label={t('trade')} onPress={() => Linking.openURL(ORIGIN + '/trade.html').catch(() => {})} />
-        <Item icon="file-document-outline" label={t('policies')} onPress={() => Linking.openURL(ORIGIN + '/policies.html').catch(() => {})} />
-        <Item icon="shield-lock-outline" label={t('privacy')} onPress={() => Linking.openURL(ORIGIN + '/privacy.html').catch(() => {})} />
-        <Item icon="account-remove-outline" label={t('delete_account')} onPress={() => (user ? router.push('/profile') : Linking.openURL(ORIGIN + '/delete-account.html').catch(() => {}))} />
+        <MenuItem icon="whatsapp" color={C.whatsapp} label={t('whatsapp')} value={phone} onPress={() => openWhatsApp(wa, lang === 'ar' ? 'أهلاً FixIt' : 'Hi FixIt')} />
+        <MenuItem icon="phone-outline" label={t('call_us')} onPress={() => Linking.openURL('tel:' + phone).catch(() => {})} />
+        <MenuItem icon="map-marker-outline" label={t('our_location')} value={t('address_store')} onPress={() => Linking.openURL('https://share.google/InODxiIyOGIAOBHaM').catch(() => {})} />
+        <MenuItem icon="earth" label={t('trade')} onPress={() => Linking.openURL(ORIGIN + '/trade.html').catch(() => {})} />
+        <MenuItem icon="file-document-outline" label={t('policies')} onPress={() => Linking.openURL(ORIGIN + '/policies.html').catch(() => {})} />
+        <MenuItem icon="shield-lock-outline" label={t('privacy')} onPress={() => Linking.openURL(ORIGIN + '/privacy.html').catch(() => {})} />
+        <MenuItem icon="account-remove-outline" label={t('delete_account')} onPress={() => (user ? router.push('/profile') : Linking.openURL(ORIGIN + '/delete-account.html').catch(() => {}))} />
       </View>
 
       {user ? (
         <View style={styles.group}>
-          <Item icon="logout" color={C.red} label={t('logout')} onPress={() => Alert.alert(t('logout'), '', [{ text: t('cancel'), style: 'cancel' }, { text: t('logout'), style: 'destructive', onPress: signOut }])} />
+          <MenuItem icon="logout" color={C.red} label={t('logout')} onPress={() => Alert.alert(t('logout'), '', [{ text: t('cancel'), style: 'cancel' }, { text: t('logout'), style: 'destructive', onPress: signOut }])} />
         </View>
       ) : null}
 
