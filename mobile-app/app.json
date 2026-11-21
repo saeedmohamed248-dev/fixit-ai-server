@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "FixIt",
+    "slug": "fixit-parts",
+    "scheme": "fixit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#eef1f8",
+    "description": "FixIt — BMW & MINI parts store in Egypt. New & used imported parts, delivery across Egypt.",
+    "ios": {
+      "bundleIdentifier": "parts.fixitauto.app",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": [
+          "ar",
+          "en"
+        ],
+        "LSApplicationQueriesSchemes": [
+          "whatsapp",
+          "tel"
+        ]
+      }
+    },
+    "android": {
+      "package": "parts.fixitauto.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#101828",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-image",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#101828"
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true
+        }
+      ]
+    ],
+    "extra": {
+      "supportsRTL": true
+    },
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

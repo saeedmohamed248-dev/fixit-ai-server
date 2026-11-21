@@ -1,6 +1,7 @@
 // حسابات العملاء
 // POST /api/auth  { action: "register", name, phone, password, email? }
 // POST /api/auth  { action: "login", phone, password }
+// POST /api/auth  { action: "delete_account", password }  → حذف حساب العميل (بتوكنه)
 // GET  /api/auth?action=me         → بيانات العميل (بتوكن العميل)
 // GET  /api/auth?action=customers  → قائمة العملاء (إدارة)
 import { getUsers, saveUsers } from '../db.js';
@@ -65,6 +66,21 @@ export default async function handler(req, res) {
         await saveUsers(users);
         try { await sendWelcome(user); } catch {} // 📧 إيميل ترحيب
         return res.status(201).json({ token: signToken({ uid: user.id, name: user.name }), user: publicUser(user) });
+      }
+
+      // 🗑️ حذف الحساب من التطبيق (شرط أبل وجوجل) — بتوكن العميل + كلمة السر للتأكيد.
+      //    الطلبات القديمة بتفضل (للضمان والفواتير) بس بتتفك من الحساب.
+      if (action === 'delete_account') {
+        const session = getUser(req);
+        if (!session) return res.status(401).json({ error: 'سجّل دخول الأول' });
+        const idx = users.findIndex((u) => u.id === session.uid);
+        if (idx === -1) return res.status(401).json({ error: 'الحساب غير موجود' });
+        if (!checkPassword(password || '', users[idx].pass)) {
+          return res.status(400).json({ error: 'كلمة السر غلط' });
+        }
+        users.splice(idx, 1);
+        await saveUsers(users);
+        return res.status(200).json({ ok: true });
       }
 
       if (action === 'login') {
