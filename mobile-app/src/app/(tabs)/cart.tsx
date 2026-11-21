@@ -78,7 +78,7 @@ export default function Cart() {
               <Txt w="black" size={15} color={C.navy}>{money(lang, p!.price * qty)}</Txt>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
                 <View style={styles.stepper}>
-                  <Pressable accessibilityLabel="-" onPress={() => { tap(); qty > 1 ? setQty(id, qty - 1) : removeFromCart(id); }} style={styles.stepBtn}>
+                  <Pressable accessibilityLabel="-" onPress={() => { tap(); if (qty > 1) setQty(id, qty - 1); else removeFromCart(id); }} style={styles.stepBtn}>
                     <Icon name={qty > 1 ? 'minus' : 'trash-can-outline'} size={17} color={qty > 1 ? C.text : C.red} />
                   </Pressable>
                   <Txt w="bold" center style={{ minWidth: 22 }}>{qty}</Txt>

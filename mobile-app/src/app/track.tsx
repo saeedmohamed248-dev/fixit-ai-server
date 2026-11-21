@@ -9,6 +9,12 @@ import { useApp } from '../lib/store';
 import { C, S } from '../lib/theme';
 import type { Order } from '../lib/types';
 
+function normNumber(n: string) {
+  const q = toLatinDigits(n).trim().toUpperCase();
+  return /^\d+$/.test(q) ? 'ORD-' + q : q;
+}
+const normPhone = (ph: string) => toLatinDigits(ph).replace(/[\s-]/g, '');
+
 export default function Track() {
   const { t, user } = useApp();
   const p = useLocalSearchParams<{ number?: string; phone?: string }>();
@@ -24,9 +30,7 @@ export default function Track() {
     setBusy(true);
     setErr('');
     try {
-      let q = toLatinDigits(n).trim().toUpperCase();
-      if (/^\d+$/.test(q)) q = 'ORD-' + q;
-      setOrder(await api.track(q, toLatinDigits(ph).replace(/[\s-]/g, '')));
+      setOrder(await api.track(normNumber(n), normPhone(ph)));
     } catch (e: any) {
       setOrder(null);
       setErr(e?.message === 'NETWORK' ? t('net_error') : e?.message || '');
@@ -34,7 +38,15 @@ export default function Track() {
       setBusy(false);
     }
   };
-  useEffect(() => { if (p.number && p.phone) go(p.number, p.phone); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🔗 جاي من صفحة نجاح الطلب أو طلباتي — نتتبع على طول
+  useEffect(() => {
+    if (!p.number || !p.phone) return;
+    let alive = true;
+    api.track(normNumber(p.number), normPhone(p.phone))
+      .then((o) => { if (alive) setOrder(o); })
+      .catch((e) => { if (alive) setErr(e?.message === 'NETWORK' ? t('net_error') : e?.message || ''); });
+    return () => { alive = false; };
+  }, [p.number, p.phone, t]);
 
   const sendReturn = async () => {
     if (!order) return;

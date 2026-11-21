@@ -14,15 +14,16 @@ export default function Orders() {
   const [err, setErr] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      setOrders(await api.myOrders());
-      setErr(false);
-    } catch {
-      setErr(true);
-    }
-  }, []);
-  useEffect(() => { if (user) load(); }, [user, load]);
+  const load = useCallback(
+    () => api.myOrders().then((o) => { setOrders(o); setErr(false); }).catch(() => setErr(true)),
+    [],
+  );
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    api.myOrders().then((o) => { if (alive) { setOrders(o); setErr(false); } }).catch(() => alive && setErr(true));
+    return () => { alive = false; };
+  }, [user]);
 
   if (!user) return <Empty icon="account-circle-outline" title={t('login_sub')} action={t('login')} onAction={() => router.push('/login')} />;
   if (err && !orders) return <Empty icon="wifi-off" title={t('net_error')} action={t('retry')} onAction={load} />;
