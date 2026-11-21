@@ -78,6 +78,7 @@ export default function Account() {
         <Item icon="earth" label={t('trade')} onPress={() => Linking.openURL(ORIGIN + '/trade.html').catch(() => {})} />
         <Item icon="file-document-outline" label={t('policies')} onPress={() => Linking.openURL(ORIGIN + '/policies.html').catch(() => {})} />
         <Item icon="shield-lock-outline" label={t('privacy')} onPress={() => Linking.openURL(ORIGIN + '/privacy.html').catch(() => {})} />
+        <Item icon="account-remove-outline" label={t('delete_account')} onPress={() => (user ? router.push('/profile') : Linking.openURL(ORIGIN + '/delete-account.html').catch(() => {}))} />
       </View>
 
       {user ? (
