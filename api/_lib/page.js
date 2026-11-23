@@ -52,9 +52,9 @@ export function page({ host, path, title, desc, crumbs = [], body, ld = [], ogIm
     ${body}
   </div></main>
   <div id="site-footer"></div>
-  <script src="/js/config.js"></script>
-  <script src="/js/i18n.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/config.js?v=20261123"></script>
+  <script src="/js/i18n.js?v=20261123"></script>
+  <script src="/js/app.js?v=20261123"></script>
   <script>renderLayout('shop');${script}</script>
 </body>
 </html>`;
