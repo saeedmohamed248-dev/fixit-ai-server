@@ -54,7 +54,7 @@
     let cartNotice = ''; // تنبيه لو شلنا قطع مبقتش متاحة
 
     // ✍️ نحفظ اللي العميل كتبه في الفورم قبل أي إعادة رسم (تغيير كمية/كوبون/نقاط كان بيمسح الاسم والعنوان)
-    const FORM_IDS = ['c-name', 'c-phone', 'c-city', 'c-email', 'c-address', 'c-notes', 'w-name', 'w-phone', 'w-city', 'w-notes'];
+    const FORM_IDS = ['c-name', 'c-phone', 'c-city', 'c-email', 'c-address', 'c-notes', 'w-name', 'w-phone', 'w-country', 'w-city', 'w-notes'];
     let formDraft = {};
     try { formDraft = JSON.parse(localStorage.getItem('checkout_draft') || '{}'); } catch {}
     function saveDraft() {
@@ -184,11 +184,9 @@
       const cart = getCart();
       const items = products.filter((p) => cart[p.id]);
       if (items.length === 0) return load();
-      if (!currentUser()) {
-        container.innerHTML = `<div class="empty-state"><span class="icon">🔒</span>
-          ${t('ws_login_required')}<br><br><a class="btn" href="/account.html?mode=register&next=${encodeURIComponent(location.pathname + location.search)}">${t('ws_login_cta')}</a></div>`;
-        return;
-      }
+      // 🔓 من غير تسجيل دخول: بنطلب الاسم + الواتساب + الدولة عند الإرسال بس
+      const buyer = wsBuyer();
+      if (formDraft['w-country'] !== undefined && formDraft['w-country'] !== buyer.country) buyer.country = formDraft['w-country'];
       let subtotal = 0;
       let anyOnRequest = false;
       items.forEach((p) => {
@@ -198,7 +196,7 @@
       });
       // 🚢 حساب الحاوية وعرض سعر الشحن الدولي
       const qitems = items.map((p) => ({ p, qty: cart[p.id] }));
-      const cc = dealerCountryCode();
+      const cc = countryCode(buyer.country);
       const pol = countryPolicy(cc);
       const allowed = (pol.incoterms || ['FOB', 'CIF']).filter((c) => incotermDef(c).nameAr);
       if (!wsIncoterm || !allowed.includes(wsIncoterm)) wsIncoterm = allowed[0];
@@ -252,7 +250,10 @@
 
           <div class="ship-quote">
             <div class="ship-head">📦 ${t('ship_title')}</div>
-            <div class="row"><span>${t('ship_dest')}</span><b>${esc(currentUser().country || '—')}${q.port ? ` · ${esc(q.port)}` : ''}</b></div>
+            <div style="margin:8px 0;"><label>${t('ship_dest')}</label>
+              <input id="w-country" list="w-country-list" value="${esc(buyer.country || '')}" placeholder="${LANG === 'en' ? 'Egypt, UAE, Russia…' : 'مصر، الإمارات، روسيا…'}">
+              <datalist id="w-country-list">${['مصر', 'الإمارات', 'السعودية', 'روسيا', 'الأردن', 'العراق', 'ليبيا', 'الكويت', 'قطر', 'عمان', 'البحرين'].map((c) => `<option value="${c}">`).join('')}</datalist>
+              ${q.port ? `<small style="color:var(--muted);">⚓ ${esc(q.port)}</small>` : ''}</div>
             <div style="margin:8px 0;">
               <label>${t('ship_mode')}</label>
               <div class="mode-switch">
@@ -260,7 +261,7 @@
                 <button type="button" class="${wsShipMode === 'air' ? 'active' : ''}" data-mode="air">${t('mode_air')}</button>
               </div>
             </div>
-            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${esc(leadNow(currentUser().country, wsShipMode))}</b></div>
+            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${esc(leadNow(buyer.country, wsShipMode))}</b></div>
             <div style="margin:8px 0;">
               <label>${t('ship_incoterm')}</label>
               <select id="w-incoterm">
@@ -292,11 +293,13 @@
           </div>
 
           <hr style="border-color: var(--line);">
-          <div><label>${t('full_name')}</label><input id="w-name" value="${esc(currentUser().name || '')}"></div>
-          <div><label>${t('phone')}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" value="${esc(currentUser().phone || '')}"></div>
+          <div class="note" style="margin:0;font-size:12.5px;">${LANG === 'en' ? '✅ No account needed — just your name and WhatsApp number. We reply with the final quote on WhatsApp.' : '✅ من غير حساب ولا باسورد — اسمك ورقم الواتساب بس، وهنرد عليك بعرض السعر النهائي على واتساب.'}</div>
+          <div><label>${t('full_name')}</label><input id="w-name" value="${esc(buyer.name || '')}"></div>
+          <div><label>${LANG === 'en' ? 'WhatsApp number (with country code)' : 'رقم الواتساب (بكود الدولة)'}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="+20 10xxxxxxxx" value="${esc(buyer.phone || '')}"></div>
           <div><label>${t('city')}</label><input id="w-city"></div>
           <div><label>${t('notes')}</label><textarea id="w-notes" rows="2"></textarea></div>
           <button class="btn btn-green" id="w-submit">💬 ${t('ws_checkout')}</button>
+          <div id="w-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>`;
 
@@ -312,6 +315,7 @@
       container.querySelectorAll('[data-remove]').forEach((btn) => {
         btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); renderWholesale(); });
       });
+      document.getElementById('w-country')?.addEventListener('change', () => { saveDraft(); renderWholesale(); });
       document.getElementById('w-incoterm')?.addEventListener('change', (e) => {
         wsIncoterm = e.target.value;
         renderWholesale();
@@ -319,7 +323,7 @@
       container.querySelectorAll('.mode-switch [data-mode]').forEach((btn) =>
         btn.addEventListener('click', () => { wsShipMode = btn.dataset.mode; renderWholesale(); }));
       // 🕒 تقدير مدة التوريد بالبوت (مع كاش لكل دولة+وسيلة)
-      loadLead(currentUser().country, wsShipMode);
+      loadLead(buyer.country, wsShipMode);
       container.querySelectorAll('[data-step]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const c = getCart();
@@ -335,6 +339,14 @@
         const phone = document.getElementById('w-phone').value.trim();
         const city = document.getElementById('w-city').value.trim();
         const notes = document.getElementById('w-notes').value.trim();
+        const country = document.getElementById('w-country').value.trim();
+        const errEl = document.getElementById('w-error');
+        if (!name || !/^\+?\d{7,15}$/.test(phone.replace(/[\s-]/g, ''))) {
+          errEl.textContent = LANG === 'en' ? 'Please enter your name and a WhatsApp number with country code' : 'اكتب اسمك ورقم الواتساب بكود الدولة (مثال: +2010xxxxxxxx)';
+          return;
+        }
+        errEl.textContent = '';
+        saveWsGuest({ name, phone, country }); buyer.country = country;
         const cur = WCUR === 'usd' ? 'USD' : 'AED';
         const lines = items.map((p) => {
           const d = tierUnit(p, cart[p.id]);
@@ -343,13 +355,13 @@
         }).join('\n');
         const head = `${t('ws_order_title')} 🇦🇪 (${cur})`;
         const who = [name && `${t('full_name')}: ${name}`, phone && `${t('phone')}: ${phone}`,
-          currentUser().company && `${t('rfq_company')}: ${currentUser().company}`,
+          buyer.company && `${t('rfq_company')}: ${buyer.company}`,
           city && `${t('city')}: ${city}`].filter(Boolean).join('\n');
         const totalTxt = `${t('subtotal')}: ${money(subtotal)}${anyOnRequest ? ' +' : ''}`;
         // 🚢 تفاصيل الشحن
         const ship = [
           `— ${t('ship_title')} —`,
-          `${t('ship_dest')}: ${currentUser().country || '-'}${q.port ? ' / ' + q.port : ''}`,
+          `${t('ship_dest')}: ${buyer.country || '-'}${q.port ? ' / ' + q.port : ''}`,
           `${t('ship_mode')}: ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`,
           wsLeadText ? `${t('lead_title')}: ${wsLeadText}` : '',
           q.cbm > 0 ? `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})` : '',
@@ -375,8 +387,8 @@
         window.open(waLink(msg), '_blank');
         // 📥 نسجّل الطلب كمان في لوحة التحكم (طلبات القطع → جملة RFQ) عشان مايضيعش لو الرسالة ماتبعتتش
         api('/requests', { method: 'POST', body: JSON.stringify({
-          wholesale: true, name: name || currentUser().name, phone: phone || currentUser().phone,
-          company: currentUser().company || '', country: currentUser().country || '', email: currentUser().email || '',
+          wholesale: true, name: name || buyer.name, phone: phone || buyer.phone,
+          company: buyer.company || '', country: buyer.country || '', email: buyer.email || '',
           partName: lines + '\n\n' + totalTxt + ' — ' + t('ship_grand') + ': ' + usdMoney(q.total),
           notes: [city && `${t('city')}: ${city}`, `${incName(wsIncoterm)} · ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`, notes].filter(Boolean).join(' | '),
           source: 'cart',

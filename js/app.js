@@ -204,7 +204,7 @@ function countryCode(str) {
   if (/(روسيا|russia|ru\b|россия)/.test(s)) return 'RU';
   return 'DEFAULT';
 }
-function dealerCountryCode() { return countryCode(currentUser()?.country); }
+function dealerCountryCode() { return countryCode(wsBuyer().country); }
 function lane(code) { return (wsConf().freight?.lanes || {})[code] || (wsConf().freight?.lanes || {}).DEFAULT || {}; }
 function countryPolicy(code) { return (wsConf().countryPolicy || {})[code] || (wsConf().countryPolicy || {}).DEFAULT || { incoterms: ['FOB', 'CIF'], customs: false }; }
 function incotermDef(c) { return (wsConf().incoterms || {})[c] || {}; }
@@ -288,8 +288,18 @@ function deliveryBadge(p, cls = '') {
   return `<div class="delivery-badge ${cls}">🚚 ${esc(n)}</div>`;
 }
 
-// أسعار الجملة تظهر بس للتجار المسجّلين
-function wsLocked() { return isWholesale() && !currentUser(); }
+// 🔓 أسعار الجملة والكتالوج بقوا ظاهرين للكل — 57% من زوار مكتب التجارة كانوا بيقفوا عند التسجيل.
+//    التسجيل بقى عند إرسال الطلب بس (الاسم + رقم الواتساب). الدالة متسابة عشان باقي الكود.
+function wsLocked() { return false; }
+// 🧾 بيانات تاجر الجملة: الحساب المسجّل لو موجود، وإلا اللي كتبه في آخر طلب (اسم + واتساب + دولة)
+function wsBuyer() {
+  const u = currentUser();
+  if (u) return u;
+  try { return JSON.parse(localStorage.getItem('ws_guest')) || {}; } catch { return {}; }
+}
+function saveWsGuest(d) {
+  try { localStorage.setItem('ws_guest', JSON.stringify({ ...wsBuyer(), ...d })); } catch {}
+}
 // كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
 function priceBlock(p) {
   // ⚠️ span مش <a>: الكارت نفسه لينك، واللينك جوه لينك بيخلّي المتصفح يقسم الكارت لقطع متفرقة
