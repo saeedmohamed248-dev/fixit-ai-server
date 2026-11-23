@@ -8,7 +8,7 @@ document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
 // 🇦🇪 وضع الفرع مبكراً عشان سكين الجملة (Trade Terminal) يتطبّق من غير وميض
 const _urlMode = new URLSearchParams(location.search).get('mode');
 if (_urlMode === 'wholesale' || _urlMode === 'retail') localStorage.setItem('mode', _urlMode);
-document.documentElement.dataset.mode = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
+document.documentElement.dataset.mode = window.__MODE || (localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail');
 
 const I18N = {
   /* ---------- عام / Layout ---------- */
@@ -232,10 +232,11 @@ const I18N = {
   mode_air: { ar: '✈️ جوي', en: '✈️ Air' },
   lead_title: { ar: 'مدة التوريد التقديرية', en: 'Estimated lead time' },
   lead_loading: { ar: 'جاري التقدير…', en: 'Estimating…' },
+  ship_freight_tbd: { ar: 'يتحدد بعد قياس الشحنة', en: 'Quoted after measuring the shipment' },
   lead_note: { ar: 'تقدير آلي حسب الوجهة والظروف الحالية — قابل للتغيير', en: 'Auto estimate by destination & current conditions — may vary' },
   pay_terms_title: { ar: 'شروط الدفع', en: 'Payment terms' },
-  pay_deposit: { ar: 'دفعة مقدّمة ({p}%) — عند تأكيد الطلب', en: 'Deposit ({p}%) — on order confirmation' },
-  pay_balance: { ar: 'الباقي ({p}%) — عند وصول البضاعة للجمارك', en: 'Balance ({p}%) — on customs arrival' },
+  ws_pay_deposit: { ar: 'دفعة مقدّمة ({p}%) — عند تأكيد الطلب', en: 'Deposit ({p}%) — on order confirmation' },
+  ws_pay_balance: { ar: 'الباقي ({p}%) — عند وصول البضاعة للجمارك', en: 'Balance ({p}%) — on customs arrival' },
   pay_terms_note: { ar: 'الدفع كاش/تحويل من الموقع: {d}% مقدّم و{b}% عند وصول الجمارك', en: 'Cash/transfer: {d}% upfront, {b}% on customs arrival' },
   pay_full: { ar: 'دفع كامل (100%) مقدّماً — عند تأكيد الطلب', en: 'Full payment (100%) upfront — on order confirmation' },
   pay_full_note: { ar: 'بعد الدفع الكامل نشحن ونبعتلك بوليصة الشحن. الشركة غير مسؤولة عن أي شيء بعد الشحن.', en: 'After full payment we ship and send you the bill of lading. The company is not responsible for anything after shipment.' },
@@ -443,6 +444,10 @@ const I18N = {
   notes: { ar: 'ملاحظات (نوع العربية / سنة الموديل / رقم الشاسيه)', en: 'Notes (car model / year / chassis number)' },
   pay_method: { ar: 'طريقة الدفع', en: 'Payment method' },
   pay_cod: { ar: '💵 الدفع عند الاستلام', en: '💵 Cash on delivery' },
+  pay_deposit_opt: { ar: '🔒 (اختياري) احجز القطعة بعربون {d} والباقي {b} عند الاستلام', en: '🔒 (Optional) Reserve with a {d} deposit, pay {b} on delivery' },
+  gov_choose: { ar: 'اختار المحافظة', en: 'Choose governorate' },
+  ship_choose_gov: { ar: 'اختار المحافظة لحساب الشحن', en: 'Choose governorate to see shipping' },
+  pay_step_cod: { ar: '💵 <b>الدفع عند الاستلام:</b> هتدفع <b>{v}</b> كاش للمندوب لما القطعة توصلك. هنكلمك نأكد الطلب قبل الشحن.', en: '💵 <b>Cash on delivery:</b> pay <b>{v}</b> in cash to the courier on delivery. We will call you to confirm before shipping.' },
   pay_instapay: { ar: '🏦 تحويل انستاباي', en: '🏦 InstaPay transfer' },
   pay_wallet: { ar: '📱 فودافون كاش / محفظة', en: '📱 Vodafone Cash / e-wallet' },
   pay_deposit: { ar: '💵 عربون {d} والباقي {b} كاش عند الاستلام', en: '💵 {d} deposit, pay the remaining {b} cash on delivery' },
@@ -457,7 +462,7 @@ const I18N = {
   paid_fail: { ar: '⚠️ الدفع ما تمش — تقدر تحاول تاني أو تحوّل انستاباي / محفظة', en: '⚠️ Payment failed — try again or pay via InstaPay / e-wallet' },
   confirm_order: { ar: 'تأكيد الطلب ✓', en: 'Place Order ✓' },
   sending: { ar: 'جاري إرسال الطلب...', en: 'Placing your order...' },
-  fill_required: { ar: 'من فضلك اكتب الاسم ورقم الموبايل والعنوان', en: 'Please enter your name, mobile number and address' },
+  fill_required: { ar: 'من فضلك اكتب الاسم ورقم الموبايل والمحافظة والعنوان', en: 'Please enter your name, mobile number, governorate and address' },
   order_success: { ar: 'تم استلام طلبك بنجاح!', en: 'Your order has been received!' },
   order_no: { ar: 'رقم الطلب:', en: 'Order number:' },
   saved: { ar: 'وفّرت {v} بكود الخصم 🎉', en: 'You saved {v} with your coupon 🎉' },

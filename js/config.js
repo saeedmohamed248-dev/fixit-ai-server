@@ -21,6 +21,16 @@ window.SITE = {
   deposit: { pct: 20, min: 300 },
   // الشحن
   freeShippingOver: 5000, // شحن مجاني فوق المبلغ ده (0 = إلغاء الخاصية)
+  // 🚚 سعر شحن ثابت لكل محافظة (بالجنيه) — لازم يطابق SHIPPING_RATES في api/_lib/util.js
+  shippingRates: {
+    'القاهرة': 75, 'الجيزة': 75, 'القليوبية': 85,
+    'الإسكندرية': 95, 'البحيرة': 100, 'الدقهلية': 100, 'الغربية': 100, 'المنوفية': 100, 'الشرقية': 100,
+    'كفر الشيخ': 100, 'دمياط': 100, 'بورسعيد': 100, 'الإسماعيلية': 100, 'السويس': 100,
+    'الفيوم': 110, 'بني سويف': 110, 'المنيا': 120, 'أسيوط': 130, 'سوهاج': 130, 'قنا': 140, 'الأقصر': 140, 'أسوان': 150,
+    'البحر الأحمر': 160, 'مطروح': 160, 'الوادي الجديد': 175, 'شمال سيناء': 175, 'جنوب سيناء': 175,
+  },
+  // 💵 العربون الاختياري بيظهر بس للطلبات من المبلغ ده وطالع (الافتراضي الدفع عند الاستلام)
+  depositOptionalOver: 5000,
   // ⭐ آراء العملاء (تظهر في الصفحة الرئيسية القطاعية) — عدّلها بآراء حقيقية
   reviews: [
     { name: 'محمود عبد الله', car: 'BMW F30', stars: 5, text: 'قطع أصلية وسعر ممتاز، والتوصيل كان أسرع مما توقعت. تعامل محترم.' },
@@ -137,9 +147,14 @@ window.SITE = {
   try {
     if (/admin\.html/i.test(location.pathname)) return; // من غير شات على لوحة التحكم
     var WIDGET_KEY = 'wid_UsaGap2Em2K5_0n8h63LdtfvYnWu-h1x';
-    var s = document.createElement('script');
-    s.src = 'https://mousstec.com/omnichannel/widget/' + WIDGET_KEY + '.js';
-    s.defer = true;
-    (document.head || document.documentElement).appendChild(s);
+    // ⚡ بنحمّل الشات بعد ما الصفحة تخلص تحميل (+ ثانيتين) عشان مايزاحمش الصور والكود على موبايل بطيء
+    var load = function () {
+      var s = document.createElement('script');
+      s.src = 'https://mousstec.com/omnichannel/widget/' + WIDGET_KEY + '.js';
+      s.async = true;
+      (document.head || document.documentElement).appendChild(s);
+    };
+    var later = function () { setTimeout(load, 2000); };
+    if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
   } catch (e) { /* الشات ما يوقفش الموقع أبداً */ }
 })();

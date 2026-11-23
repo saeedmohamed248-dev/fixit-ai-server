@@ -100,9 +100,9 @@
     <div class="modal" id="order-modal-body"></div>
   </div>
 
-  <script src="/js/config.js"></script>
-  <script src="/js/i18n.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/config.js?v=20261123"></script>
+  <script src="/js/i18n.js?v=20261123"></script>
+  <script src="/js/app.js?v=20261123"></script>
   <script>
     // لوحة التحكم دايماً بالثيم الفاتح النظيف (مش سكين الجملة الداكن)
     document.documentElement.dataset.mode = 'retail';
@@ -1719,7 +1719,7 @@
     }
 
     /* ==================== 📈 التحليلات والزيارات ==================== */
-    const EV_LABELS = { add_cart: '🛒 إضافة للسلة', checkout: '💳 بدء إتمام الطلب', whatsapp: '💬 نقرة واتساب', search: '🔎 بحث', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة', trade_alert: '🔔 تنبيه وصول (تجارة)', part_request: '🔍 طلب توفير قطعة', notify_stock: '📦 بلّغني لما يتوفر', question: '❓ سؤال على منتج', savings_lead: '🧾 حاسبة التوفير' };
+    const EV_LABELS = { add_cart: '🛒 إضافة للسلة', begin_checkout: '✍️ بدأ يكتب بيانات الطلب', checkout: '💳 ضغط تأكيد الطلب', whatsapp: '💬 نقرة واتساب', search: '🔎 بحث', rfq: '📝 طلب عرض سعر', container_book: '🧩 حجز حاوية', ws_order: '🇦🇪 طلب جملة', trade_alert: '🔔 تنبيه وصول (تجارة)', part_request: '🔍 طلب توفير قطعة', notify_stock: '📦 بلّغني لما يتوفر', question: '❓ سؤال على منتج', savings_lead: '🧾 حاسبة التوفير' };
     const PAGE_LABELS = { '/': '🏠 الرئيسية', '/index.html': '🏠 الرئيسية', '/trade.html': '🌐 مكتب التجارة', '/shop.html': '🛍️ الكتالوج', '/product.html': '🔧 صفحة منتج', '/cart.html': '🛒 السلة', '/about.html': '👥 من نحن', '/trade-terms.html': '📜 شروط التجارة', '/account.html': '👤 الحساب', '/track.html': '🚚 تتبع الطلب', '/assistant.html': '🤖 اسأل الخبير', '/request.html': '🔍 طلب قطعة', '/savings.html': '🧾 حاسبة التوفير', '/wishlist.html': '❤️ المفضلة', '/container.html': '🧩 اعمل حاوية' };
     const SRC_LABELS = { direct: '🔗 مباشر / بدون مصدر', google: '🔍 جوجل', facebook: '📘 فيسبوك', instagram: '📸 إنستجرام', whatsapp: '💬 واتساب', tiktok: '🎵 تيك توك', youtube: '▶️ يوتيوب', bing: '🔍 Bing', x: '✖️ X / تويتر' };
     const DEV_LABELS = { mobile: '📱 موبايل', desktop: '💻 كمبيوتر', tablet: '📟 تابلت' };
@@ -1905,7 +1905,7 @@
       let r; try { r = await api('/track?session=' + encodeURIComponent(sid), { headers: authHeaders() }); } catch (e) { body.innerHTML = esc(e.message); return; }
       body.innerHTML = journeyHtml(r, true);
     }
-    const EVL = { add_cart: '🛒 حط في السلة', checkout: '💳 ضغط "تأكيد الطلب"', order_placed: '✅ الطلب اتعمل', whatsapp: '💬 فتح واتساب', search: '🔎 دوّر على', ws_order: '🇦🇪 بعت طلب جملة', rfq: '📝 طلب عرض سعر', container_request: '🧩 طلب حاوية', part_request: '🔍 طلب قطعة', notify_stock: '🔔 بلّغني لما يتوفر', question: '❓ سأل سؤال', savings_lead: '🧾 استخدم حاسبة التوفير', container_book: '🧩 حجز في حاوية', pricelist_dl: '⬇️ نزّل قائمة الأسعار' };
+    const EVL = { add_cart: '🛒 حط في السلة', begin_checkout: '✍️ بدأ يكتب بياناته في السلة', checkout: '💳 ضغط "تأكيد الطلب"', order_placed: '✅ الطلب اتعمل', whatsapp: '💬 فتح واتساب', search: '🔎 دوّر على', ws_order: '🇦🇪 بعت طلب جملة', rfq: '📝 طلب عرض سعر', container_request: '🧩 طلب حاوية', part_request: '🔍 طلب قطعة', notify_stock: '🔔 بلّغني لما يتوفر', question: '❓ سأل سؤال', savings_lead: '🧾 استخدم حاسبة التوفير', container_book: '🧩 حجز في حاوية', pricelist_dl: '⬇️ نزّل قائمة الأسعار' };
     const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return String(x || ''); } };
     function journeyHtml(r, withClose) {
       const t0 = r.steps.length ? r.steps[0].at : 0;
@@ -1933,7 +1933,7 @@
       const t = a.totals, p = a.prev;
       const maxV = Math.max(1, ...a.daily.map((d) => d.views));
       const maxH = Math.max(1, ...a.hours);
-      const f = a.funnel, fSteps = [['جلسات', f.sessions], ['شافوا منتج', f.productViews], ['أضافوا للسلة', f.addCart], ['بدأوا الطلب', f.checkout], ['طلبات فعلية', f.orders]];
+      const f = a.funnel, fSteps = [['جلسات', f.sessions], ['شافوا منتج', f.productViews], ['أضافوا للسلة', f.addCart], ['بدأوا يكتبوا بياناتهم', f.beginCheckout || 0], ['ضغطوا تأكيد الطلب', f.checkout], ['طلبات فعلية', f.orders]];
       const fMax = Math.max(1, ...fSteps.map((s) => s[1]));
       const insights = anInsights(a);
       const ranges = [[1, 'النهارده'], [7, '7 أيام'], [14, '14 يوم'], [30, '30 يوم'], [90, '90 يوم']];

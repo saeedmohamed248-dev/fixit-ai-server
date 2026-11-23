@@ -24,9 +24,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js"></script>
-  <script src="/js/i18n.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/config.js?v=20261123"></script>
+  <script src="/js/i18n.js?v=20261123"></script>
+  <script src="/js/app.js?v=20261123"></script>
   <script>
     renderLayout('cart');
     document.title = t('title_cart');
@@ -54,7 +54,7 @@
     let cartNotice = ''; // تنبيه لو شلنا قطع مبقتش متاحة
 
     // ✍️ نحفظ اللي العميل كتبه في الفورم قبل أي إعادة رسم (تغيير كمية/كوبون/نقاط كان بيمسح الاسم والعنوان)
-    const FORM_IDS = ['c-name', 'c-phone', 'c-city', 'c-email', 'c-address', 'c-notes', 'w-name', 'w-phone', 'w-city', 'w-notes'];
+    const FORM_IDS = ['c-name', 'c-phone', 'c-city', 'c-email', 'c-address', 'c-notes', 'w-name', 'w-phone', 'w-country', 'w-city', 'w-notes'];
     let formDraft = {};
     try { formDraft = JSON.parse(localStorage.getItem('checkout_draft') || '{}'); } catch {}
     function saveDraft() {
@@ -69,6 +69,17 @@
       FORM_IDS.forEach((id) => document.getElementById(id)?.addEventListener('input', saveDraft));
       document.querySelectorAll('input[name="pay"]').forEach((r) => r.addEventListener('change', saveDraft));
     }
+
+    // 📊 begin_checkout: أول ما العميل يبدأ يكتب في فورم السلة (مرة واحدة لكل سلة في الجلسة).
+    //    مربوط على الـ container عشان يفضل شغال بعد أي إعادة رسم.
+    container.addEventListener('input', (e) => {
+      if (!e.target.closest('#c-name, #c-phone, #c-email, #c-address, #c-notes, #w-name, #w-phone, #w-country, #w-city, #w-notes')) return;
+      const cart = getCart();
+      const sig = (isWholesale() ? 'ws:' : 'eg:') + Object.keys(cart).sort().join(',');
+      try { if (sessionStorage.getItem('an_bc') === sig) return; sessionStorage.setItem('an_bc', sig); } catch {}
+      const val = products.filter((p) => cart[p.id]).reduce((a, p) => a + (isWholesale() ? 0 : p.price * cart[p.id]), 0);
+      trackEvent('begin_checkout', { n: Object.keys(cart).length, val, cur: isWholesale() ? 'USD' : 'EGP', br: isWholesale() ? 'ae' : 'eg' });
+    });
 
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
@@ -92,12 +103,15 @@
         allProducts = await api('/products');
         // 🧹 نشيل من السلة اللي خلص أو اتشال أو سعره عند الطلب، ونظبط الكميات على المخزون —
         //    غير كده السلة كانت بتلف في حلقة تحميل لا نهائية، والطلب بيترفض من غير ما العميل يعرف ليه
-        const removed = [];
+        const removed = [], moved = [];
         const c = getCart();
         ids.forEach((id) => {
           const p = allProducts.find((x) => x.id === id);
-          // قطعة مش تبع فرع الوضع الحالي (مثلاً قطعة إمارات في السلة القطاعي) بتتشال برضه
-          if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0)) || !wsCatalogFilter([p]).length) {
+          // قطعة مش تبع فرع الوضع الحالي (مثلاً قطعة إمارات في السلة القطاعي) بتتنقل لسلة الفرع التاني بدل ما تتمسح
+          if (p && Number(p.stock) > 0 && !wsCatalogFilter([p]).length) {
+            const other = getCart(!isWholesale()); other[id] = (other[id] || 0) + c[id]; setCart(other, !isWholesale());
+            moved.push(pname(p)); delete c[id];
+          } else if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0))) {
             removed.push(p ? pname(p) : null); delete c[id];
           } else if (c[id] > p.stock) c[id] = p.stock;
         });
@@ -107,6 +121,9 @@
             ? `⚠️ ${removed.length} item(s) were removed from your cart because they're no longer available${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">Request them</a>`
             : `⚠️ شلنا ${removed.length} قطعة من السلة لأنها مبقتش متاحة${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">اطلبها نوفّرهالك</a>`)
           : '';
+        if (moved.length) cartNotice += (cartNotice ? '<br>' : '') + (LANG === 'en'
+          ? `ℹ️ ${moved.length} item(s) belong to the ${isWholesale() ? 'Retail (Egypt)' : 'Wholesale (UAE)'} store and were kept in that cart: ${moved.map(esc).join('، ')}. <a href="#" onclick="setMode('${isWholesale() ? 'retail' : 'wholesale'}');return false;" style="color:var(--accent-dark);">Switch</a>`
+          : `ℹ️ ${moved.length} قطعة تبع ${isWholesale() ? 'القطاعي (مصر)' : 'الجملة (الإمارات)'} — اتحفظت في سلة الفرع ده ومتمسحتش: ${moved.map(esc).join('، ')}. <a href="#" onclick="setMode('${isWholesale() ? 'retail' : 'wholesale'}');return false;" style="color:var(--accent-dark);">روح لها</a>`);
         products = allProducts.filter((p) => c[p.id]);
         if (!products.length) {
           container.innerHTML = `${cartNotice ? `<div class="note">${cartNotice}</div>` : ''}<div class="empty-state"><span class="icon">🛒</span>
@@ -141,21 +158,35 @@
         </div>`).join('')}`;
     }
 
-    // 🕒 تقدير مدة التوريد من البوت (يخزّن في الجلسة عشان مايتكررش)
+    // 🕒 تقدير مدة التوريد: بنعرض تقدير فوري من جدول ثابت، وبعدين نحدّثه من البوت لو رد (بحد أقصى 8 ثواني).
+    //    قبل كده الرسم من جديد كان بيفصل العنصر القديم، فالقيمة كانت بتفضل «جاري التقدير…» للأبد.
+    const LEAD_FALLBACK = { sea: { EG: [45, 65], RU: [40, 60], DEFAULT: [45, 70] }, air: { EG: [4, 8], RU: [6, 11], DEFAULT: [5, 10] } };
+    function leadFallback(country, mode) {
+      const tbl = LEAD_FALLBACK[mode] || LEAD_FALLBACK.sea;
+      const [a, b] = tbl[countryCode(country)] || tbl.DEFAULT;
+      const buf = 1 + ((SITE.wholesale?.leadBufferPct) || 40) / 100;
+      return { minDays: Math.round(a * buf), maxDays: Math.round(b * buf) };
+    }
+    function leadKey(country, mode) { return `lead_${countryCode(country)}_${mode}`; }
+    function leadNow(country, mode) {
+      let d = null;
+      try { d = JSON.parse(sessionStorage.getItem(leadKey(country, mode)) || 'null'); } catch {}
+      d = d || leadFallback(country, mode);
+      wsLeadText = fmtLead(d.minDays, d.maxDays);
+      return wsLeadText;
+    }
     async function loadLead(country, mode) {
-      const el = document.getElementById('lead-val');
-      if (!el) return;
-      const key = `lead_${countryCode(country)}_${mode}`;
-      let cached = null;
-      try { cached = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch {}
-      const apply = (d) => { const txt = fmtLead(d.minDays, d.maxDays); wsLeadText = txt; el.textContent = txt; };
-      if (cached) { apply(cached); return; }
+      const key = leadKey(country, mode);
+      try { if (sessionStorage.getItem(key)) return; } catch {}
       try {
-        const d = await api('/leadtime', { method: 'POST', body: JSON.stringify({ country, mode, bufferPct: (SITE.wholesale?.leadBufferPct) || 40 }) });
+        const d = await api('/leadtime', { method: 'POST', signal: AbortSignal.timeout(8000), body: JSON.stringify({ country, mode, bufferPct: (SITE.wholesale?.leadBufferPct) || 40 }) });
+        if (!(d && d.minDays > 0)) return;
         try { sessionStorage.setItem(key, JSON.stringify(d)); } catch {}
-        // نطبّق فقط لو لسه على نفس الوسيلة
-        if (wsShipMode === mode) apply(d);
-      } catch { el.textContent = '—'; }
+        if (wsShipMode !== mode) return;
+        wsLeadText = fmtLead(d.minDays, d.maxDays);
+        const el = document.getElementById('lead-val'); // العنصر الحالي (مش القديم)
+        if (el) el.textContent = wsLeadText;
+      } catch { /* بنفضل على التقدير الثابت */ }
     }
 
     // 🇦🇪 وضع الجملة: عرض بأسعار الجملة + إتمام الطلب عبر واتساب فرع الإمارات
@@ -164,11 +195,9 @@
       const cart = getCart();
       const items = products.filter((p) => cart[p.id]);
       if (items.length === 0) return load();
-      if (!currentUser()) {
-        container.innerHTML = `<div class="empty-state"><span class="icon">🔒</span>
-          ${t('ws_login_required')}<br><br><a class="btn" href="/account.html?mode=register&next=${encodeURIComponent(location.pathname + location.search)}">${t('ws_login_cta')}</a></div>`;
-        return;
-      }
+      // 🔓 من غير تسجيل دخول: بنطلب الاسم + الواتساب + الدولة عند الإرسال بس
+      const buyer = wsBuyer();
+      if (formDraft['w-country'] !== undefined && formDraft['w-country'] !== buyer.country) buyer.country = formDraft['w-country'];
       let subtotal = 0;
       let anyOnRequest = false;
       items.forEach((p) => {
@@ -178,7 +207,7 @@
       });
       // 🚢 حساب الحاوية وعرض سعر الشحن الدولي
       const qitems = items.map((p) => ({ p, qty: cart[p.id] }));
-      const cc = dealerCountryCode();
+      const cc = countryCode(buyer.country);
       const pol = countryPolicy(cc);
       const allowed = (pol.incoterms || ['FOB', 'CIF']).filter((c) => incotermDef(c).nameAr);
       if (!wsIncoterm || !allowed.includes(wsIncoterm)) wsIncoterm = allowed[0];
@@ -215,15 +244,16 @@
           }).join('')}
         </div>
         <div class="summary">
+          ${q.cbm > 0 ? `
           <div class="load-card">
             <div class="load-head">🚢 ${t('load_title')}</div>
             <div class="load-row"><span>${t('load_cbm')}</span><b>${q.cbm.toFixed(2)} ${t('cbm_unit')}</b></div>
-            <div class="load-row"><span>${t('load_weight')}</span><b>${new Intl.NumberFormat('en-US').format(Math.round(q.kg))} kg</b></div>
+            ${q.kg > 0 ? `<div class="load-row"><span>${t('load_weight')}</span><b>${new Intl.NumberFormat('en-US').format(Math.round(q.kg))} kg</b></div>` : ''}
             <div class="load-row"><span>${t('load_recommend')}</span><b style="color:var(--accent);">${loadLabel(q.plan)}</b></div>
             ${q.plan.mode === 'FCL' || q.plan.mode === 'FCL_MULTI' ? `
             <div class="fill-track"><div class="fill-bar" style="width:${Math.min(100, q.plan.fillPct)}%;"></div></div>
             <div class="fill-cap">${q.cbm.toFixed(1)} ${t('load_fill_of')} ${q.plan.container.usableCbm * (q.plan.count || 1)} ${t('cbm_unit')} · ${q.plan.fillPct}%</div>` : ''}
-          </div>
+          </div>` : ''}
 
           <h3>${t('order_summary')}</h3>
           <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}${anyOnRequest ? ' +' : ''}</b></div>
@@ -231,7 +261,10 @@
 
           <div class="ship-quote">
             <div class="ship-head">📦 ${t('ship_title')}</div>
-            <div class="row"><span>${t('ship_dest')}</span><b>${esc(currentUser().country || '—')}${q.port ? ` · ${esc(q.port)}` : ''}</b></div>
+            <div style="margin:8px 0;"><label>${t('ship_dest')}</label>
+              <input id="w-country" list="w-country-list" value="${esc(buyer.country || '')}" placeholder="${LANG === 'en' ? 'Egypt, UAE, Russia…' : 'مصر، الإمارات، روسيا…'}">
+              <datalist id="w-country-list">${['مصر', 'الإمارات', 'السعودية', 'روسيا', 'الأردن', 'العراق', 'ليبيا', 'الكويت', 'قطر', 'عمان', 'البحرين'].map((c) => `<option value="${c}">`).join('')}</datalist>
+              ${q.port ? `<small style="color:var(--muted);">⚓ ${esc(q.port)}</small>` : ''}</div>
             <div style="margin:8px 0;">
               <label>${t('ship_mode')}</label>
               <div class="mode-switch">
@@ -239,7 +272,7 @@
                 <button type="button" class="${wsShipMode === 'air' ? 'active' : ''}" data-mode="air">${t('mode_air')}</button>
               </div>
             </div>
-            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${t('lead_loading')}</b></div>
+            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${esc(leadNow(buyer.country, wsShipMode))}</b></div>
             <div style="margin:8px 0;">
               <label>${t('ship_incoterm')}</label>
               <select id="w-incoterm">
@@ -247,7 +280,7 @@
               </select>
             </div>
             <div class="row"><span>${t('ship_goods')}</span><span>${usdMoney(q.goods)}</span></div>
-            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : ''}
+            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : (q.plan.mode === 'EMPTY' && incotermDef(wsIncoterm).freight ? `<div class="row" style="color:var(--muted);"><span>${t('ship_freight')}</span><span>${t('ship_freight_tbd')}</span></div>` : '')}
             ${q.insurance ? `<div class="row"><span>${t('ship_insurance')}</span><span>${usdMoney(q.insurance)}</span></div>` : ''}
             ${q.customs ? `<div class="row" style="color:var(--amber);"><span>${t('ship_customs')}</span><span>${usdMoney(q.customs)}</span></div>` : ''}
             <div class="row total" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;"><span>${t('ship_grand')}</span><span>${usdMoney(q.total)}</span></div>
@@ -263,19 +296,21 @@
               return (dp || bp) ? `
               <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
                 <div class="ship-head" style="font-size:13px;">💵 ${t('pay_terms_title')}</div>
-                <div class="row" style="color:var(--green);"><span>${t('pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
-                <div class="row"><span>${t('pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
+                <div class="row" style="color:var(--green);"><span>${t('ws_pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
+                <div class="row"><span>${t('ws_pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
               </div>` : '';
             })()}
             <div class="note" style="margin:8px 0 0;font-size:12px;">${t('ship_usd_note')}${q.customs ? '<br>⚠️ ' + t('ship_customs_note') : ''}</div>
           </div>
 
           <hr style="border-color: var(--line);">
-          <div><label>${t('full_name')}</label><input id="w-name" value="${esc(currentUser().name || '')}"></div>
-          <div><label>${t('phone')}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" value="${esc(currentUser().phone || '')}"></div>
+          <div class="note" style="margin:0;font-size:12.5px;">${LANG === 'en' ? '✅ No account needed — just your name and WhatsApp number. We reply with the final quote on WhatsApp.' : '✅ من غير حساب ولا باسورد — اسمك ورقم الواتساب بس، وهنرد عليك بعرض السعر النهائي على واتساب.'}</div>
+          <div><label>${t('full_name')}</label><input id="w-name" value="${esc(buyer.name || '')}"></div>
+          <div><label>${LANG === 'en' ? 'WhatsApp number (with country code)' : 'رقم الواتساب (بكود الدولة)'}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="+20 10xxxxxxxx" value="${esc(buyer.phone || '')}"></div>
           <div><label>${t('city')}</label><input id="w-city"></div>
           <div><label>${t('notes')}</label><textarea id="w-notes" rows="2"></textarea></div>
           <button class="btn btn-green" id="w-submit">💬 ${t('ws_checkout')}</button>
+          <div id="w-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>`;
 
@@ -291,6 +326,7 @@
       container.querySelectorAll('[data-remove]').forEach((btn) => {
         btn.addEventListener('click', () => { removeFromCart(btn.dataset.remove); renderWholesale(); });
       });
+      document.getElementById('w-country')?.addEventListener('change', () => { saveDraft(); renderWholesale(); });
       document.getElementById('w-incoterm')?.addEventListener('change', (e) => {
         wsIncoterm = e.target.value;
         renderWholesale();
@@ -298,7 +334,7 @@
       container.querySelectorAll('.mode-switch [data-mode]').forEach((btn) =>
         btn.addEventListener('click', () => { wsShipMode = btn.dataset.mode; renderWholesale(); }));
       // 🕒 تقدير مدة التوريد بالبوت (مع كاش لكل دولة+وسيلة)
-      loadLead(currentUser().country, wsShipMode);
+      loadLead(buyer.country, wsShipMode);
       container.querySelectorAll('[data-step]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const c = getCart();
@@ -314,6 +350,14 @@
         const phone = document.getElementById('w-phone').value.trim();
         const city = document.getElementById('w-city').value.trim();
         const notes = document.getElementById('w-notes').value.trim();
+        const country = document.getElementById('w-country').value.trim();
+        const errEl = document.getElementById('w-error');
+        if (!name || !/^\+?\d{7,15}$/.test(phone.replace(/[\s-]/g, ''))) {
+          errEl.textContent = LANG === 'en' ? 'Please enter your name and a WhatsApp number with country code' : 'اكتب اسمك ورقم الواتساب بكود الدولة (مثال: +2010xxxxxxxx)';
+          return;
+        }
+        errEl.textContent = '';
+        saveWsGuest({ name, phone, country }); buyer.country = country;
         const cur = WCUR === 'usd' ? 'USD' : 'AED';
         const lines = items.map((p) => {
           const d = tierUnit(p, cart[p.id]);
@@ -322,16 +366,16 @@
         }).join('\n');
         const head = `${t('ws_order_title')} 🇦🇪 (${cur})`;
         const who = [name && `${t('full_name')}: ${name}`, phone && `${t('phone')}: ${phone}`,
-          currentUser().company && `${t('rfq_company')}: ${currentUser().company}`,
+          buyer.company && `${t('rfq_company')}: ${buyer.company}`,
           city && `${t('city')}: ${city}`].filter(Boolean).join('\n');
         const totalTxt = `${t('subtotal')}: ${money(subtotal)}${anyOnRequest ? ' +' : ''}`;
         // 🚢 تفاصيل الشحن
         const ship = [
           `— ${t('ship_title')} —`,
-          `${t('ship_dest')}: ${currentUser().country || '-'}${q.port ? ' / ' + q.port : ''}`,
+          `${t('ship_dest')}: ${buyer.country || '-'}${q.port ? ' / ' + q.port : ''}`,
           `${t('ship_mode')}: ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`,
           wsLeadText ? `${t('lead_title')}: ${wsLeadText}` : '',
-          `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})`,
+          q.cbm > 0 ? `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})` : '',
           `${t('ship_incoterm')}: ${incName(wsIncoterm)}`,
           `${t('ship_goods')}: ${usdMoney(q.goods)}`,
           q.freight ? `${t('ship_freight')}: ${usdMoney(q.freight)}` : '',
@@ -346,16 +390,16 @@
           t('pay_full_note'),
         ].join('\n') : [
           `— ${t('pay_terms_title')} —`,
-          `${t('pay_deposit', { p: pay.depositPct })}: ${usdMoney(q.total * (pay.depositPct || 0) / 100)}`,
-          `${t('pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
+          `${t('ws_pay_deposit', { p: pay.depositPct })}: ${usdMoney(q.total * (pay.depositPct || 0) / 100)}`,
+          `${t('ws_pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
         ].join('\n'));
         const msg = [head, who, '', lines, '', totalTxt, '', ship, payTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
         trackEvent('ws_order');
         window.open(waLink(msg), '_blank');
         // 📥 نسجّل الطلب كمان في لوحة التحكم (طلبات القطع → جملة RFQ) عشان مايضيعش لو الرسالة ماتبعتتش
         api('/requests', { method: 'POST', body: JSON.stringify({
-          wholesale: true, name: name || currentUser().name, phone: phone || currentUser().phone,
-          company: currentUser().company || '', country: currentUser().country || '', email: currentUser().email || '',
+          wholesale: true, name: name || buyer.name, phone: phone || buyer.phone,
+          company: buyer.company || '', country: buyer.country || '', email: buyer.email || '',
           partName: lines + '\n\n' + totalTxt + ' — ' + t('ship_grand') + ': ' + usdMoney(q.total),
           notes: [city && `${t('city')}: ${city}`, `${incName(wsIncoterm)} · ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`, notes].filter(Boolean).join(' | '),
           source: 'cart',
@@ -384,6 +428,13 @@
       const total = netBeforeCb - cashbackDiscount;
       const user = currentUser();
       const freeShip = SITE.freeShippingOver && total >= SITE.freeShippingOver;
+      // 🚚 شحن ثابت حسب المحافظة (نفس حسبة السيرفر)
+      const govSel = formDraft['c-city'] || '';
+      const govFee = (SITE.shippingRates || {})[govSel];
+      const shipFee = freeShip ? 0 : (govFee === undefined ? null : govFee);
+      const grand = total + (shipFee || 0);
+      const depOk = !SITE.depositOff && grand >= (SITE.depositOptionalOver || 5000);
+      if (formDraft.pay === 'deposit' && !depOk) formDraft.pay = 'cod';
 
       container.innerHTML = `
       ${cartNotice ? `<div class="note" style="margin-bottom:14px;">${cartNotice}</div>` : ''}
@@ -418,14 +469,14 @@
           ${creditDiscount ? `<div class="row" style="color: var(--green);"><span>${t('credit_row')} 💳</span><b>- ${money(creditDiscount)}</b></div>` : ''}
           ${cashbackDiscount ? `<div class="row" style="color: var(--green);"><span>${LANG === 'en' ? 'Cashback' : 'كاش باك'} 💰</span><b>- ${money(cashbackDiscount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
-            <span>${t('shipping')}</span><span>${freeShip ? t('ship_free') : t('ship_later')}</span>
+            <span>${t('shipping')}${govSel && shipFee !== null ? ` (${esc(govSel)})` : ''}</span><span>${freeShip ? t('ship_free') : (shipFee === null ? t('ship_choose_gov') : money(shipFee))}</span>
           </div>
           ${SITE.freeShippingOver && !freeShip ? `
           <div class="ship-progress">
             <small>${t('ship_progress', { v: money(SITE.freeShippingOver - total) })}</small>
             <div class="progress-track"><div class="progress-fill" style="width: ${Math.min(100, Math.round(total / SITE.freeShippingOver * 100))}%;"></div></div>
           </div>` : ''}
-          <div class="row total"><span>${t('total_due')}</span><span>${money(total)}</span></div>
+          <div class="row total"><span>${t('total_due')}</span><span>${money(grand)}</span></div>
 
           <div style="display: flex; gap: 8px;">
             <input id="c-coupon" placeholder="${t('coupon_ph')}" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
@@ -460,7 +511,7 @@
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
           <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
           <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
-          <div><label>${t('city')}</label><input id="c-city" placeholder="${t('city_ph')}"></div>
+          <div><label>${t('city')}</label><select id="c-city"><option value="">${t('gov_choose')}</option>${Object.entries(SITE.shippingRates || {}).map(([g, f]) => `<option value="${esc(g)}">${esc(g)} — ${money(f)}</option>`).join('')}</select></div>
           <div><label>${t('email_label')}</label><input id="c-email" type="email" dir="ltr" style="text-align: start;" value="${user && user.email ? esc(user.email) : ''}" placeholder="عشان يوصلك تأكيد الطلب"></div>
           <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
           <div><label>${t('notes')}</label><textarea id="c-notes" rows="2"></textarea></div>
@@ -469,8 +520,9 @@
             <label>${t('pay_method')}</label>
             <div class="pay-options">
               ${cardEnabled ? `<label class="pay-option"><input type="radio" name="pay" value="card"> ${t('pay_card')} 🔒</label>` : ''}
-              ${SITE.depositOff ? '' : (() => { const dp = calcDeposit(total); return `<label class="pay-option"><input type="radio" name="pay" value="deposit" checked> ${t('pay_deposit', { d: money(dp.deposit), b: money(dp.balance) })}</label>`; })()}
-              <label class="pay-option"><input type="radio" name="pay" value="instapay" ${SITE.depositOff ? 'checked' : ''}> ${t('pay_instapay')}</label>
+              <label class="pay-option"><input type="radio" name="pay" value="cod" checked> ${t('pay_cod')}</label>
+              ${depOk ? (() => { const dp = calcDeposit(grand); return `<label class="pay-option"><input type="radio" name="pay" value="deposit"> ${t('pay_deposit_opt', { d: money(dp.deposit), b: money(dp.balance) })}</label>`; })() : ''}
+              <label class="pay-option"><input type="radio" name="pay" value="instapay"> ${t('pay_instapay')}</label>
               <label class="pay-option"><input type="radio" name="pay" value="wallet"> ${t('pay_wallet')}</label>
             </div>
           </div>
@@ -481,6 +533,7 @@
       </div>`;
 
       restoreDraft();
+      document.getElementById('c-city')?.addEventListener('change', () => { saveDraft(); render(); });
       // 📱 التحقق من رقم الموبايل وهو بيكتب (وتحويل الأرقام العربي ٠١٢ لإنجليزي)
       const phoneEl = document.getElementById('c-phone');
       if (phoneEl && !document.getElementById('c-phone-hint')) {
@@ -570,7 +623,7 @@
           document.getElementById('c-phone').focus();
           return;
         }
-        if (!customer.name || !customer.phone || !customer.address) {
+        if (!customer.name || !customer.phone || !customer.address || !customer.city) {
           errBox.textContent = t('fill_required');
           return;
         }
@@ -637,6 +690,8 @@
       let payBox = '';
       if (order.payment === 'card' && !order.paid) {
         payBox = `<button class="btn" onclick='payCard("${esc(order.number)}", "${esc(order.customer.phone)}")'>${t('pay_now')}</button>`;
+      } else if (order.payment === 'cod') {
+        payBox = `<div class="note" style="text-align: start;">${t('pay_step_cod', { v: money(order.total) })}</div>`;
       } else if (order.payment === 'deposit') {
         payBox = `<div class="note" style="text-align: start;">${t('pay_step_deposit', { d: money(order.deposit), b: money(order.balanceDue), n: esc(SITE.instapay) })}</div>`;
       } else if (order.payment === 'instapay') {

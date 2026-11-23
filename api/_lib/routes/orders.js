@@ -9,11 +9,11 @@ import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { generateFromOrder } from './maintenance.js';
 import { applyToNewOrder, onOrderStatus } from './cashback.js';
 import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
-import { cors, requireAdmin, rateLimit, validPhone, calcDeposit } from '../util.js';
+import { cors, requireAdmin, rateLimit, validPhone, calcDeposit, shippingFee } from '../util.js';
 
 const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-// 💵 الدفع الكامل عند الاستلام اتلغى — بداله «عربون والباقي عند الاستلام» (deposit)
-const PAYMENTS = ['deposit', 'instapay', 'wallet', 'card'];
+// 💵 الدفع عند الاستلام (cod) هو الخيار الأساسي، والعربون اختياري (للطلبات الكبيرة)
+const PAYMENTS = ['cod', 'deposit', 'instapay', 'wallet', 'card'];
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -150,7 +150,7 @@ export default async function handler(req, res) {
         userId: session?.uid || null,
         email: (user && user.email) || (customer.email || '').trim(),
         notes: body.notes || '',
-        payment: PAYMENTS.includes(body.payment) ? body.payment : 'instapay',
+        payment: PAYMENTS.includes(body.payment) ? body.payment : 'cod',
         items: orderItems,
         subtotal,
         discount,
@@ -181,12 +181,17 @@ export default async function handler(req, res) {
         order.total -= cb.cashbackUsed;
       } catch { /* الكاش باك مايوقفش الطلب */ }
 
-      // 🔀 العربون متوقف مؤقتاً من الأدمن → نحوّل الطلب لتحويل كامل
+      let st = {};
+      try { st = await getSettings(); } catch {}
+      // 🚚 الشحن الثابت حسب المحافظة — بيتحسب هنا (مش من المتصفح) وبيتضاف على الإجمالي
+      {
+        const fee = shippingFee(customer.city, order.total, st);
+        if (fee !== null) { order.shipping = fee; order.total += fee; }
+      }
+      // 🔀 العربون متوقف مؤقتاً من الأدمن → نحوّل الطلب للدفع عند الاستلام
       if (order.payment === 'deposit') {
-        let st = {};
-        try { st = await getSettings(); } catch {}
         const until = st.depositOffUntil;
-        if (st.depositOff === true && !(until && Date.now() > new Date(until + 'T23:59:59+02:00').getTime())) order.payment = 'instapay';
+        if (st.depositOff === true && !(until && Date.now() > new Date(until + 'T23:59:59+02:00').getTime())) order.payment = 'cod';
       }
 
       // 💵 عربون والباقي عند الاستلام — المبلغ بيتحسب هنا (مش من المتصفح) عشان محدش يغيّره

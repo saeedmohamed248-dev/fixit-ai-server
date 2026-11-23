@@ -157,7 +157,7 @@ async function record(req, b) {
       if (step.lk) cmds.push(['HSET', mk, 'locked', 1]);
       if (Number(b.nv)) cmds.push(['HSET', mk, 'new', 1]);
     } else if (step.t === 'e') {
-      const flag = { add_cart: 'cart', checkout: 'checkout', order_placed: 'order', whatsapp: 'wa', search: 'search', ws_order: 'wsorder', rfq: 'rfq', container_request: 'ctreq', part_request: 'preq' }[step.ev];
+      const flag = { add_cart: 'cart', begin_checkout: 'bcheckout', checkout: 'checkout', order_placed: 'order', whatsapp: 'wa', search: 'search', ws_order: 'wsorder', rfq: 'rfq', container_request: 'ctreq', part_request: 'preq' }[step.ev];
       if (flag) cmds.push(['HINCRBY', mk, flag, 1]);
       if (step.ev === 'search' && step.n === 0) cmds.push(['HINCRBY', mk, 'search0', 1]);
       if (step.ord) cmds.push(['HSET', mk, 'ord', step.ord]);
@@ -201,7 +201,8 @@ function outcomeOf(m) {
   const n = (k) => Number(m[k]) || 0;
   if (n('order') || n('wsorder')) return ['bought', '✅ اشترى'];
   if (n('ctreq') || n('rfq') || n('preq')) return ['lead', '📝 ساب طلب'];
-  if (n('checkout')) return ['checkout_drop', '💳 بدأ الطلب ومكمّلش'];
+  if (n('checkout')) return ['checkout_drop', '💳 ضغط تأكيد الطلب ومكمّلش'];
+  if (n('bcheckout')) return ['form_drop', '✍️ بدأ يكتب بياناته ومكمّلش'];
   if (n('cart')) return ['cart_drop', '🛒 حط في السلة ومشتراش'];
   if (n('locked')) return ['locked', '🔒 وقف عند تسجيل الدخول (جملة)'];
   if (n('search0')) return ['no_result', '🔎 دوّر ومالقاش'];
@@ -334,7 +335,7 @@ async function report(n) {
     products: group(rows, 'pr:', 15).map(([id, c]) => [id, names[id] || id, c]),
     sources: group(rows, 'src:'), devices: group(rows, 'dev:'), countries: group(rows, 'cty:'),
     events, searches: dropPrefixes(group(rows, 'q:', 60)).slice(0, 20), searchesZero: dropPrefixes(group(rows, 'q0:', 60)).slice(0, 20),
-    funnel: { sessions: totals.sessions, productViews, addCart: events.add_cart || 0, checkout: events.checkout || 0, orders: totals.orders },
+    funnel: { sessions: totals.sessions, productViews, addCart: events.add_cart || 0, beginCheckout: events.begin_checkout || 0, checkout: events.checkout || 0, orders: totals.orders },
     legacy,
   };
 }

@@ -9,7 +9,8 @@ const API = IS_NATIVE ? PROD_ORIGIN + '/api' : '/api';
 
 /* ---------- 🇪🇬🇦🇪 الفرع: قطاعي (مصر) / جملة (الإمارات) ---------- */
 // الوضع محفوظ في المتصفح، والافتراضي القطاعي (مصر). العملة في الجملة: درهم/دولار
-window.MODE = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
+// صفحات الجملة الثابتة (عن الشركة/الشروط) بتحدد window.__MODE للصفحة دي بس من غير ما تغيّر اختيار الزائر
+window.MODE = window.__MODE || (localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail');
 window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
 function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
@@ -58,6 +59,14 @@ function newArrivals(list, n = 8) {
 function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
 function setMode(m) {
   const ws = m === 'wholesale';
+  // 🛒 كل فرع ليه سلة لوحده — التحويل مابيمسحش حاجة، بس بننبّه الزائر إن القطع هتفضل في سلة الفرع التاني
+  const n = Object.keys(getCart()).length;
+  if (ws !== isWholesale() && n) {
+    const msg = LANG === 'en'
+      ? `Your cart has ${n} item(s) from the ${isWholesale() ? 'Wholesale (UAE)' : 'Retail (Egypt)'} store. They stay saved there — switch back anytime to check out. Continue?`
+      : `سلتك فيها ${n} قطعة من ${isWholesale() ? 'الجملة (الإمارات)' : 'القطاعي (مصر)'}. هتفضل محفوظة هناك وتقدر ترجعلها في أي وقت. نكمّل التحويل؟`;
+    if (!confirm(msg)) return;
+  }
   localStorage.setItem('mode', ws ? 'wholesale' : 'retail');
   location.href = ws ? '/trade.html' : '/index.html';
 }
@@ -195,7 +204,7 @@ function countryCode(str) {
   if (/(روسيا|russia|ru\b|россия)/.test(s)) return 'RU';
   return 'DEFAULT';
 }
-function dealerCountryCode() { return countryCode(currentUser()?.country); }
+function dealerCountryCode() { return countryCode(wsBuyer().country); }
 function lane(code) { return (wsConf().freight?.lanes || {})[code] || (wsConf().freight?.lanes || {}).DEFAULT || {}; }
 function countryPolicy(code) { return (wsConf().countryPolicy || {})[code] || (wsConf().countryPolicy || {}).DEFAULT || { incoterms: ['FOB', 'CIF'], customs: false }; }
 function incotermDef(c) { return (wsConf().incoterms || {})[c] || {}; }
@@ -279,8 +288,18 @@ function deliveryBadge(p, cls = '') {
   return `<div class="delivery-badge ${cls}">🚚 ${esc(n)}</div>`;
 }
 
-// أسعار الجملة تظهر بس للتجار المسجّلين
-function wsLocked() { return isWholesale() && !currentUser(); }
+// 🔓 أسعار الجملة والكتالوج بقوا ظاهرين للكل — 57% من زوار مكتب التجارة كانوا بيقفوا عند التسجيل.
+//    التسجيل بقى عند إرسال الطلب بس (الاسم + رقم الواتساب). الدالة متسابة عشان باقي الكود.
+function wsLocked() { return false; }
+// 🧾 بيانات تاجر الجملة: الحساب المسجّل لو موجود، وإلا اللي كتبه في آخر طلب (اسم + واتساب + دولة)
+function wsBuyer() {
+  const u = currentUser();
+  if (u) return u;
+  try { return JSON.parse(localStorage.getItem('ws_guest')) || {}; } catch { return {}; }
+}
+function saveWsGuest(d) {
+  try { localStorage.setItem('ws_guest', JSON.stringify({ ...wsBuyer(), ...d })); } catch {}
+}
 // كتلة السعر الجاهزة (قديم + حالي) أو "السعر عند الطلب" أو قفل تسجيل الدخول
 function priceBlock(p) {
   // ⚠️ span مش <a>: الكارت نفسه لينك، واللينك جوه لينك بيخلّي المتصفح يقسم الكارت لقطع متفرقة
@@ -467,8 +486,11 @@ function trackPageview(extra = {}) {
 function trackEvent(ev, extra = {}) {
   track('event', { ev, ...extra });
   // 📣 نفس الأحداث بتروح لفيسبوك بالأسماء القياسية (للإعلانات والـ Retargeting)
-  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
+  // begin_checkout = أول ما يبدأ يكتب بياناته في فورم السلة → InitiateCheckout
+  // checkout = ضغط «تأكيد الطلب» → AddPaymentInfo · order_placed = الطلب اتسجّل → Purchase
+  const map = { add_cart: 'AddToCart', begin_checkout: 'InitiateCheckout', checkout: 'AddPaymentInfo', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
   if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
+  else if (ev === 'begin_checkout') px('InitiateCheckout', { value: Number(extra.val) || 0, currency: extra.cur || 'EGP', num_items: Number(extra.n) || 0 });
   else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
   else if (ev === 'wa_click') px('Contact', {});
   try { if (window.gtag) gtag('event', ev === 'order_placed' ? 'purchase' : ev, ev === 'order_placed' ? { value: Number(extra.val) || 0, currency: 'EGP', transaction_id: extra.ord } : {}); } catch {}
@@ -527,12 +549,14 @@ function userHeaders() {
 }
 
 /* ---------- السلة (localStorage) ---------- */
-function getCart() {
-  try { return JSON.parse(localStorage.getItem('cart')) || {}; }
+// 🛒 سلة منفصلة لكل فرع: 'cart' للقطاعي (مصر) و 'cart_ws' للجملة (الإمارات)
+function cartKey(ws = isWholesale()) { return ws ? 'cart_ws' : 'cart'; }
+function getCart(ws) {
+  try { return JSON.parse(localStorage.getItem(cartKey(ws))) || {}; }
   catch { return {}; }
 }
-function setCart(cart) {
-  localStorage.setItem('cart', JSON.stringify(cart));
+function setCart(cart, ws) {
+  localStorage.setItem(cartKey(ws), JSON.stringify(cart));
   updateCartBadge();
 }
 function addToCart(id, qty = 1) {
@@ -779,11 +803,19 @@ function fixMediaUrl(u) {
   if (/^\/media\//i.test(u)) return MEDIA_BASE + u;
   return u.replace(/^https?:\/\/(www\.)?fixitauto\.parts(?=\/media\/)/i, MEDIA_BASE);
 }
+// 🖼️ صور Cloudinary بتترفع PNG بحجمها الأصلي (ممكن ميجات) — بنطلب نسخة مصغّرة WebP/AVIF بالجودة المناسبة
+//    حسب مكان العرض (كارت/صورة صغيرة/صفحة المنتج). روابط غير Cloudinary بترجع زي ما هي.
+function imgSized(u, w = 400) {
+  u = String(u || '');
+  if (!/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(u)) return u;
+  if (/\/upload\/[^/]*(?:w_|f_auto|q_auto)/.test(u)) return u; // متصغّرة قبل كده
+  return u.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${w}/`);
+}
 function firstImage(p) {
   return fixMediaUrl(p.image || (Array.isArray(p.images) && p.images[0]) || '');
 }
 function productImage(p, cssClass = 'card-img') {
-  const src = firstImage(p);
+  const src = imgSized(firstImage(p), /thumb/.test(cssClass) ? 200 : 480);
   // لو رابط الصورة بايظ/انتهى، نعرض أيقونة الفئة بدل مربع فاضي
   if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}${p.oem ? ' ' + esc(p.oem) : ''}" loading="lazy" decoding="async" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
   return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
@@ -859,7 +891,7 @@ function wsCard(p) {
       <span class="ws-plate-ic">${categoryIcon(p.category)}</span>
     </div>`;
   const media = src
-    ? `<img class="card-img ws-img" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy" decoding="async" onerror="this.outerHTML=this.nextElementSibling.innerHTML">`
+    ? `<img class="card-img ws-img" src="${esc(imgSized(src, 480))}" alt="${esc(pname(p))}" loading="lazy" decoding="async" onerror="this.outerHTML=this.nextElementSibling.innerHTML">`
       + `<template>${plate}</template>`
     : plate;
   const tiers = wsTiers();
@@ -1027,7 +1059,7 @@ function initHeaderSearch() {
             </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
           : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}"
               <a class="btn btn-sm" style="display:block;margin-top:8px;text-align:center;" href="/shop.html?q=${encodeURIComponent(q)}">📩 ${LANG === 'en' ? 'Can\'t find it? Request it — we\'ll source it' : 'مش لاقيها؟ اطلبها — هنوفّرهالك'}</a>
-              <a class="btn btn-sm btn-green" style="display:block;margin-top:6px;text-align:center;" target="_blank" rel="noopener" href="${waLink((LANG === 'en' ? 'I need a part: ' : 'محتاج قطعة: ') + q)}">💬 ${LANG === 'en' ? 'Ask on WhatsApp' : 'اطلبها على واتساب'}</a></div>`;
+              <a class="btn btn-sm btn-green" style="display:block;margin-top:6px;text-align:center;" target="_blank" rel="noopener" href="${waLink(LANG === 'en' ? `Hi FixIt 👋\nI'm looking for: ${q}\nChassis number (VIN): ` : `أهلاً FixIt 👋\nبدوّر على: ${q}\nرقم الشاسيه (VIN): `)}">💬 ${LANG === 'en' ? 'Send part name or VIN on WhatsApp' : 'ابعت اسم القطعة أو رقم الشاسيه على واتساب'}</a></div>`;
         box.classList.add('open');
       } catch {}
     }, 300);
