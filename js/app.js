@@ -9,7 +9,8 @@ const API = IS_NATIVE ? PROD_ORIGIN + '/api' : '/api';
 
 /* ---------- 🇪🇬🇦🇪 الفرع: قطاعي (مصر) / جملة (الإمارات) ---------- */
 // الوضع محفوظ في المتصفح، والافتراضي القطاعي (مصر). العملة في الجملة: درهم/دولار
-window.MODE = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
+// صفحات الجملة الثابتة (عن الشركة/الشروط) بتحدد window.__MODE للصفحة دي بس من غير ما تغيّر اختيار الزائر
+window.MODE = window.__MODE || (localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail');
 window.WCUR = localStorage.getItem('wcur') === 'usd' ? 'usd' : 'aed';
 function isWholesale() { return MODE === 'wholesale'; }
 function wsConf() { return SITE.wholesale || {}; }
@@ -58,6 +59,14 @@ function newArrivals(list, n = 8) {
 function usdRate() { return Number(wsConf().usdRate) || 3.6725; }
 function setMode(m) {
   const ws = m === 'wholesale';
+  // 🛒 كل فرع ليه سلة لوحده — التحويل مابيمسحش حاجة، بس بننبّه الزائر إن القطع هتفضل في سلة الفرع التاني
+  const n = Object.keys(getCart()).length;
+  if (ws !== isWholesale() && n) {
+    const msg = LANG === 'en'
+      ? `Your cart has ${n} item(s) from the ${isWholesale() ? 'Wholesale (UAE)' : 'Retail (Egypt)'} store. They stay saved there — switch back anytime to check out. Continue?`
+      : `سلتك فيها ${n} قطعة من ${isWholesale() ? 'الجملة (الإمارات)' : 'القطاعي (مصر)'}. هتفضل محفوظة هناك وتقدر ترجعلها في أي وقت. نكمّل التحويل؟`;
+    if (!confirm(msg)) return;
+  }
   localStorage.setItem('mode', ws ? 'wholesale' : 'retail');
   location.href = ws ? '/trade.html' : '/index.html';
 }
@@ -527,12 +536,14 @@ function userHeaders() {
 }
 
 /* ---------- السلة (localStorage) ---------- */
-function getCart() {
-  try { return JSON.parse(localStorage.getItem('cart')) || {}; }
+// 🛒 سلة منفصلة لكل فرع: 'cart' للقطاعي (مصر) و 'cart_ws' للجملة (الإمارات)
+function cartKey(ws = isWholesale()) { return ws ? 'cart_ws' : 'cart'; }
+function getCart(ws) {
+  try { return JSON.parse(localStorage.getItem(cartKey(ws))) || {}; }
   catch { return {}; }
 }
-function setCart(cart) {
-  localStorage.setItem('cart', JSON.stringify(cart));
+function setCart(cart, ws) {
+  localStorage.setItem(cartKey(ws), JSON.stringify(cart));
   updateCartBadge();
 }
 function addToCart(id, qty = 1) {

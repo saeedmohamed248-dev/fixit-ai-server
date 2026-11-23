@@ -8,7 +8,7 @@ document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
 // 🇦🇪 وضع الفرع مبكراً عشان سكين الجملة (Trade Terminal) يتطبّق من غير وميض
 const _urlMode = new URLSearchParams(location.search).get('mode');
 if (_urlMode === 'wholesale' || _urlMode === 'retail') localStorage.setItem('mode', _urlMode);
-document.documentElement.dataset.mode = localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail';
+document.documentElement.dataset.mode = window.__MODE || (localStorage.getItem('mode') === 'wholesale' ? 'wholesale' : 'retail');
 
 const I18N = {
   /* ---------- عام / Layout ---------- */

@@ -92,12 +92,15 @@
         allProducts = await api('/products');
         // 🧹 نشيل من السلة اللي خلص أو اتشال أو سعره عند الطلب، ونظبط الكميات على المخزون —
         //    غير كده السلة كانت بتلف في حلقة تحميل لا نهائية، والطلب بيترفض من غير ما العميل يعرف ليه
-        const removed = [];
+        const removed = [], moved = [];
         const c = getCart();
         ids.forEach((id) => {
           const p = allProducts.find((x) => x.id === id);
-          // قطعة مش تبع فرع الوضع الحالي (مثلاً قطعة إمارات في السلة القطاعي) بتتشال برضه
-          if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0)) || !wsCatalogFilter([p]).length) {
+          // قطعة مش تبع فرع الوضع الحالي (مثلاً قطعة إمارات في السلة القطاعي) بتتنقل لسلة الفرع التاني بدل ما تتمسح
+          if (p && Number(p.stock) > 0 && !wsCatalogFilter([p]).length) {
+            const other = getCart(!isWholesale()); other[id] = (other[id] || 0) + c[id]; setCart(other, !isWholesale());
+            moved.push(pname(p)); delete c[id];
+          } else if (!p || !(Number(p.stock) > 0) || (!isWholesale() && !(Number(p.price) > 0))) {
             removed.push(p ? pname(p) : null); delete c[id];
           } else if (c[id] > p.stock) c[id] = p.stock;
         });
@@ -107,6 +110,9 @@
             ? `⚠️ ${removed.length} item(s) were removed from your cart because they're no longer available${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">Request them</a>`
             : `⚠️ شلنا ${removed.length} قطعة من السلة لأنها مبقتش متاحة${removed.filter(Boolean).length ? ': ' + removed.filter(Boolean).map(esc).join('، ') : ''}. <a href="/request.html" style="color:var(--accent-dark);">اطلبها نوفّرهالك</a>`)
           : '';
+        if (moved.length) cartNotice += (cartNotice ? '<br>' : '') + (LANG === 'en'
+          ? `ℹ️ ${moved.length} item(s) belong to the ${isWholesale() ? 'Retail (Egypt)' : 'Wholesale (UAE)'} store and were kept in that cart: ${moved.map(esc).join('، ')}. <a href="#" onclick="setMode('${isWholesale() ? 'retail' : 'wholesale'}');return false;" style="color:var(--accent-dark);">Switch</a>`
+          : `ℹ️ ${moved.length} قطعة تبع ${isWholesale() ? 'القطاعي (مصر)' : 'الجملة (الإمارات)'} — اتحفظت في سلة الفرع ده ومتمسحتش: ${moved.map(esc).join('، ')}. <a href="#" onclick="setMode('${isWholesale() ? 'retail' : 'wholesale'}');return false;" style="color:var(--accent-dark);">روح لها</a>`);
         products = allProducts.filter((p) => c[p.id]);
         if (!products.length) {
           container.innerHTML = `${cartNotice ? `<div class="note">${cartNotice}</div>` : ''}<div class="empty-state"><span class="icon">🛒</span>
