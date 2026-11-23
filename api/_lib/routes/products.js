@@ -74,6 +74,9 @@ export default async function handler(req, res) {
       else if (sort === 'best') list = [...list].sort((a, b) => (b.sold || 0) - (a.sold || 0));
       else if (sort === 'rating') list = [...list].sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
 
+      // ⚡ القائمة العامة بتتكاش على Vercel Edge دقيقة (وبتتقدّم قديمة لحد 5 دقايق وهي بتتحدّث في الخلفية)
+      //    بدل ما كل زيارة تستنى السيرفر + Redis. لوحة التحكم (?all=1) مش بتتكاش.
+      if (!all) res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
       return res.status(200).json(list);
     }
 

@@ -803,11 +803,19 @@ function fixMediaUrl(u) {
   if (/^\/media\//i.test(u)) return MEDIA_BASE + u;
   return u.replace(/^https?:\/\/(www\.)?fixitauto\.parts(?=\/media\/)/i, MEDIA_BASE);
 }
+// 🖼️ صور Cloudinary بتترفع PNG بحجمها الأصلي (ممكن ميجات) — بنطلب نسخة مصغّرة WebP/AVIF بالجودة المناسبة
+//    حسب مكان العرض (كارت/صورة صغيرة/صفحة المنتج). روابط غير Cloudinary بترجع زي ما هي.
+function imgSized(u, w = 400) {
+  u = String(u || '');
+  if (!/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(u)) return u;
+  if (/\/upload\/[^/]*(?:w_|f_auto|q_auto)/.test(u)) return u; // متصغّرة قبل كده
+  return u.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${w}/`);
+}
 function firstImage(p) {
   return fixMediaUrl(p.image || (Array.isArray(p.images) && p.images[0]) || '');
 }
 function productImage(p, cssClass = 'card-img') {
-  const src = firstImage(p);
+  const src = imgSized(firstImage(p), /thumb/.test(cssClass) ? 200 : 480);
   // لو رابط الصورة بايظ/انتهى، نعرض أيقونة الفئة بدل مربع فاضي
   if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}${p.oem ? ' ' + esc(p.oem) : ''}" loading="lazy" decoding="async" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
   return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
@@ -883,7 +891,7 @@ function wsCard(p) {
       <span class="ws-plate-ic">${categoryIcon(p.category)}</span>
     </div>`;
   const media = src
-    ? `<img class="card-img ws-img" src="${esc(src)}" alt="${esc(pname(p))}" loading="lazy" decoding="async" onerror="this.outerHTML=this.nextElementSibling.innerHTML">`
+    ? `<img class="card-img ws-img" src="${esc(imgSized(src, 480))}" alt="${esc(pname(p))}" loading="lazy" decoding="async" onerror="this.outerHTML=this.nextElementSibling.innerHTML">`
       + `<template>${plate}</template>`
     : plate;
   const tiers = wsTiers();

@@ -147,9 +147,14 @@ window.SITE = {
   try {
     if (/admin\.html/i.test(location.pathname)) return; // من غير شات على لوحة التحكم
     var WIDGET_KEY = 'wid_UsaGap2Em2K5_0n8h63LdtfvYnWu-h1x';
-    var s = document.createElement('script');
-    s.src = 'https://mousstec.com/omnichannel/widget/' + WIDGET_KEY + '.js';
-    s.defer = true;
-    (document.head || document.documentElement).appendChild(s);
+    // ⚡ بنحمّل الشات بعد ما الصفحة تخلص تحميل (+ ثانيتين) عشان مايزاحمش الصور والكود على موبايل بطيء
+    var load = function () {
+      var s = document.createElement('script');
+      s.src = 'https://mousstec.com/omnichannel/widget/' + WIDGET_KEY + '.js';
+      s.async = true;
+      (document.head || document.documentElement).appendChild(s);
+    };
+    var later = function () { setTimeout(load, 2000); };
+    if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
   } catch (e) { /* الشات ما يوقفش الموقع أبداً */ }
 })();
