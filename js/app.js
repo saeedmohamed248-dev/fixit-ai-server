@@ -1051,7 +1051,7 @@ function initHeaderSearch() {
             </a>`).join('') + `<a class="suggest-all" href="/shop.html?q=${encodeURIComponent(q)}">${t('suggest_all')}</a>`
           : `<div class="suggest-empty">${t('suggest_none')} "${esc(q)}"
               <a class="btn btn-sm" style="display:block;margin-top:8px;text-align:center;" href="/shop.html?q=${encodeURIComponent(q)}">📩 ${LANG === 'en' ? 'Can\'t find it? Request it — we\'ll source it' : 'مش لاقيها؟ اطلبها — هنوفّرهالك'}</a>
-              <a class="btn btn-sm btn-green" style="display:block;margin-top:6px;text-align:center;" target="_blank" rel="noopener" href="${waLink((LANG === 'en' ? 'I need a part: ' : 'محتاج قطعة: ') + q)}">💬 ${LANG === 'en' ? 'Ask on WhatsApp' : 'اطلبها على واتساب'}</a></div>`;
+              <a class="btn btn-sm btn-green" style="display:block;margin-top:6px;text-align:center;" target="_blank" rel="noopener" href="${waLink(LANG === 'en' ? `Hi FixIt 👋\nI'm looking for: ${q}\nChassis number (VIN): ` : `أهلاً FixIt 👋\nبدوّر على: ${q}\nرقم الشاسيه (VIN): `)}">💬 ${LANG === 'en' ? 'Send part name or VIN on WhatsApp' : 'ابعت اسم القطعة أو رقم الشاسيه على واتساب'}</a></div>`;
         box.classList.add('open');
       } catch {}
     }, 300);

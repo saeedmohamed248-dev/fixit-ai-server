@@ -24,6 +24,7 @@
 
   <main class="section">
     <div class="container">
+      <div id="wa-top" style="display:grid;"></div>
       <div class="shop-layout">
         <!-- الفلاتر -->
         <aside class="filters">
@@ -133,12 +134,23 @@
           <a class="btn btn-green" target="_blank" rel="noopener" style="width:100%;margin-top:8px;text-align:center;" data-wa-req href="${waLink((AR ? 'محتاج قطعة: ' : 'I need a part: ') + currentQ)}">💬 ${AR ? 'أو اطلبها على واتساب' : 'Or ask on WhatsApp'}</a>
           <div class="miss-msg" style="font-size:13px;margin-top:8px;"></div>
         </form>`;
+      // 📲 زرار واتساب واضح فوق صفحة «مفيش نتائج» — رسالة جاهزة فيها كلمة البحث + طلب رقم الشاسيه
+      const waMsg = AR
+        ? `أهلاً FixIt 👋\nبدوّر على: ${currentQ}\nومالقيتهاش على الموقع.\nرقم الشاسيه (VIN): `
+        : `Hi FixIt 👋\nI'm looking for: ${currentQ}\nCouldn't find it on the website.\nChassis number (VIN): `;
+      const waBig = `<a class="btn btn-green" data-wa-req target="_blank" rel="noopener" href="${waLink(waMsg)}"
+          style="grid-column:1/-1;max-width:520px;width:100%;margin:6px auto 4px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;padding:16px 14px;border-radius:14px;text-align:center;line-height:1.4;">
+          <span style="font-size:24px;">💬</span><span>${AR ? 'ابعت اسم القطعة أو رقم الشاسيه على واتساب' : 'Send the part name or chassis number on WhatsApp'}<small style="display:block;font-weight:500;opacity:.9;font-size:13px;">${AR ? 'بنرد في دقايق ونوفّرهالك' : 'We reply in minutes and source it'}</small></span></a>`;
       grid.innerHTML = slice.length
         ? (near && currentQ ? `<div class="note" style="grid-column:1/-1;">🔎 ${AR ? `مفيش تطابق كامل لـ "<b>${esc(currentQ)}</b>" — دي أقرب نتايج. مش هي؟ اطلبها تحت 👇` : `No exact match for "<b>${esc(currentQ)}</b>" — closest results. Not it? Request it below 👇`}</div>` : '')
           + slice.map(productCard).join('')
           + (near && currentQ && currentPage === pages ? reqBox(AR ? '🙋 مش لاقي اللي بتدور عليه؟ اطلبها' : '🙋 Can\'t find it? Request it') : '')
-        : (currentQ ? reqBox(AR ? `🙋 مش لاقي "${esc(currentQ)}"؟ اطلبها وهنوفّرهالك` : `🙋 Can't find "${esc(currentQ)}"? Request it`) : '')
+        : (currentQ ? waBig + reqBox(AR ? `🙋 مش لاقي "${esc(currentQ)}"؟ اطلبها وهنوفّرهالك` : `🙋 Can't find "${esc(currentQ)}"? Request it`) : '')
           + `<div class="empty-state" style="grid-column: 1/-1;"><span class="icon">🔍</span>${t('no_results')} <a href="/assistant.html" style="color: var(--accent-dark);">${t('ask_expert')}</a></div>`;
+      // على الموبايل الفلاتر بتيجي قبل النتايج — فبنحط نفس الزرار فوقها عشان يبان من غير سكرول
+      const waTop = document.getElementById('wa-top');
+      if (waTop) waTop.innerHTML = (!slice.length && currentQ && innerWidth < 900) ? waBig : '';
+      waTop?.querySelectorAll('[data-wa-req]').forEach((a) => a.addEventListener('click', () => trackEvent('part_request', { via: 'wa_noresult' })));
       grid.querySelectorAll('[data-wa-req]').forEach((a) => a.addEventListener('click', () => trackEvent('part_request', { via: 'wa' })));
       grid.querySelectorAll('.miss-form').forEach((f) => f.addEventListener('submit', async (e) => {
         e.preventDefault();
