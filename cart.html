@@ -469,7 +469,7 @@
           ${creditDiscount ? `<div class="row" style="color: var(--green);"><span>${t('credit_row')} 💳</span><b>- ${money(creditDiscount)}</b></div>` : ''}
           ${cashbackDiscount ? `<div class="row" style="color: var(--green);"><span>${LANG === 'en' ? 'Cashback' : 'كاش باك'} 💰</span><b>- ${money(cashbackDiscount)}</b></div>` : ''}
           <div class="row" style="color: var(--muted); font-size: 13px;">
-            <span>${t('shipping')}${govSel && shipFee !== null ? ` (${esc(govSel)})` : ''}</span><span>${freeShip ? t('ship_free') : (shipFee === null ? t('ship_choose_gov') : money(shipFee))}</span>
+            <span>${t('shipping')}${govSel && shipFee !== null ? ` (${esc(govSel)})` : ''}</span><span>${freeShip ? t('ship_free') : (shipFee === null ? (Object.keys(SITE.shippingRates || {}).length ? t('ship_choose_gov') : t('ship_later')) : money(shipFee))}</span>
           </div>
           ${SITE.freeShippingOver && !freeShip ? `
           <div class="ship-progress">
@@ -511,7 +511,7 @@
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
           <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
           <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
-          <div><label>${t('city')}</label><select id="c-city"><option value="">${t('gov_choose')}</option>${Object.entries(SITE.shippingRates || {}).map(([g, f]) => `<option value="${esc(g)}">${esc(g)} — ${money(f)}</option>`).join('')}</select></div>
+          <div><label>${t('city')}</label><select id="c-city"><option value="">${t('gov_choose')}</option>${(SITE.governorates || Object.keys(SITE.shippingRates || {})).map((g) => { const f = (SITE.shippingRates || {})[g]; return `<option value="${esc(g)}">${esc(g)}${f !== undefined ? ' — ' + money(f) : ''}</option>`; }).join('')}</select></div>
           <div><label>${t('email_label')}</label><input id="c-email" type="email" dir="ltr" style="text-align: start;" value="${user && user.email ? esc(user.email) : ''}" placeholder="عشان يوصلك تأكيد الطلب"></div>
           <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
           <div><label>${t('notes')}</label><textarea id="c-notes" rows="2"></textarea></div>
