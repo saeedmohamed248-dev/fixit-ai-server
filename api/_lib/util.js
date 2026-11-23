@@ -36,6 +36,22 @@ export function validPhone(phone) {
 //    النسبة والحد الأدنى بيتغيروا من لوحة التحكم (depositPct / depositMin).
 //    العربون بيتقرّب لأعلى ١٠ جنيه، ومايزيدش عن قيمة الطلب.
 export const DEPOSIT_DEFAULTS = { pct: 20, min: 300 };
+// 🚚 سعر شحن ثابت لكل محافظة (بالجنيه) — لازم يطابق SITE.shippingRates في js/config.js
+export const SHIPPING_RATES = {
+  'القاهرة': 75, 'الجيزة': 75, 'القليوبية': 85,
+  'الإسكندرية': 95, 'البحيرة': 100, 'الدقهلية': 100, 'الغربية': 100, 'المنوفية': 100, 'الشرقية': 100,
+  'كفر الشيخ': 100, 'دمياط': 100, 'بورسعيد': 100, 'الإسماعيلية': 100, 'السويس': 100,
+  'الفيوم': 110, 'بني سويف': 110, 'المنيا': 120, 'أسيوط': 130, 'سوهاج': 130, 'قنا': 140, 'الأقصر': 140, 'أسوان': 150,
+  'البحر الأحمر': 160, 'مطروح': 160, 'الوادي الجديد': 175, 'شمال سيناء': 175, 'جنوب سيناء': 175,
+};
+// رسوم الشحن: مجاني فوق حد الشحن المجاني (من الإعدادات، الافتراضي 5000)، و null لو المحافظة مش معروفة
+export function shippingFee(gov, net, settings = {}) {
+  const fee = SHIPPING_RATES[String(gov || '').trim()];
+  if (fee === undefined) return null;
+  const free = settings.freeShippingOver === undefined || settings.freeShippingOver === '' ? 5000 : Number(settings.freeShippingOver);
+  return free > 0 && net >= free ? 0 : fee;
+}
+
 export function calcDeposit(total, settings = {}) {
   const t = Math.max(0, Math.round(Number(total) || 0));
   let pct = Number(settings.depositPct);
