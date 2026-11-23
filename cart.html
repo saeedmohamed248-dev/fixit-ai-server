@@ -70,6 +70,17 @@
       document.querySelectorAll('input[name="pay"]').forEach((r) => r.addEventListener('change', saveDraft));
     }
 
+    // 📊 begin_checkout: أول ما العميل يبدأ يكتب في فورم السلة (مرة واحدة لكل سلة في الجلسة).
+    //    مربوط على الـ container عشان يفضل شغال بعد أي إعادة رسم.
+    container.addEventListener('input', (e) => {
+      if (!e.target.closest('#c-name, #c-phone, #c-email, #c-address, #c-notes, #w-name, #w-phone, #w-country, #w-city, #w-notes')) return;
+      const cart = getCart();
+      const sig = (isWholesale() ? 'ws:' : 'eg:') + Object.keys(cart).sort().join(',');
+      try { if (sessionStorage.getItem('an_bc') === sig) return; sessionStorage.setItem('an_bc', sig); } catch {}
+      const val = products.filter((p) => cart[p.id]).reduce((a, p) => a + (isWholesale() ? 0 : p.price * cart[p.id]), 0);
+      trackEvent('begin_checkout', { n: Object.keys(cart).length, val, cur: isWholesale() ? 'USD' : 'EGP', br: isWholesale() ? 'ae' : 'eg' });
+    });
+
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
 

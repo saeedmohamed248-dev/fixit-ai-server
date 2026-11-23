@@ -486,8 +486,11 @@ function trackPageview(extra = {}) {
 function trackEvent(ev, extra = {}) {
   track('event', { ev, ...extra });
   // 📣 نفس الأحداث بتروح لفيسبوك بالأسماء القياسية (للإعلانات والـ Retargeting)
-  const map = { add_cart: 'AddToCart', checkout: 'InitiateCheckout', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
+  // begin_checkout = أول ما يبدأ يكتب بياناته في فورم السلة → InitiateCheckout
+  // checkout = ضغط «تأكيد الطلب» → AddPaymentInfo · order_placed = الطلب اتسجّل → Purchase
+  const map = { add_cart: 'AddToCart', begin_checkout: 'InitiateCheckout', checkout: 'AddPaymentInfo', ws_order: 'Lead', container_request: 'Lead', part_request: 'Lead', savings_lead: 'Lead' };
   if (ev === 'order_placed') px('Purchase', { value: Number(extra.val) || 0, currency: 'EGP', order_id: extra.ord });
+  else if (ev === 'begin_checkout') px('InitiateCheckout', { value: Number(extra.val) || 0, currency: extra.cur || 'EGP', num_items: Number(extra.n) || 0 });
   else if (map[ev]) px(map[ev], extra.pid ? { content_ids: [extra.pid], content_type: 'product' } : {});
   else if (ev === 'wa_click') px('Contact', {});
   try { if (window.gtag) gtag('event', ev === 'order_placed' ? 'purchase' : ev, ev === 'order_placed' ? { value: Number(extra.val) || 0, currency: 'EGP', transaction_id: extra.ord } : {}); } catch {}
