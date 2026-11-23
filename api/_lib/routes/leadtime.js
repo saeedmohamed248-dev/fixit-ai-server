@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 خُد في اعتبارك ظروف الشحن الحالية (زحام الموانئ، اضطرابات البحر الأحمر، مواعيد الإبحار). أرجع JSON فقط:
 {"minDays": number, "maxDays": number}
 أرقام واقعية فقط بدون أي نص إضافي.`;
-        const out = await aiJSON(prompt, [], { temperature: 0.3 });
+        const out = await Promise.race([aiJSON(prompt, [], { temperature: 0.3 }), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))]);
         const mn = Number(out.minDays), mx = Number(out.maxDays);
         if (mn > 0 && mx >= mn) { baseMin = Math.round(mn); baseMax = Math.round(mx); source = 'ai'; }
       } catch { /* نسقط على التقدير الاحتياطي */ }

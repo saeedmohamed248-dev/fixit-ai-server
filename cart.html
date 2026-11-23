@@ -147,21 +147,35 @@
         </div>`).join('')}`;
     }
 
-    // 🕒 تقدير مدة التوريد من البوت (يخزّن في الجلسة عشان مايتكررش)
+    // 🕒 تقدير مدة التوريد: بنعرض تقدير فوري من جدول ثابت، وبعدين نحدّثه من البوت لو رد (بحد أقصى 8 ثواني).
+    //    قبل كده الرسم من جديد كان بيفصل العنصر القديم، فالقيمة كانت بتفضل «جاري التقدير…» للأبد.
+    const LEAD_FALLBACK = { sea: { EG: [45, 65], RU: [40, 60], DEFAULT: [45, 70] }, air: { EG: [4, 8], RU: [6, 11], DEFAULT: [5, 10] } };
+    function leadFallback(country, mode) {
+      const tbl = LEAD_FALLBACK[mode] || LEAD_FALLBACK.sea;
+      const [a, b] = tbl[countryCode(country)] || tbl.DEFAULT;
+      const buf = 1 + ((SITE.wholesale?.leadBufferPct) || 40) / 100;
+      return { minDays: Math.round(a * buf), maxDays: Math.round(b * buf) };
+    }
+    function leadKey(country, mode) { return `lead_${countryCode(country)}_${mode}`; }
+    function leadNow(country, mode) {
+      let d = null;
+      try { d = JSON.parse(sessionStorage.getItem(leadKey(country, mode)) || 'null'); } catch {}
+      d = d || leadFallback(country, mode);
+      wsLeadText = fmtLead(d.minDays, d.maxDays);
+      return wsLeadText;
+    }
     async function loadLead(country, mode) {
-      const el = document.getElementById('lead-val');
-      if (!el) return;
-      const key = `lead_${countryCode(country)}_${mode}`;
-      let cached = null;
-      try { cached = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch {}
-      const apply = (d) => { const txt = fmtLead(d.minDays, d.maxDays); wsLeadText = txt; el.textContent = txt; };
-      if (cached) { apply(cached); return; }
+      const key = leadKey(country, mode);
+      try { if (sessionStorage.getItem(key)) return; } catch {}
       try {
-        const d = await api('/leadtime', { method: 'POST', body: JSON.stringify({ country, mode, bufferPct: (SITE.wholesale?.leadBufferPct) || 40 }) });
+        const d = await api('/leadtime', { method: 'POST', signal: AbortSignal.timeout(8000), body: JSON.stringify({ country, mode, bufferPct: (SITE.wholesale?.leadBufferPct) || 40 }) });
+        if (!(d && d.minDays > 0)) return;
         try { sessionStorage.setItem(key, JSON.stringify(d)); } catch {}
-        // نطبّق فقط لو لسه على نفس الوسيلة
-        if (wsShipMode === mode) apply(d);
-      } catch { el.textContent = '—'; }
+        if (wsShipMode !== mode) return;
+        wsLeadText = fmtLead(d.minDays, d.maxDays);
+        const el = document.getElementById('lead-val'); // العنصر الحالي (مش القديم)
+        if (el) el.textContent = wsLeadText;
+      } catch { /* بنفضل على التقدير الثابت */ }
     }
 
     // 🇦🇪 وضع الجملة: عرض بأسعار الجملة + إتمام الطلب عبر واتساب فرع الإمارات
@@ -221,15 +235,16 @@
           }).join('')}
         </div>
         <div class="summary">
+          ${q.cbm > 0 ? `
           <div class="load-card">
             <div class="load-head">🚢 ${t('load_title')}</div>
             <div class="load-row"><span>${t('load_cbm')}</span><b>${q.cbm.toFixed(2)} ${t('cbm_unit')}</b></div>
-            <div class="load-row"><span>${t('load_weight')}</span><b>${new Intl.NumberFormat('en-US').format(Math.round(q.kg))} kg</b></div>
+            ${q.kg > 0 ? `<div class="load-row"><span>${t('load_weight')}</span><b>${new Intl.NumberFormat('en-US').format(Math.round(q.kg))} kg</b></div>` : ''}
             <div class="load-row"><span>${t('load_recommend')}</span><b style="color:var(--accent);">${loadLabel(q.plan)}</b></div>
             ${q.plan.mode === 'FCL' || q.plan.mode === 'FCL_MULTI' ? `
             <div class="fill-track"><div class="fill-bar" style="width:${Math.min(100, q.plan.fillPct)}%;"></div></div>
             <div class="fill-cap">${q.cbm.toFixed(1)} ${t('load_fill_of')} ${q.plan.container.usableCbm * (q.plan.count || 1)} ${t('cbm_unit')} · ${q.plan.fillPct}%</div>` : ''}
-          </div>
+          </div>` : ''}
 
           <h3>${t('order_summary')}</h3>
           <div class="row"><span>${t('subtotal')}</span><b>${money(subtotal)}${anyOnRequest ? ' +' : ''}</b></div>
@@ -245,7 +260,7 @@
                 <button type="button" class="${wsShipMode === 'air' ? 'active' : ''}" data-mode="air">${t('mode_air')}</button>
               </div>
             </div>
-            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${t('lead_loading')}</b></div>
+            <div class="row"><span>🕒 ${t('lead_title')}</span><b id="lead-val" style="color:var(--accent);">${esc(leadNow(currentUser().country, wsShipMode))}</b></div>
             <div style="margin:8px 0;">
               <label>${t('ship_incoterm')}</label>
               <select id="w-incoterm">
@@ -253,7 +268,7 @@
               </select>
             </div>
             <div class="row"><span>${t('ship_goods')}</span><span>${usdMoney(q.goods)}</span></div>
-            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : ''}
+            ${q.freight ? `<div class="row"><span>${t('ship_freight')}</span><span>${usdMoney(q.freight)}</span></div>` : (q.plan.mode === 'EMPTY' && incotermDef(wsIncoterm).freight ? `<div class="row" style="color:var(--muted);"><span>${t('ship_freight')}</span><span>${t('ship_freight_tbd')}</span></div>` : '')}
             ${q.insurance ? `<div class="row"><span>${t('ship_insurance')}</span><span>${usdMoney(q.insurance)}</span></div>` : ''}
             ${q.customs ? `<div class="row" style="color:var(--amber);"><span>${t('ship_customs')}</span><span>${usdMoney(q.customs)}</span></div>` : ''}
             <div class="row total" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;"><span>${t('ship_grand')}</span><span>${usdMoney(q.total)}</span></div>
@@ -269,8 +284,8 @@
               return (dp || bp) ? `
               <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
                 <div class="ship-head" style="font-size:13px;">💵 ${t('pay_terms_title')}</div>
-                <div class="row" style="color:var(--green);"><span>${t('pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
-                <div class="row"><span>${t('pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
+                <div class="row" style="color:var(--green);"><span>${t('ws_pay_deposit', { p: dp })}</span><b>${usdMoney(q.total * dp / 100)}</b></div>
+                <div class="row"><span>${t('ws_pay_balance', { p: bp })}</span><b>${usdMoney(q.total * bp / 100)}</b></div>
               </div>` : '';
             })()}
             <div class="note" style="margin:8px 0 0;font-size:12px;">${t('ship_usd_note')}${q.customs ? '<br>⚠️ ' + t('ship_customs_note') : ''}</div>
@@ -337,7 +352,7 @@
           `${t('ship_dest')}: ${currentUser().country || '-'}${q.port ? ' / ' + q.port : ''}`,
           `${t('ship_mode')}: ${wsShipMode === 'air' ? t('mode_air') : t('mode_sea')}`,
           wsLeadText ? `${t('lead_title')}: ${wsLeadText}` : '',
-          `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})`,
+          q.cbm > 0 ? `${t('load_recommend')}: ${loadLabel(q.plan)} (${q.cbm.toFixed(2)} ${t('cbm_unit')})` : '',
           `${t('ship_incoterm')}: ${incName(wsIncoterm)}`,
           `${t('ship_goods')}: ${usdMoney(q.goods)}`,
           q.freight ? `${t('ship_freight')}: ${usdMoney(q.freight)}` : '',
@@ -352,8 +367,8 @@
           t('pay_full_note'),
         ].join('\n') : [
           `— ${t('pay_terms_title')} —`,
-          `${t('pay_deposit', { p: pay.depositPct })}: ${usdMoney(q.total * (pay.depositPct || 0) / 100)}`,
-          `${t('pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
+          `${t('ws_pay_deposit', { p: pay.depositPct })}: ${usdMoney(q.total * (pay.depositPct || 0) / 100)}`,
+          `${t('ws_pay_balance', { p: pay.balancePct })}: ${usdMoney(q.total * (pay.balancePct || 0) / 100)}`,
         ].join('\n'));
         const msg = [head, who, '', lines, '', totalTxt, '', ship, payTxt, notes && (`${t('notes')}: ${notes}`)].filter((x) => x !== undefined && x !== '').join('\n');
         trackEvent('ws_order');
