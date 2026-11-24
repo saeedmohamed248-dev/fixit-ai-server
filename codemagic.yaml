@@ -35,6 +35,15 @@ workflows:
           cd android
           chmod +x ./gradlew
           ./gradlew bundleRelease assembleRelease
+      - name: توقيع الـ AAB بمفتاح fixit_keystore
+        # 🐛 [FIX]: مشروع أندرويد بيتولّد من جديد بـ «cap add» فمفيهوش إعداد توقيع → Google Play رفض الـ AAB
+        #          («يجب توقيع جميع الحزم»). بنوقّعه هنا بالمفتاح اللي Codemagic بيحطه في CM_KEYSTORE_*
+        script: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$CM_KEYSTORE_PATH" -storepass "$CM_KEYSTORE_PASSWORD" \
+            -keypass "$CM_KEY_PASSWORD" "$AAB" "$CM_KEY_ALIAS"
+          jarsigner -verify "$AAB" | tail -1
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
