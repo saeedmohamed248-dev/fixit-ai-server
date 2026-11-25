@@ -5,6 +5,7 @@
 // DELETE /api/requests?id=.. → حذف (إدارة)
 import { getRequests, saveRequests, logActivity, getUsers } from '../db.js';
 import { cors, requireAdmin, rateLimit, validPhone, validIntlPhone } from '../util.js';
+import { markRecovered } from './carts.js';
 import { getUser } from '../auth.js';
 
 export default async function handler(req, res) {
@@ -86,6 +87,7 @@ export default async function handler(req, res) {
       };
       requests.unshift(request);
       await saveRequests(requests);
+      if (request.source === 'cart') { try { await markRecovered(request.phone, request.number); } catch {} }
       await logActivity('request', isRfq
         ? `🌐 طلب عرض سعر جملة ${request.number} من ${request.company || request.name} (${request.country || '—'})`
         : `🔎 طلب توفير قطعة ${request.number}${request.source === 'search' ? ' (من البحث)' : ''}: "${request.partName}" من ${request.name}`);

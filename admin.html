@@ -116,6 +116,7 @@
       { tab: 'analytics', ic: '📈', label: 'التحليلات والزيارات' },
       { sep: '🇪🇬 متجر مصر (قطاعي)' },
       { tab: 'orders', ic: '📦', label: 'الطلبات' },
+      { tab: 'carts', ic: '🛒', label: 'سلات متروكة' },
       { tab: 'requests', ic: '🔎', label: 'طلبات القطع' },
       { tab: 'leads', ic: '🧾', label: 'حاسبة التوفير' },
       { tab: 'questions', ic: '❓', label: 'أسئلة العملاء' },
@@ -178,14 +179,16 @@
     /* ---------- أدوات مشتركة ---------- */
     // تاريخ اليوم بالتوقيت المحلي (بدل UTC اللي كان بيخلي طلبات بعد نص الليل تتحسب في اليوم الغلط)
     const localDay = (d) => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
-    const badgeCounts = { requests: 0, questions: 0, maintenance: 0, ctreqs: 0 };
+    const badgeCounts = { carts: 0, requests: 0, questions: 0, maintenance: 0, ctreqs: 0 };
     async function refreshBadgeCounts() {
       const today = localDay(new Date());
-      const [rq, qs, mt] = await Promise.all([
+      const [rq, qs, mt, ac] = await Promise.all([
         api('/requests', { headers: authHeaders() }).catch(() => []),
         api('/questions', { headers: authHeaders() }).catch(() => []),
         api('/maintenance', { headers: authHeaders() }).catch(() => []),
+        api('/carts', { headers: authHeaders() }).catch(() => []),
       ]);
+      badgeCounts.carts = ac.filter((c) => c.status === 'new').length;
       badgeCounts.requests = rq.filter((r) => r.type !== 'container' && (r.status || 'open') === 'open').length;
       badgeCounts.ctreqs = rq.filter((r) => r.type === 'container' && (r.status || 'open') === 'open').length;
       badgeCounts.questions = qs.filter((q) => !q.answer).length;
@@ -286,7 +289,7 @@
     }
 
     function showTab(tab) {
-      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, cashback: loadCashback, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, missing: loadMissing, activity: loadActivity, settings: loadSettings, sync: showSync };
+      const fns = { dashboard: loadDashboard, analytics: loadAnalytics, orders: loadOrders, leads: loadLeads, requests: loadRequests, carts: loadCarts, ctreqs: loadCtReqs, questions: loadQuestions, products: loadProducts, coupons: loadCoupons, cashback: loadCashback, customers: loadCustomers, maintenance: loadMaintenance, containers: loadContainers, alerts: loadAlerts, missing: loadMissing, activity: loadActivity, settings: loadSettings, sync: showSync };
       fns[tab]?.();
     }
 
@@ -763,6 +766,50 @@
     }
 
     /* ==================== ❓ الأسئلة ==================== */
+    /* ==================== 🛒 السلات المتروكة ==================== */
+    async function loadCarts(filter = 'open') {
+      const box = document.getElementById('tab-content');
+      box.innerHTML = '<div class="spinner">جاري التحميل...</div>';
+      let list;
+      try { list = await api('/carts', { headers: authHeaders() }); } catch (e) { box.innerHTML = `<div class="empty-state">${esc(e.message)}</div>`; return; }
+      const open = list.filter((c) => c.status !== 'ordered');
+      setNavBadge('carts', open.filter((c) => c.status === 'new').length);
+      const shown = filter === 'all' ? list : filter === 'ordered' ? list.filter((c) => c.status === 'ordered') : open;
+      const ago = (d) => { const m = Math.round((Date.now() - Date.parse(d)) / 60000); return m < 60 ? `من ${m} دقيقة` : m < 1440 ? `من ${Math.round(m / 60)} ساعة` : `من ${Math.round(m / 1440)} يوم`; };
+      const waNum = (c) => c.br === 'ae' ? String(c.phone).replace(/[^\d]/g, '') : '2' + c.phone;
+      const ST = { new: '🆕 جديدة', contacted: '📞 اتكلمت معاه', ordered: '✅ اشترى' };
+      box.innerHTML = `
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">عملاء كتبوا رقمهم في السلة ومكمّلوش الطلب. لو اشتروا بعد كده بتتعلّم «اشترى» لوحدها. بتتمسح بعد ٤٥ يوم.</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          ${[['open', `مفتوحة (${open.length})`], ['ordered', `اشتروا (${list.length - open.length})`], ['all', 'الكل']].map(([k, l]) => `<button class="btn btn-sm ${k === filter ? '' : 'btn-outline'}" data-acf="${k}">${l}</button>`).join('')}
+        </div>
+        ${shown.length ? shown.map((c) => {
+          const items = (c.items || []).map((i) => `${i.name} × ${i.qty}`).join('، ');
+          const msg = `أهلاً ${c.name || ''} 👋 شفنا إنك كنت بتطلب من ${SITE.name}: ${(c.items || []).map((i) => i.name).join('، ')}. لو محتاج أي مساعدة تكمّل الطلب إحنا معاك.`;
+          return `<div class="admin-card" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <div><b>${esc(c.name || 'بدون اسم')}</b> — <a href="tel:${esc(c.phone)}" dir="ltr">${esc(c.phone)}</a> ${c.br === 'ae' ? '🌐 جملة' : '🇪🇬 قطاعي'}${c.city ? ' · ' + esc(c.city) : ''}</div>
+              <small class="muted">${ST[c.status] || ''} · ${ago(c.updatedAt)}${c.order ? ' · ' + esc(c.order) : ''}</small>
+            </div>
+            <div style="margin:6px 0;font-size:14px;">🛒 ${esc(items)}${c.total ? ` — <b>${nf(c.total)} ج.م</b>` : ''}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${esc(waNum(c))}?text=${encodeURIComponent(msg)}">💬 واتساب</a>
+              <a class="btn btn-sm btn-outline" href="tel:${esc(c.phone)}">📞 اتصال</a>
+              ${c.status === 'new' ? `<button class="btn btn-sm btn-outline" data-acs="${esc(c.id)}" data-st="contacted">✔ اتكلمت معاه</button>` : c.status === 'contacted' ? `<button class="btn btn-sm btn-outline" data-acs="${esc(c.id)}" data-st="new">↩ رجّعها جديدة</button>` : ''}
+              <input data-acn="${esc(c.id)}" value="${esc(c.note || '')}" placeholder="ملاحظة (قال إيه؟)" style="flex:1;min-width:140px;">
+              <button class="btn btn-sm btn-danger" data-acd="${esc(c.id)}">✕</button>
+            </div></div>`;
+        }).join('') : '<div class="empty-state"><span class="icon">🛒</span>مفيش سلات هنا</div>'}`;
+      box.querySelectorAll('[data-acf]').forEach((b) => b.addEventListener('click', () => loadCarts(b.dataset.acf)));
+      const put = (body) => api('/carts', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+      box.querySelectorAll('[data-acs]').forEach((b) => b.addEventListener('click', async () => { try { await put({ id: b.dataset.acs, status: b.dataset.st }); loadCarts(filter); } catch (e) { toast(e.message); } }));
+      box.querySelectorAll('[data-acn]').forEach((i) => i.addEventListener('change', async () => { try { await put({ id: i.dataset.acn, note: i.value }); toast('✓ اتحفظت'); } catch (e) { toast(e.message); } }));
+      box.querySelectorAll('[data-acd]').forEach((b) => b.addEventListener('click', async () => {
+        if (!confirm('تمسح السلة دي؟')) return;
+        try { await api('/carts?id=' + encodeURIComponent(b.dataset.acd), { method: 'DELETE', headers: authHeaders() }); loadCarts(filter); } catch (e) { toast(e.message); }
+      }));
+    }
+
     async function loadQuestions() {
       const box = document.getElementById('tab-content');
       box.innerHTML = '<div class="spinner">جاري التحميل...</div>';

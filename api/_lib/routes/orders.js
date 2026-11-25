@@ -7,6 +7,7 @@ import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, 
 import { getUser } from '../auth.js';
 import { findCoupon, calcDiscount, markCouponUsed } from './coupons.js';
 import { generateFromOrder } from './maintenance.js';
+import { markRecovered } from './carts.js';
 import { applyToNewOrder, onOrderStatus } from './cashback.js';
 import { sendOrderConfirm, sendStatusUpdate } from '../email.js';
 import { cors, requireAdmin, rateLimit, validPhone, calcDeposit, shippingFee } from '../util.js';
@@ -215,6 +216,7 @@ export default async function handler(req, res) {
       const orders = await getOrders();
       orders.unshift(order);
       await saveOrders(orders);
+      try { await markRecovered(order.customer.phone, order.number); } catch {}
 
       // توليد مواعيد الصيانة تلقائياً من القطع المشتراة
       try { await generateFromOrder(order); } catch {}

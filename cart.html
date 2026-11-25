@@ -81,6 +81,29 @@
       trackEvent('begin_checkout', { n: Object.keys(cart).length, val, cur: isWholesale() ? 'USD' : 'EGP', br: isWholesale() ? 'ae' : 'eg' });
     });
 
+    // 🛒 السلة المتروكة: أول ما يبقى فيه رقم صحيح في الفورم نحفظ السلة (بعد ثانيتين من آخر كتابة)
+    //    عشان المتجر يقدر يكلّم العميل لو مكمّلش — العميل متنبّه تحت خانة الرقم.
+    let acTimer = null, acLast = '';
+    function saveAbandoned() {
+      clearTimeout(acTimer);
+      acTimer = setTimeout(() => {
+        const ws = isWholesale();
+        const phEl = document.getElementById(ws ? 'w-phone' : 'c-phone');
+        const phone = (phEl?.value || '').replace(/[\s-]/g, '');
+        if (!(ws ? /^\+?\d{7,15}$/.test(phone) : /^01[0125]\d{8}$/.test(phone))) return;
+        const cart = getCart();
+        const items = products.filter((p) => cart[p.id]).map((p) => ({ id: p.id, name: p.name, qty: cart[p.id], price: ws ? 0 : p.price }));
+        if (!items.length) return;
+        const body = { br: ws ? 'ae' : 'eg', phone, name: (document.getElementById(ws ? 'w-name' : 'c-name')?.value || '').trim(),
+          city: (document.getElementById(ws ? 'w-city' : 'c-city')?.value || '').trim(), items, total: items.reduce((a, i) => a + i.price * i.qty, 0) };
+        const sig = JSON.stringify(body);
+        if (sig === acLast) return; acLast = sig;
+        api('/carts', { method: 'POST', body: sig }).catch(() => {});
+      }, 2000);
+    }
+    container.addEventListener('input', (e) => { if (e.target.closest('#c-phone, #c-name, #w-phone, #w-name')) saveAbandoned(); });
+    container.addEventListener('change', (e) => { if (e.target.closest('#c-city, #w-city, [data-qty]')) saveAbandoned(); });
+
     // هل الدفع بالبطاقة (Paymob) مفعّل؟
     api('/pay').then((d) => { if (d.enabled) { cardEnabled = true; render(); } }).catch(() => {});
 
@@ -306,7 +329,7 @@
           <hr style="border-color: var(--line);">
           <div class="note" style="margin:0;font-size:12.5px;">${LANG === 'en' ? '✅ No account needed — just your name and WhatsApp number. We reply with the final quote on WhatsApp.' : '✅ من غير حساب ولا باسورد — اسمك ورقم الواتساب بس، وهنرد عليك بعرض السعر النهائي على واتساب.'}</div>
           <div><label>${t('full_name')}</label><input id="w-name" value="${esc(buyer.name || '')}"></div>
-          <div><label>${LANG === 'en' ? 'WhatsApp number (with country code)' : 'رقم الواتساب (بكود الدولة)'}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="+20 10xxxxxxxx" value="${esc(buyer.phone || '')}"></div>
+          <div><label>${LANG === 'en' ? 'WhatsApp number (with country code)' : 'رقم الواتساب (بكود الدولة)'}</label><input id="w-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="+20 10xxxxxxxx" value="${esc(buyer.phone || '')}"><small class="muted" style="display:block;font-size:12px;margin-top:3px;">${LANG === 'en' ? 'We save your number with your cart so we can help you finish your order.' : 'بنحفظ رقمك مع السلة عشان نقدر نساعدك تكمّل طلبك.'}</small></div>
           <div><label>${t('city')}</label><input id="w-city"></div>
           <div><label>${t('notes')}</label><textarea id="w-notes" rows="2"></textarea></div>
           <button class="btn btn-green" id="w-submit">💬 ${t('ws_checkout')}</button>
@@ -315,6 +338,7 @@
       </div>`;
 
       restoreDraft();
+      saveAbandoned();
       container.querySelectorAll('[data-qty]').forEach((input) => {
         input.addEventListener('change', () => {
           const c = getCart();
@@ -510,7 +534,7 @@
           <hr style="border-color: var(--line);">
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
           <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
-          <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"></div>
+          <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"><small class="muted" style="display:block;font-size:12px;margin-top:3px;">${LANG === 'en' ? 'We save your number with your cart so we can help you finish your order.' : 'بنحفظ رقمك مع السلة عشان نقدر نساعدك تكمّل طلبك.'}</small></div>
           <div><label>${t('city')}</label><select id="c-city"><option value="">${t('gov_choose')}</option>${(SITE.governorates || Object.keys(SITE.shippingRates || {})).map((g) => { const f = (SITE.shippingRates || {})[g]; return `<option value="${esc(g)}">${esc(g)}${f !== undefined ? ' — ' + money(f) : ''}</option>`; }).join('')}</select></div>
           <div><label>${t('email_label')}</label><input id="c-email" type="email" dir="ltr" style="text-align: start;" value="${user && user.email ? esc(user.email) : ''}" placeholder="عشان يوصلك تأكيد الطلب"></div>
           <div><label>${t('address')}</label><textarea id="c-address" rows="2"></textarea></div>
@@ -533,6 +557,7 @@
       </div>`;
 
       restoreDraft();
+      saveAbandoned();
       document.getElementById('c-city')?.addEventListener('change', () => { saveDraft(); render(); });
       // 📱 التحقق من رقم الموبايل وهو بيكتب (وتحويل الأرقام العربي ٠١٢ لإنجليزي)
       const phoneEl = document.getElementById('c-phone');
