@@ -93,6 +93,10 @@ const maintenanceCol = makeCollection('maintenance');
 export const getMaintenance = maintenanceCol.get;
 export const saveMaintenance = maintenanceCol.save;
 
+const abandonedCol = makeCollection('abandoned_carts');
+export const getAbandonedCarts = abandonedCol.get;
+export const saveAbandonedCarts = abandonedCol.save;
+
 const alertsCol = makeCollection('alerts');
 export const getAlerts = alertsCol.get;
 export const saveAlerts = alertsCol.save;

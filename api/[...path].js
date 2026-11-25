@@ -31,10 +31,11 @@ import category from './_lib/routes/category.js';
 import oem from './_lib/routes/oem.js';
 import guide from './_lib/routes/guide.js';
 import cashback from './_lib/routes/cashback.js';
+import carts from './_lib/routes/carts.js';
 
 const ROUTES = {
   products, orders, sync, diagnose, auth, reviews, coupons,
-  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed, car, bmw: car, mini: car, item, p: item, category, parts: category, oem, guide, cashback,
+  settings, activity, requests, sitemap, questions, notify, pay, maintenance, containers, estimate, leadtime, track, describe, alerts, savings, feed, car, bmw: car, mini: car, item, p: item, category, parts: category, oem, guide, cashback, carts,
 };
 
 export default async function handler(req, res) {
