@@ -29,13 +29,15 @@ workflows:
           npx cap add android 2>/dev/null || true
           npx cap sync android
           # 🐛 [FIX]: Google Play بيرفض minSdk أقل من 24 (الحماية التلقائية) — Capacitor بيولّده 22
-          sed -i.bak -E 's/minSdkVersion *= *[0-9]+/minSdkVersion = 24/' android/variables.gradle
-          # 🐛 [FIX]: Google Play بيطلب targetSdk 36 على الأقل
-          sed -i -E 's/(compileSdkVersion|targetSdkVersion) *= *[0-9]+/\1 = 36/' android/variables.gradle
+          # 🐛 [FIX]: Codemagic على Mac — sed بتاع macOS مش بيفهم «-i -E» زي لينكس، فبنستخدم perl
+          set -e
+          perl -pi -e 's/minSdkVersion\s*=\s*\d+/minSdkVersion = 24/' android/variables.gradle
+          # Google Play بيطلب targetSdk 36 على الأقل
+          perl -pi -e 's/(compileSdkVersion|targetSdkVersion)\s*=\s*\d+/$1 = 36/' android/variables.gradle
           # رقم الإصدار (versionCode) = رقم الـ build على Codemagic علشان كل رفعة تتقبل
-          sed -i -E "s/versionCode [0-9]+/versionCode ${BUILD_NUMBER:-1}/" android/app/build.gradle
+          perl -pi -e "s/versionCode \\d+/versionCode ${BUILD_NUMBER:-1}/" android/app/build.gradle
           grep -E "versionCode" android/app/build.gradle
-          grep minSdkVersion android/variables.gradle
+          grep -E "SdkVersion" android/variables.gradle
       - name: توليد الأيقونات
         script: npm run cap:assets || true
       - name: بناء الإصدار (AAB للمتجر + APK للتثبيت المباشر)
