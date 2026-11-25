@@ -28,6 +28,16 @@ workflows:
           npm run build:mobile
           npx cap add android 2>/dev/null || true
           npx cap sync android
+          # 🐛 [FIX]: Google Play بيرفض minSdk أقل من 24 (الحماية التلقائية) — Capacitor بيولّده 22
+          # 🐛 [FIX]: Codemagic على Mac — sed بتاع macOS مش بيفهم «-i -E» زي لينكس، فبنستخدم perl
+          set -e
+          perl -pi -e 's/minSdkVersion\s*=\s*\d+/minSdkVersion = 24/' android/variables.gradle
+          # Google Play بيطلب targetSdk 36 على الأقل
+          perl -pi -e 's/(compileSdkVersion|targetSdkVersion)\s*=\s*\d+/$1 = 36/' android/variables.gradle
+          # رقم الإصدار (versionCode) = رقم الـ build على Codemagic علشان كل رفعة تتقبل
+          perl -pi -e "s/versionCode \\d+/versionCode ${BUILD_NUMBER:-1}/" android/app/build.gradle
+          grep -E "versionCode" android/app/build.gradle
+          grep -E "SdkVersion" android/variables.gradle
       - name: توليد الأيقونات
         script: npm run cap:assets || true
       - name: بناء الإصدار (AAB للمتجر + APK للتثبيت المباشر)
@@ -35,6 +45,15 @@ workflows:
           cd android
           chmod +x ./gradlew
           ./gradlew bundleRelease assembleRelease
+      - name: توقيع الـ AAB بمفتاح fixit_keystore
+        # 🐛 [FIX]: مشروع أندرويد بيتولّد من جديد بـ «cap add» فمفيهوش إعداد توقيع → Google Play رفض الـ AAB
+        #          («يجب توقيع جميع الحزم»). بنوقّعه هنا بالمفتاح اللي Codemagic بيحطه في CM_KEYSTORE_*
+        script: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$CM_KEYSTORE_PATH" -storepass "$CM_KEYSTORE_PASSWORD" \
+            -keypass "$CM_KEY_PASSWORD" "$AAB" "$CM_KEY_ALIAS"
+          jarsigner -verify "$AAB" | tail -1
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
