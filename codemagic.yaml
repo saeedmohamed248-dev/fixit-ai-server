@@ -28,6 +28,9 @@ workflows:
           npm run build:mobile
           npx cap add android 2>/dev/null || true
           npx cap sync android
+          # 🐛 [FIX]: Google Play بيرفض minSdk أقل من 24 (الحماية التلقائية) — Capacitor بيولّده 22
+          sed -i.bak -E 's/minSdkVersion *= *[0-9]+/minSdkVersion = 24/' android/variables.gradle
+          grep minSdkVersion android/variables.gradle
       - name: توليد الأيقونات
         script: npm run cap:assets || true
       - name: بناء الإصدار (AAB للمتجر + APK للتثبيت المباشر)
