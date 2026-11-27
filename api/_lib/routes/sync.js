@@ -14,6 +14,18 @@
 import { getProducts, saveProducts, logActivity } from '../db.js';
 import { cors, productCategory, productBrand, productSupplier } from '../util.js';
 
+
+// 📦 المخزون من موس تك: بنطبّقه بس لو رقم موس تك نفسه اتغيّر من آخر مرة بعته.
+//    قبل كده كل مزامنة كانت بتكتب رقم موس تك فوق أي تعديل من لوحة تحكم الموقع أو خصم من طلب
+//    على الموقع — فالقطعة اللي خلصت كانت بترجع، وتعديل الأدمن كان بيتلغي. msStock = آخر رقم بعته موس تك.
+function applyMsStock(product, rawStock) {
+  const incoming = Math.max(0, Number(rawStock) || 0);
+  const known = product.msStock !== undefined && product.msStock !== null;
+  if (!known || incoming !== Number(product.msStock)) product.stock = incoming;
+  product.msStock = incoming;
+  return product.stock;
+}
+
 function checkSecret(req, res) {
   if (!process.env.SYNC_SECRET) {
     res.status(503).json({ error: 'المزامنة غير مفعّلة: أضِف متغير SYNC_SECRET في إعدادات Vercel' });
@@ -132,7 +144,6 @@ export default async function handler(req, res) {
             condition: item.condition === 'used' ? 'used' : 'new',
             price: Number(item.price) || 0,
             oldPrice: Number(item.oldPrice) || existing?.oldPrice || 0,
-            stock: Math.max(0, Number(item.stock) || 0),
             models: Array.isArray(item.models) ? item.models : existing?.models || [],
             oem: item.oem || existing?.oem || '',
             image: resolvedImages[i] || existing?.image || '',
@@ -154,9 +165,10 @@ export default async function handler(req, res) {
           fields.brand = productBrand({ brand: item.brand, name: fields.name, models: fields.models });
           // 🏬 توزيع الفروع + الفرع الافتراضي للشحن
           applyBranchFields(fields, item, existing || {});
-          if (existing) { Object.assign(existing, fields); updated++; }
+          if (existing) { Object.assign(existing, fields); applyMsStock(existing, item.stock); updated++; }
           else {
             products.push({
+              stock: Math.max(0, Number(item.stock) || 0), msStock: Math.max(0, Number(item.stock) || 0),
               id: 'p' + Date.now() + Math.random().toString(36).slice(2, 5),
               sku: item.sku, images: [], sold: 0, ratingAvg: 0, ratingCount: 0,
               descriptionEn: '', ...fields,
@@ -175,7 +187,7 @@ export default async function handler(req, res) {
         for (const item of body.items) {
           const product = products.find((p) => p.sku === item.sku);
           if (!product) continue;
-          product.stock = Math.max(0, Number(item.stock) || 0);
+          applyMsStock(product, item.stock);
           if (item.price) product.price = Number(item.price);
           // 🏬 حدّث توزيع الفروع لو موس تك بعته (المخزون ممكن يكون اتنقل بين الفروع)
           applyBranchFields(product, item, product);

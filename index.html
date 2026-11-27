@@ -21,7 +21,7 @@
   <meta name="theme-color" content="#101828">
   <!-- 🇪🇬 الرئيسية = قطاعي مصر. تاجر جملة مسجّل بس هو اللي بيتحوّل لمكتب التجارة؛ أي حد تاني بيرجع للقطاعي -->
   <script>try{if(localStorage.getItem('mode')==='wholesale'){var u=JSON.parse(localStorage.getItem('user')||'null');if(u&&u.account==='wholesale')location.replace('/trade.html');else localStorage.setItem('mode','retail');}}catch(e){}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20261127b">
+  <link rel="stylesheet" href="/css/style.css?v=20261127c">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoPartsStore","name":"Fixit Spare Parts","alternateName":"FixIt","url":"https://fixitauto.parts/","telephone":"+201125157767","address":{"@type":"PostalAddress","streetAddress":"الحي العاشر، مدينة نصر","addressLocality":"Nasr City","addressRegion":"Cairo","addressCountry":"EG"},"hasMap":"https://share.google/InODxiIyOGIAOBHaM","priceRange":"$$","logo":"https://fixitauto.parts/assets/fixit-logo-square.png","image":"https://fixitauto.parts/assets/fixit-logo-square.png","areaServed":{"@type":"Country","name":"Egypt"},"currenciesAccepted":"EGP","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"12:00","closes":"23:00"}],"brand":[{"@type":"Brand","name":"BMW"},{"@type":"Brand","name":"MINI"}]}</script>
   <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "FixIt", "url": "https://fixitauto.parts/", "inLanguage": ["ar", "en"], "potentialAction": {"@type": "SearchAction", "target": "https://fixitauto.parts/shop.html?q={search_term_string}", "query-input": "required name=search_term_string"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "منين أشتري قطع غيار BMW أصلية في مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "FixIt متخصص في قطع غيار BMW وميني كوبر بس — جديد ومستعمل وارد أوروبا وأمريكا، كل قطعة بتتفحص قبل البيع وعليها ضمان، ومحلنا في الحي العاشر بمدينة نصر بالقاهرة مع شحن لكل المحافظات."}}, {"@type": "Question", "name": "هل قطع الغيار المستعملة عليها ضمان؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، القطع المستعملة الوارد بتتفحص وبتتباع بضمان. تفاصيل مدة الضمان والاستبدال موجودة في صفحة السياسات."}}, {"@type": "Question", "name": "إزاي أعرف القطعة المناسبة لعربيتي؟", "acceptedAnswer": {"@type": "Answer", "text": "اختار موديل عربيتك (زي F30 أو E90 أو R56) من “عربيتي”، أو ابعتلنا رقم الشاسيه (VIN) على واتساب ونحدد لك رقم القطعة الصح."}}, {"@type": "Question", "name": "لو القطعة مش موجودة على الموقع أعمل إيه؟", "acceptedAnswer": {"@type": "Answer", "text": "اطلبها من صفحة “اطلب قطعتك” بالاسم أو رقم القطعة، وهنكلمك خلال ٥ دقايق في مواعيد العمل (١٢ الظهر – ١١ بالليل) بالسعر والمدة."}}, {"@type": "Question", "name": "بتشحنوا لكل محافظات مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، بنشحن لكل المحافظات، وممكن تستلم من المحل في مدينة نصر."}}, {"@type": "Question", "name": "إيه موديلات BMW وميني اللي بتوفروا قطعها؟", "acceptedAnswer": {"@type": "Answer", "text": "كل فئات BMW (الفئة 1 و3 و5 و7 و X1 و X3 و X5 و X6) من E36 لحد G20 و G30، وميني كوبر R56 و R55 و R60 و F56 و F55 و F54 و F60."}}]}]</script>
 </head>
@@ -29,46 +29,71 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- 🏬 الرئيسية بشكل المتاجر الكبيرة: بانر + باحث العربية ← فئات ← بلاطات الماركات ← رفوف منتجات -->
-    <section class="h2-top">
-      <div class="container h2-hero-grid">
-        <div class="h2-banner">
-          <div class="h2-banner-copy">
-            <span class="h2-kicker" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
-            <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
-            <p data-i18n="h2_sub">جديد أصلي ومستعمل وارد مفحوص — والدفع عند الاستلام</p>
-          </div>
-          <div class="h2-finder">
-            <b class="h2-finder-t" data-i18n="sbc_title">دوّر بعربيتك</b>
-            <div class="sbc-form">
-              <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
-              <select id="sbc-model" aria-label="Model"></select>
-              <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
+    <!-- 🔧 الرئيسية: «لاقي القطعة الصح» — عربية تفاعلية تختار منها الجزء + باحث بـ 3 طرق -->
+    <section class="hx-hero">
+      <div class="container hx-grid">
+        <div class="hx-copy">
+          <span class="hx-open" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
+          <h1><span data-i18n="hx_title1">لاقي القطعة الصح</span><br><em data-i18n="hx_title2">لعربيتك الـ BMW أو MINI</em></h1>
+          <p data-i18n="hx_sub">جديد أصلي ومستعمل وارد مفحوص — بضمان، والدفع عند الاستلام.</p>
+
+          <div class="hx-finder">
+            <div class="hx-tabs" role="tablist">
+              <button type="button" class="on" data-tab="car" data-i18n="hx_tab_car">بالعربية</button>
+              <button type="button" data-tab="part" data-i18n="hx_tab_part">باسم القطعة / OEM</button>
+              <button type="button" data-tab="vin" data-i18n="hx_tab_vin">برقم الشاسيه</button>
             </div>
+            <div class="hx-pane on" data-pane="car">
+              <div class="sbc-form">
+                <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
+                <select id="sbc-model" aria-label="Model"></select>
+                <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
+              </div>
+            </div>
+            <form class="hx-pane" data-pane="part" action="/shop.html" method="get">
+              <input type="search" name="q" data-i18n-ph="hx_part_ph" placeholder="مثال: تيل فرامل F30 أو 34116860016">
+              <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
+            </form>
+            <form class="hx-pane" data-pane="vin" id="hx-vin">
+              <input name="vin" maxlength="17" dir="ltr" data-i18n-ph="hx_vin_ph" placeholder="WBA8E9C5XGK... (17 حرف)">
+              <button class="btn btn-green" type="submit" data-i18n="hx_vin_go">ابعته واتساب</button>
+            </form>
           </div>
+
+          <div class="hx-chassis" id="hx-chassis"></div>
         </div>
-        <div class="h2-side">
-          <a class="h2-side-tile h2-t-bmw" href="/shop.html?brand=BMW"><small data-i18n="h2_shop">تسوّق</small><b>BMW</b><span data-i18n="h2_bmw_sub">كل الشاسيهات E · F · G</span></a>
-          <a class="h2-side-tile h2-t-mini" href="/shop.html?brand=MINI"><small data-i18n="h2_shop">تسوّق</small><b>MINI</b><span data-i18n="h2_mini_sub">Cooper R · F</span></a>
+
+        <div class="hx-car" aria-label="اختار الجزء من العربية">
+          <svg viewBox="0 0 600 230" class="hx-car-svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="hxBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ecf5"/></linearGradient>
+              <radialGradient id="hxShadow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#0b0d12" stop-opacity=".22"/><stop offset="1" stop-color="#0b0d12" stop-opacity="0"/></radialGradient>
+            </defs>
+            <ellipse cx="305" cy="204" rx="285" ry="16" fill="url(#hxShadow)"/>
+            <path class="hx-body" d="M38 156 Q36 126 78 116 L168 103 Q214 62 262 54 L382 52 Q432 54 474 98 L542 110 Q578 118 574 152 L574 163 Q574 172 563 172 L522 172 A44 44 0 0 0 434 172 L192 172 A44 44 0 0 0 104 172 L50 172 Q38 172 38 162 Z" fill="url(#hxBody)"/>
+            <path class="hx-glass" d="M188 103 Q224 68 264 64 L316 64 L316 103 Z M328 64 L380 64 Q416 68 444 103 L328 103 Z"/>
+            <path class="hx-line" d="M110 128 L560 128 M322 106 L322 168 M546 120 Q560 122 566 132"/>
+            <rect class="hx-lamp" x="548" y="122" width="22" height="9" rx="4"/>
+            <rect class="hx-tail" x="40" y="124" width="14" height="9" rx="3"/>
+            <g class="hx-wheel"><circle cx="148" cy="172" r="36"/><circle cx="148" cy="172" r="17" class="hx-rim"/></g>
+            <g class="hx-wheel"><circle cx="478" cy="172" r="36"/><circle cx="478" cy="172" r="17" class="hx-rim"/></g>
+          </svg>
+          <div class="hx-spots" id="hx-spots"></div>
+          <div class="hx-car-hint" data-i18n="hx_car_hint">دوس على أي جزء في العربية</div>
         </div>
       </div>
     </section>
 
     <!-- شريط الثقة -->
     <div class="container">
-      <div class="h2-trust">
-        <span>🚚 <b data-i18n="trust_ship">شحن لكل المحافظات</b></span>
-        <span>💵 <b data-i18n="trust_cod">الدفع عند الاستلام</b></span>
-        <span>✅ <b data-i18n="trust_genuine">قطع أصلية مضمونة</b></span>
-        <span>🔍 <b data-i18n="trust_inspect">فحص قبل التسليم</b></span>
-      </div>
+      <div class="hx-trust" id="hx-trust"></div>
     </div>
 
-    <!-- الفئات: دواير بتتسحب زي التطبيقات الكبيرة -->
+    <!-- الفئات -->
     <section class="h2-sec">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_cats">تسوّق حسب الفئة</h2><a href="/shop.html" data-i18n="view_all">عرض الكل ←</a></div>
-        <div class="h2-cats" id="cats-grid"></div>
+        <div class="hx-cats" id="cats-grid"></div>
       </div>
     </section>
 
@@ -91,6 +116,17 @@
         <a class="h2-promo h2-p-new" href="/shop.html?condition=new"><b data-i18n="chip_new">جديد أصلي</b><span data-i18n="h2_new_sub">قطع أصلية بضمان الوكيل</span><i>←</i></a>
         <a class="h2-promo h2-p-used" href="/shop.html?condition=used"><b data-i18n="chip_used">مستعمل وارد</b><span data-i18n="h2_used_sub">وارد أوروبا وأمريكا — مفحوص</span><i>←</i></a>
         <a class="h2-promo h2-p-sav" href="/savings.html"><b data-i18n="nav_savings">احسب توفيرك</b><span data-i18n="h2_sav_sub">صوّر فاتورتك واعرف هتوفّر كام</span><i>←</i></a>
+      </div>
+    </section>
+
+    <!-- إزاي بتشتري -->
+    <section class="h2-sec">
+      <div class="container">
+        <div class="hx-steps">
+          <div><b>1</b><h3 data-i18n="hx_s1_t">اختار عربيتك</h3><p data-i18n="hx_s1_d">الموديل أو رقم الشاسيه — ونوريك اللي بيركب بس</p></div>
+          <div><b>2</b><h3 data-i18n="hx_s2_t">اطلب أونلاين أو واتساب</h3><p data-i18n="hx_s2_d">مش متأكد؟ ابعت صورة القطعة ونأكدلك</p></div>
+          <div><b>3</b><h3 data-i18n="hx_s3_t">استلم وادفع</h3><p data-i18n="hx_s3_d">شحن لكل المحافظات والدفع عند الاستلام</p></div>
+        </div>
       </div>
     </section>
 
@@ -158,9 +194,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127b"></script>
-  <script src="/js/i18n.js?v=20261127b"></script>
-  <script src="/js/app.js?v=20261127b"></script>
+  <script src="/js/config.js?v=20261127c"></script>
+  <script src="/js/i18n.js?v=20261127c"></script>
+  <script src="/js/app.js?v=20261127c"></script>
   <script>
     renderLayout('home');
     document.title = t('title_home');
@@ -199,7 +235,7 @@
         const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date());
         const h = +parts.find((x) => x.type === 'hour').value % 24, wd = parts.find((x) => x.type === 'weekday').value;
         const open = wd !== 'Sun' && h >= 12 && h < 23;
-        const el = document.getElementById('sh-open');
+        const el = document.getElementById('sh-open'); if (!el) return;
         el.classList.toggle('closed', !open);
         document.getElementById('sh-open-txt').textContent = open
           ? (LANG === 'en' ? 'Open now · till 11 PM' : 'مفتوح دلوقتي · لحد ١١ بالليل')
@@ -221,11 +257,53 @@
     })();
 
     const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
+    // ✏️ أيقونات خطية (بدل الإيموجي) — 24×24 stroke
+    const IC = {
+      'فرامل': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+      'عفشة وتعليق': '<path d="M8 3h8M8 21h8M8 6l8 2-8 2 8 2-8 2 8 2-8 2"/>',
+      'محرك': '<path d="M4 10h2V8h4V6h4v2h3l2 3h1v5h-1l-2 2h-6l-2-2H6v-2H4z"/><path d="M10 6V4h4v2"/>',
+      'كهرباء وإشعال': '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+      'تبريد': '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2"/>',
+      'وقود': '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M6 9h6"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
+      'فلاتر وصيانة': '<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M6 8h12M6 16h12M10 8v8M14 8v8"/>',
+      'هيكل وإكسسوارات': '<path d="M3 16v-3l2-5h14l2 5v3"/><path d="M3 16h18v2H3z"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M6 12h12"/>',
+    };
+    const svgIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${IC[k] || IC['هيكل وإكسسوارات']}</svg>`;
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
-      <a class="h2-cat" href="/shop.html?category=${encodeURIComponent(c)}">
-        <span class="h2-cat-ic">${categoryIcon(c)}</span>
-        <span class="h2-cat-n">${catName(c)}</span>
+      <a class="hx-cat" href="/shop.html?category=${encodeURIComponent(c)}">
+        <span class="hx-cat-ic">${svgIc(c)}</span>
+        <span class="hx-cat-n">${catName(c)}</span>
       </a>`).join('');
+    // 🚗 نقاط على العربية → الفئة (إحداثيات من viewBox 600×230)
+    const SPOTS = [['محرك', 505, 100], ['كهرباء وإشعال', 560, 126], ['تبريد', 572, 148], ['فرامل', 478, 172], ['عفشة وتعليق', 148, 172], ['هيكل وإكسسوارات', 300, 138], ['وقود', 78, 118], ['فلاتر وصيانة', 440, 116]];
+    document.getElementById('hx-spots').innerHTML = SPOTS.map(([c, x, y]) => `
+      <a class="hx-spot" href="/shop.html?category=${encodeURIComponent(c)}" style="left:${(x / 600 * 100).toFixed(2)}%;top:${(y / 230 * 100).toFixed(2)}%">
+        <i></i><span>${catName(c)}</span></a>`).join('');
+    // 🔢 شاسيهات شائعة
+    const CHASSIS = [['BMW', 'F30'], ['BMW', 'E90'], ['BMW', 'G20'], ['BMW', 'F10'], ['BMW', 'X5'], ['BMW', 'X3'], ['MINI', 'R56'], ['MINI', 'F56']];
+    document.getElementById('hx-chassis').innerHTML = `<small>${LANG === 'en' ? 'Popular:' : 'الأكثر طلباً:'}</small>` +
+      CHASSIS.map(([b, m]) => `<a href="/shop.html?brand=${b}&model=${m}">${m}</a>`).join('');
+    // ✅ شريط الثقة بأيقونات خطية
+    const TI = {
+      ship: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
+      cod: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/>',
+      genuine: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+      inspect: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M8.5 11l2 2 3.5-3.5"/>',
+    };
+    document.getElementById('hx-trust').innerHTML = [['ship', 'trust_ship'], ['cod', 'trust_cod'], ['genuine', 'trust_genuine'], ['inspect', 'trust_inspect']]
+      .map(([k, key]) => `<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${TI[k]}</svg><b>${t(key)}</b></span>`).join('');
+    // 🗂️ تبويبات الباحث
+    document.querySelectorAll('.hx-tabs button').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.hx-tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      document.querySelectorAll('.hx-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === b.dataset.tab));
+      const inp = document.querySelector(`.hx-pane[data-pane="${b.dataset.tab}"] input`); if (inp) inp.focus();
+    }));
+    document.getElementById('hx-vin').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const vin = e.target.vin.value.trim().toUpperCase();
+      trackEvent('part_request', { via: 'vin' });
+      window.open(waLink((LANG === 'en' ? 'Hi FixIt 👋\nMy chassis number (VIN): ' : 'أهلاً FixIt 👋\nرقم الشاسيه بتاعي: ') + vin + (LANG === 'en' ? '\nI need: ' : '\nمحتاج: ')), '_blank');
+    });
     api('/products').then((products) => {
       // 🐛 [FIX]: الرئيسية كانت بتعرض قطع الفرعين — دلوقتي قطع فرع العرض الحالي بس (قطاعي مصر / جملة الإمارات)
       products = wsCatalogFilter(products);
