@@ -21,7 +21,7 @@
   <meta name="theme-color" content="#101828">
   <!-- 🇪🇬 الرئيسية = قطاعي مصر. تاجر جملة مسجّل بس هو اللي بيتحوّل لمكتب التجارة؛ أي حد تاني بيرجع للقطاعي -->
   <script>try{if(localStorage.getItem('mode')==='wholesale'){var u=JSON.parse(localStorage.getItem('user')||'null');if(u&&u.account==='wholesale')location.replace('/trade.html');else localStorage.setItem('mode','retail');}}catch(e){}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20261127">
+  <link rel="stylesheet" href="/css/style.css?v=20261127b">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoPartsStore","name":"Fixit Spare Parts","alternateName":"FixIt","url":"https://fixitauto.parts/","telephone":"+201125157767","address":{"@type":"PostalAddress","streetAddress":"الحي العاشر، مدينة نصر","addressLocality":"Nasr City","addressRegion":"Cairo","addressCountry":"EG"},"hasMap":"https://share.google/InODxiIyOGIAOBHaM","priceRange":"$$","logo":"https://fixitauto.parts/assets/fixit-logo-square.png","image":"https://fixitauto.parts/assets/fixit-logo-square.png","areaServed":{"@type":"Country","name":"Egypt"},"currenciesAccepted":"EGP","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"12:00","closes":"23:00"}],"brand":[{"@type":"Brand","name":"BMW"},{"@type":"Brand","name":"MINI"}]}</script>
   <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "FixIt", "url": "https://fixitauto.parts/", "inLanguage": ["ar", "en"], "potentialAction": {"@type": "SearchAction", "target": "https://fixitauto.parts/shop.html?q={search_term_string}", "query-input": "required name=search_term_string"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "منين أشتري قطع غيار BMW أصلية في مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "FixIt متخصص في قطع غيار BMW وميني كوبر بس — جديد ومستعمل وارد أوروبا وأمريكا، كل قطعة بتتفحص قبل البيع وعليها ضمان، ومحلنا في الحي العاشر بمدينة نصر بالقاهرة مع شحن لكل المحافظات."}}, {"@type": "Question", "name": "هل قطع الغيار المستعملة عليها ضمان؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، القطع المستعملة الوارد بتتفحص وبتتباع بضمان. تفاصيل مدة الضمان والاستبدال موجودة في صفحة السياسات."}}, {"@type": "Question", "name": "إزاي أعرف القطعة المناسبة لعربيتي؟", "acceptedAnswer": {"@type": "Answer", "text": "اختار موديل عربيتك (زي F30 أو E90 أو R56) من “عربيتي”، أو ابعتلنا رقم الشاسيه (VIN) على واتساب ونحدد لك رقم القطعة الصح."}}, {"@type": "Question", "name": "لو القطعة مش موجودة على الموقع أعمل إيه؟", "acceptedAnswer": {"@type": "Answer", "text": "اطلبها من صفحة “اطلب قطعتك” بالاسم أو رقم القطعة، وهنكلمك خلال ٥ دقايق في مواعيد العمل (١٢ الظهر – ١١ بالليل) بالسعر والمدة."}}, {"@type": "Question", "name": "بتشحنوا لكل محافظات مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، بنشحن لكل المحافظات، وممكن تستلم من المحل في مدينة نصر."}}, {"@type": "Question", "name": "إيه موديلات BMW وميني اللي بتوفروا قطعها؟", "acceptedAnswer": {"@type": "Answer", "text": "كل فئات BMW (الفئة 1 و3 و5 و7 و X1 و X3 و X5 و X6) من E36 لحد G20 و G30، وميني كوبر R56 و R55 و R60 و F56 و F55 و F54 و F60."}}]}]</script>
 </head>
@@ -29,159 +29,100 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- 🏪 الهيرو — واجهة محل حقيقية: يمين الكلام والبحث، شمال رف القطع -->
-    <section class="hero store-hero">
-      <div class="container sh-grid">
-        <div class="sh-copy">
-          <div class="sh-badges">
-            <span class="sh-open" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
-            <span class="sh-loc">📍 <span data-i18n="sh_loc">المحل: الحي العاشر، مدينة نصر</span></span>
+    <!-- 🏬 الرئيسية بشكل المتاجر الكبيرة: بانر + باحث العربية ← فئات ← بلاطات الماركات ← رفوف منتجات -->
+    <section class="h2-top">
+      <div class="container h2-hero-grid">
+        <div class="h2-banner">
+          <div class="h2-banner-copy">
+            <span class="h2-kicker" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
+            <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
+            <p data-i18n="h2_sub">جديد أصلي ومستعمل وارد مفحوص — والدفع عند الاستلام</p>
           </div>
-          <h1 data-i18n="hero_title">قطع غيار <span>BMW</span> و <span>MINI</span> بضمان</h1>
-          <p data-i18n="hero_sub">استيراد مباشر — قطع جديدة أصلية ومستعمل وارد أوروبا وأمريكا، كله مفحوص وبضمان. اكتب اسم القطعة أو رقم الشاسيه/OEM وهنلاقيهالك.</p>
-
-          <!-- كاونتر المحل: بحث أو اختار عربيتك -->
-          <div class="sh-counter">
-            <div class="sh-tabs" role="tablist">
-              <button type="button" class="on" data-tab="car">🚗 <span data-i18n="sbc_title">دوّر بعربيتك</span></button>
-              <button type="button" data-tab="q">🔍 <span data-i18n="search_btn">بحث</span></button>
+          <div class="h2-finder">
+            <b class="h2-finder-t" data-i18n="sbc_title">دوّر بعربيتك</b>
+            <div class="sbc-form">
+              <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
+              <select id="sbc-model" aria-label="Model"></select>
+              <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
             </div>
-            <div class="sh-pane on" data-pane="car">
-              <div class="sbc-form">
-                <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
-                <select id="sbc-model" aria-label="Model"></select>
-                <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
-              </div>
-            </div>
-            <form class="sh-pane search-box" data-pane="q" action="/shop.html" method="get">
-              <input type="search" name="q" data-i18n-ph="hero_search_ph" placeholder="🔍 ابحث باسم القطعة أو رقم OEM أو الموديل (مثال: F30)...">
-              <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
-            </form>
-            <div class="brand-chips">
-              <a class="chip" href="/shop.html?brand=BMW">BMW</a>
-              <a class="chip" href="/shop.html?brand=MINI">MINI Cooper</a>
-              <a class="chip" href="/shop.html?condition=new" data-i18n="chip_new">جديد أصلي</a>
-              <a class="chip" href="/shop.html?condition=used" data-i18n="chip_used">مستعمل وارد</a>
-            </div>
-          </div>
-
-          <div class="hero-stats">
-            <span data-i18n="stat1">✓ قطع مفحوصة بضمان</span>
-            <span data-i18n="stat2">✓ شحن ٢-٤ أيام</span>
-            <span data-i18n="stat3">✓ استيراد مباشر</span>
           </div>
         </div>
-
-        <!-- رف القطع: منتجات حقيقية بصورها — بتتحدد من لوحة التحكم (إعدادات ← قطع واجهة الرئيسية) -->
-        <div class="sh-wall" id="sh-wall" style="display:none">
-          <div class="sh-sign"><b>FIXIT</b> PARTS · BMW &amp; MINI</div>
-          <div class="sh-shelf" id="sh-shelf" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
-          <div class="sh-receipt">
-            <div class="r-row"><span>🧾 <span data-i18n="sh_rcpt">طلب جاهز للتسليم</span></span><b>✓</b></div>
-            <div class="r-sub" data-i18n="sh_rcpt_sub">فحص · تغليف · شحن لكل المحافظات</div>
-          </div>
+        <div class="h2-side">
+          <a class="h2-side-tile h2-t-bmw" href="/shop.html?brand=BMW"><small data-i18n="h2_shop">تسوّق</small><b>BMW</b><span data-i18n="h2_bmw_sub">كل الشاسيهات E · F · G</span></a>
+          <a class="h2-side-tile h2-t-mini" href="/shop.html?brand=MINI"><small data-i18n="h2_shop">تسوّق</small><b>MINI</b><span data-i18n="h2_mini_sub">Cooper R · F</span></a>
         </div>
       </div>
     </section>
 
     <!-- شريط الثقة -->
-    <div class="trust-strip">
-      <div class="container trust-strip-inner">
-        <span class="ts-item">🚚 <b data-i18n="trust_ship">شحن لكل المحافظات</b></span>
-        <span class="ts-item">✅ <b data-i18n="trust_genuine">قطع أصلية مضمونة</b></span>
-        <span class="ts-item ts-deposit">💵 <b data-i18n="trust_cod">عربون والباقي عند الاستلام</b></span>
-        <span class="ts-item">🔍 <b data-i18n="trust_inspect">فحص قبل التسليم</b></span>
-        <span class="ts-item">💬 <b data-i18n="trust_support">دعم واتساب سريع</b></span>
+    <div class="container">
+      <div class="h2-trust">
+        <span>🚚 <b data-i18n="trust_ship">شحن لكل المحافظات</b></span>
+        <span>💵 <b data-i18n="trust_cod">الدفع عند الاستلام</b></span>
+        <span>✅ <b data-i18n="trust_genuine">قطع أصلية مضمونة</b></span>
+        <span>🔍 <b data-i18n="trust_inspect">فحص قبل التسليم</b></span>
       </div>
     </div>
 
-    <!-- احسب توفيرك -->
-    <section class="section" style="padding-bottom: 0;">
+    <!-- الفئات: دواير بتتسحب زي التطبيقات الكبيرة -->
+    <section class="h2-sec">
       <div class="container">
-        <a href="/savings.html" class="savings-band">
-          <span class="sb-ic">🧾💰</span>
-          <span class="sb-text" data-i18n="sav_home_cta">عندك فاتورة أو مقايسة قطع غيار؟ اعرف كنت هتوفّر كام مع فيكس إت 💰</span>
-          <span class="sb-go" data-i18n="nav_savings">احسب توفيرك 💰</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- الفئات -->
-    <section class="section" style="padding-top: 0;">
-      <div class="container">
-        <div class="section-head">
-          <h2 data-i18n="sec_cats">تسوّق حسب الفئة</h2>
-          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
-        </div>
-        <div class="cats-grid" id="cats-grid"></div>
+        <div class="section-head"><h2 data-i18n="sec_cats">تسوّق حسب الفئة</h2><a href="/shop.html" data-i18n="view_all">عرض الكل ←</a></div>
+        <div class="h2-cats" id="cats-grid"></div>
       </div>
     </section>
 
     <!-- عرض اليوم (عدّاد تنازلي) -->
-    <section class="section" style="padding-top: 0; display: none;" id="flash-section">
-      <div class="container">
-        <div class="flash-band" id="flash-band"></div>
-      </div>
+    <section class="h2-sec" style="display: none;" id="flash-section">
+      <div class="container"><div class="flash-band" id="flash-band"></div></div>
     </section>
 
     <!-- عروض وخصومات -->
-    <section class="section" style="padding-top: 0; display: none;" id="deals-section">
+    <section class="h2-sec" style="display: none;" id="deals-section">
       <div class="container">
-        <div class="section-head">
-          <h2 data-i18n="sec_deals">🔥 عروض وخصومات</h2>
-          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
-        </div>
-        <div class="hscroll" id="deals-grid"></div>
+        <div class="section-head"><h2 data-i18n="sec_deals">عروض وخصومات</h2><a href="/shop.html" data-i18n="view_all">عرض الكل ←</a></div>
+        <div class="hscroll h2-rail" id="deals-grid"></div>
+      </div>
+    </section>
+
+    <!-- بلاطات جديد / مستعمل -->
+    <section class="h2-sec">
+      <div class="container h2-promos">
+        <a class="h2-promo h2-p-new" href="/shop.html?condition=new"><b data-i18n="chip_new">جديد أصلي</b><span data-i18n="h2_new_sub">قطع أصلية بضمان الوكيل</span><i>←</i></a>
+        <a class="h2-promo h2-p-used" href="/shop.html?condition=used"><b data-i18n="chip_used">مستعمل وارد</b><span data-i18n="h2_used_sub">وارد أوروبا وأمريكا — مفحوص</span><i>←</i></a>
+        <a class="h2-promo h2-p-sav" href="/savings.html"><b data-i18n="nav_savings">احسب توفيرك</b><span data-i18n="h2_sav_sub">صوّر فاتورتك واعرف هتوفّر كام</span><i>←</i></a>
       </div>
     </section>
 
     <!-- وصل حديثاً -->
-    <section class="section" style="padding-top: 0; display: none;" id="new-section">
+    <section class="h2-sec" style="display: none;" id="new-section">
       <div class="container">
-        <div class="section-head">
-          <h2>🆕 <span data-i18n="na_title">وصل حديثاً</span></h2>
-          <a href="/shop.html?sort=newest" data-i18n="view_all">عرض الكل ←</a>
-        </div>
-        <div class="hscroll" id="new-grid"></div>
+        <div class="section-head"><h2 data-i18n="na_title">وصل حديثاً</h2><a href="/shop.html?sort=newest" data-i18n="view_all">عرض الكل ←</a></div>
+        <div class="hscroll h2-rail" id="new-grid"></div>
       </div>
     </section>
 
     <!-- الأكثر مبيعاً -->
-    <section class="section" style="padding-top: 0;">
+    <section class="h2-sec">
       <div class="container">
-        <div class="section-head">
-          <h2 data-i18n="sec_best">⭐ الأكثر مبيعاً</h2>
-          <a href="/shop.html" data-i18n="view_all">عرض الكل ←</a>
-        </div>
+        <div class="section-head"><h2 data-i18n="sec_best">الأكثر مبيعاً</h2><a href="/shop.html?sort=best" data-i18n="view_all">عرض الكل ←</a></div>
         <div class="products-grid" id="featured-grid"></div>
       </div>
     </section>
 
-    <!-- آراء العملاء -->
-    <section class="section" style="padding-top: 0; display: none;" id="reviews-section">
-      <div class="container">
-        <div class="section-head"><h2>⭐ <span data-i18n="sec_reviews">آراء عملائنا</span></h2></div>
-        <div class="reviews-grid" id="reviews-grid"></div>
-      </div>
-    </section>
-
     <!-- شاهدتها مؤخراً -->
-    <section class="section" style="padding-top: 0; display: none;" id="recent-section">
+    <section class="h2-sec" style="display: none;" id="recent-section">
       <div class="container">
-        <div class="section-head"><h2 data-i18n="sec_recent">👀 شاهدتها مؤخراً</h2></div>
-        <div class="hscroll" id="recent-grid"></div>
+        <div class="section-head"><h2 data-i18n="sec_recent">شاهدتها مؤخراً</h2></div>
+        <div class="hscroll h2-rail" id="recent-grid"></div>
       </div>
     </section>
 
-    <!-- المميزات -->
-    <section class="section" style="padding-top: 0;">
+    <!-- آراء العملاء -->
+    <section class="h2-sec" style="display: none;" id="reviews-section">
       <div class="container">
-        <div class="features-grid">
-          <div class="feature"><span class="icon">✅</span><div><h3 data-i18n="feat1_t">فحص شامل</h3><p data-i18n="feat1_d">كل قطعة مستعملة بتتفحص بالكامل قبل البيع وبنضمنها.</p></div></div>
-          <div class="feature"><span class="icon">🚢</span><div><h3 data-i18n="feat2_t">استيراد مباشر</h3><p data-i18n="feat2_d">وارد أوروبا وأمريكا بدون وسطاء، فالأسعار أفضل.</p></div></div>
-          <div class="feature"><span class="icon">🚚</span><div><h3 data-i18n="feat3_t">شحن سريع</h3><p data-i18n="feat3_d">توصيل لجميع المحافظات خلال ٢-٤ أيام عمل.</p></div></div>
-          <div class="feature"><span class="icon">🤖</span><div><h3 data-i18n="feat4_t">خبير يساعدك</h3><p data-i18n="feat4_d">مش عارف اسم القطعة؟ اسأل الخبير الذكي وهيوصلك ليها.</p></div></div>
-        </div>
+        <div class="section-head"><h2 data-i18n="sec_reviews">آراء عملائنا</h2></div>
+        <div class="reviews-grid" id="reviews-grid"></div>
       </div>
     </section>
 
@@ -217,16 +158,16 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127"></script>
-  <script src="/js/i18n.js?v=20261127"></script>
-  <script src="/js/app.js?v=20261127"></script>
+  <script src="/js/config.js?v=20261127b"></script>
+  <script src="/js/i18n.js?v=20261127b"></script>
+  <script src="/js/app.js?v=20261127b"></script>
   <script>
     renderLayout('home');
     document.title = t('title_home');
     document.getElementById('cta-wa').href = waLink(t('wa_part'));
     document.getElementById('cta-call').href = telLink();
     document.getElementById('cta-call-num').textContent = phoneDisplay();
-    document.getElementById('featured-grid').innerHTML = skeletonCards(8);
+    document.getElementById('featured-grid').innerHTML = skeletonCards(10);
 
     // 🚗 دوّر بعربيتك — موديلات حسب الماركة
     const MODELS_BY_BRAND = {
@@ -253,12 +194,6 @@
     });
 
 
-    // 🏪 تبويبات كاونتر الهيرو + حالة المحل (مفتوح ١٢ الظهر – ١١ بالليل بتوقيت القاهرة، الأحد إجازة)
-    document.querySelectorAll('.sh-tabs button').forEach((b) => b.addEventListener('click', () => {
-      document.querySelectorAll('.sh-tabs button').forEach((x) => x.classList.toggle('on', x === b));
-      document.querySelectorAll('.sh-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === b.dataset.tab));
-      if (b.dataset.tab === 'q') document.querySelector('.sh-pane[data-pane="q"] input').focus();
-    }));
     (function storeStatus() {
       try {
         const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date());
@@ -286,33 +221,16 @@
     })();
 
     const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
-    document.getElementById('cats-grid').innerHTML = CATS.map((c, i) => `
-      <a class="cat-card aisle" data-aisle="${(LANG === 'en' ? 'AISLE ' : 'ممر ') + String(i + 1).padStart(2, '0')}" href="/shop.html?category=${encodeURIComponent(c)}">
-        <span class="icon">${categoryIcon(c)}</span>
-        <span class="name">${catName(c)}</span>
+    document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
+      <a class="h2-cat" href="/shop.html?category=${encodeURIComponent(c)}">
+        <span class="h2-cat-ic">${categoryIcon(c)}</span>
+        <span class="h2-cat-n">${catName(c)}</span>
       </a>`).join('');
-
     api('/products').then((products) => {
       // 🐛 [FIX]: الرئيسية كانت بتعرض قطع الفرعين — دلوقتي قطع فرع العرض الحالي بس (قطاعي مصر / جملة الإمارات)
       products = wsCatalogFilter(products);
-      // 🏪 رف الواجهة: القطع اللي اختارها الأدمن، ولو مفيش → الأكثر مبيعاً اللي ليها صور
-      (function renderShelf() {
-        const withImg = products.filter((p) => firstImage(p) && p.stock > 0);
-        const picked = ((window.SETTINGS || {}).heroProducts || []).map((id) => products.find((p) => p.id === id)).filter((p) => p && firstImage(p));
-        const list = (picked.length ? picked : [...withImg].sort((a, b) => (b.sold || 0) - (a.sold || 0))).slice(0, 6);
-        if (list.length < 3) return;
-        const n = list.length >= 6 ? 6 : 3;
-        document.getElementById('sh-shelf').innerHTML = list.slice(0, n).map((p) => `
-          <a class="sh-item" href="${productUrl(p)}">
-            ${productImage(p, 'sh-img').replace('<img ', '<img style="width:100%;aspect-ratio:1;object-fit:cover;max-height:160px" ')}
-            <span class="sh-name">${esc(pname(p))}</span>
-            <span class="tag">${money(p.price)}</span>
-          </a>`).join('');
-        document.getElementById('sh-wall').style.display = '';
-      })();
-
       // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
-      const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
+      const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 10);
       document.getElementById('featured-grid').innerHTML =
         best.map(productCard).join('') ||
         // 🐛 [FIX]: الكتالوج الفاضي كان بيسيب مكان «الأكثر مبيعاً» بجملة «مفيش منتجات» بس — دلوقتي بيودّي الزائر لطلب القطعة أو مكالمة
@@ -328,7 +246,7 @@
       }
 
       // العروض: اللي عليها خصم
-      const deals = products.filter((p) => p.oldPrice > p.price);
+      const deals = products.filter((p) => p.oldPrice > p.price).slice(0, 16);
       if (deals.length) {
         document.getElementById('deals-section').style.display = '';
         document.getElementById('deals-grid').innerHTML = deals.map(productCard).join('');
