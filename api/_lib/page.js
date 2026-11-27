@@ -42,7 +42,7 @@ export function page({ host, path, title, desc, crumbs = [], body, ld = [], ogIm
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261127d">
+  <link rel="stylesheet" href="/css/style.css?v=20261127e">
   <script type="application/ld+json">${JSON.stringify([bc, ...ld]).replace(/</g, '\\u003c')}</script>
 </head>
 <body>
@@ -52,9 +52,9 @@ export function page({ host, path, title, desc, crumbs = [], body, ld = [], ogIm
     ${body}
   </div></main>
   <div id="site-footer"></div>
-  <script src="/js/config.js?v=20261127d"></script>
-  <script src="/js/i18n.js?v=20261127d"></script>
-  <script src="/js/app.js?v=20261127d"></script>
+  <script src="/js/config.js?v=20261127e"></script>
+  <script src="/js/i18n.js?v=20261127e"></script>
+  <script src="/js/app.js?v=20261127e"></script>
   <script>renderLayout('shop');${script}</script>
 </body>
 </html>`;
