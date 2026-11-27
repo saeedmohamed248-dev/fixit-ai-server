@@ -21,7 +21,7 @@
   <meta name="theme-color" content="#08090c">
   <!-- هذه المنصة هي فرع الجملة — نضبط الوضع مبكراً عشان السكين الداكن يتطبّق من غير وميض -->
   <script>try { localStorage.setItem('mode', 'wholesale'); } catch (e) {}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20261127e">
+  <link rel="stylesheet" href="/css/style.css?v=20261127f">
 </head>
 <body>
   <div id="site-header"></div>
@@ -34,9 +34,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127e"></script>
-  <script src="/js/i18n.js?v=20261127e"></script>
-  <script src="/js/app.js?v=20261127e"></script>
+  <script src="/js/config.js?v=20261127f"></script>
+  <script src="/js/i18n.js?v=20261127f"></script>
+  <script src="/js/app.js?v=20261127f"></script>
   <script>
     renderLayout('trade');
     document.title = (wsConf().brandEn || 'FixIt Trade') + ' — ' + (LANG === 'en' ? 'Wholesale Export' : 'تصدير جملة');
@@ -53,7 +53,7 @@
       return `
       <section id="new-arrivals" style="margin-top:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 4px;">
-          <h2 style="margin:0;">🆕 ${t('na_title')}</h2>
+          <h2 style="margin:0;">${t('na_title')}</h2>
           <a href="/shop.html?sort=newest" style="color:var(--accent);font-weight:700;">${t('ws_view_catalog')} →</a>
         </div>
         <div class="panel-sub" style="color:var(--muted);margin-bottom:14px;">${t('na_sub')}</div>
@@ -66,7 +66,7 @@
       const u = user();
       return `
       <section class="trade-panel alert-box" id="alerts">
-        <h2>🔔 ${t('alert_title')}</h2>
+        <h2>${t('alert_title')}</h2>
         <div class="panel-sub">${t('alert_sub')}</div>
         <div class="trade-grid">
           <div class="form-stack">
@@ -100,13 +100,29 @@
       });
     }
 
+    /* ---------- ✏️ أيقونات خطية (نفس ستايل المتجر) ---------- */
+    const TX = {
+      box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+      globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+      ship: '<path d="M3 17h18l-2 4H5z"/><path d="M5 17V9h14v8M9 9V5h6v4"/>',
+      star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+      recycle: '<path d="M7 19H4l3-5M17 19h3l-3-5M12 4l-2 3h4z"/><path d="M7 14 10 7M17 14l-3-7M7 19h10"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      bank: '<path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>',
+      hash: '<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>',
+      shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+      doc: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
+      card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>',
+    };
+    const txIc = (k) => `<svg class="tx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TX[k] || TX.box}</svg>`;
+
     /* ---------- شريط المصداقية ---------- */
     function statsBar() {
       const stats = wsConf().stats || [];
       if (!stats.length) return '';
-      return `<div class="stats-bar">${stats.map((s) => `
+      return `<div class="stats-bar">${stats.map((s, i) => `
         <div class="stat-cell">
-          <div class="stat-ic">${s.ic || ''}</div>
+          <div class="stat-ic">${txIc(['box', 'globe', 'ship', 'star'][i] || 'box')}</div>
           <div class="stat-val">${esc(s.value)}</div>
           <div class="stat-lbl">${esc(LANG === 'en' ? s.labelEn : s.labelAr)}</div>
         </div>`).join('')}</div>`;
@@ -115,10 +131,10 @@
     /* ---------- إزاي نشتغل (خطوات) ---------- */
     function processSteps() {
       const steps = [1, 2, 3, 4].map((n) => ({ t: t(`proc_${n}_t`), d: t(`proc_${n}_d`) }));
-      const icons = ['📝', '💳', '🚢', '📦'];
+      const icons = [txIc('doc'), txIc('card'), txIc('ship'), txIc('box')];
       return `
       <section style="margin-top:8px;">
-        <h2 style="margin:8px 0 2px;">🔄 ${t('proc_title')}</h2>
+        <h2 style="margin:8px 0 2px;">${t('proc_title')}</h2>
         <div class="panel-sub" style="color:var(--muted);margin-bottom:16px;">${t('proc_sub')}</div>
         <div class="proc-grid">
           ${steps.map((s, i) => `
@@ -138,7 +154,7 @@
       if (!faq.length) return '';
       return `
       <section class="trade-panel" id="faq">
-        <h2>❓ ${t('faq_title')}</h2>
+        <h2>${t('faq_title')}</h2>
         <div class="faq-list">
           ${faq.map((f, i) => `
             <details class="faq-item" ${i === 0 ? 'open' : ''}>
@@ -154,14 +170,14 @@
       const tr = wsConf().trust || {};
       const L = (a, e) => (LANG === 'en' ? e : a);
       const cells = [
-        { ic: '♻️', lbl: t('trust_condition'), val: L(tr.conditionAr, tr.conditionEn) },
-        { ic: '🌍', lbl: t('trust_countries'), val: L(tr.countriesAr, tr.countriesEn) },
-        { ic: '🚢', lbl: t('trust_ship_ws'), val: L(tr.shippingAr, tr.shippingEn) },
-        { ic: '⏱️', lbl: t('trust_lead'), val: L(tr.leadTimeAr, tr.leadTimeEn) },
-        { ic: '🏦', lbl: t('trust_pay'), val: L(tr.paymentAr, tr.paymentEn) },
-        { ic: '📦', lbl: t('trust_carton'), val: L(tr.cartonAr, tr.cartonEn) },
-        { ic: '🔢', lbl: t('trust_moq'), val: t('trust_moq_val', { n: wsMOQ() }) },
-        { ic: '🛡️', lbl: t('trust_warranty'), val: L(tr.warrantyAr, tr.warrantyEn) },
+        { ic: txIc('recycle'), lbl: t('trust_condition'), val: L(tr.conditionAr, tr.conditionEn) },
+        { ic: txIc('globe'), lbl: t('trust_countries'), val: L(tr.countriesAr, tr.countriesEn) },
+        { ic: txIc('ship'), lbl: t('trust_ship_ws'), val: L(tr.shippingAr, tr.shippingEn) },
+        { ic: txIc('clock'), lbl: t('trust_lead'), val: L(tr.leadTimeAr, tr.leadTimeEn) },
+        { ic: txIc('bank'), lbl: t('trust_pay'), val: L(tr.paymentAr, tr.paymentEn) },
+        { ic: txIc('box'), lbl: t('trust_carton'), val: L(tr.cartonAr, tr.cartonEn) },
+        { ic: txIc('hash'), lbl: t('trust_moq'), val: t('trust_moq_val', { n: wsMOQ() }) },
+        { ic: txIc('shield'), lbl: t('trust_warranty'), val: L(tr.warrantyAr, tr.warrantyEn) },
       ];
       return `
       <h2 style="margin: 8px 0 14px;">${t('trust_title')}</h2>
@@ -178,17 +194,51 @@
     /* ---------- الهيرو ---------- */
     function heroHtml() {
       const u = user();
+      const EN = LANG === 'en';
       return `
-      <section class="trade-hero">
-        <span class="kicker">${t('trade_hero_kicker')}</span>
-        <h1>${t('trade_hero_title')}</h1>
-        <p class="sub">${t('trade_hero_sub')}</p>
-        <div class="hero-cta">
-          <a class="btn" href="/shop.html">${t('trade_cta_browse')} →</a>
-          <a class="btn btn-outline" href="#rfq">${t('trade_cta_quote')}</a>
+      <section class="trade-hero tx-hero">
+        <div class="tx-copy">
+          <span class="kicker">${t('trade_hero_kicker')}</span>
+          <h1>${t('trade_hero_title')}</h1>
+          <p class="sub">${t('trade_hero_sub')}</p>
+          <div class="tx-finder">
+            <div class="hx-tabs" role="tablist">
+              <button type="button" class="on" data-tx="part">${EN ? 'Part / OEM' : 'قطعة / OEM'}</button>
+              <button type="button" data-tx="list">${EN ? 'Paste a list' : 'الصق قائمة'}</button>
+              <button type="button" data-tx="wa">${EN ? 'Price list' : 'قائمة الأسعار'}</button>
+            </div>
+            <form class="hx-pane on" data-txp="part" action="/shop.html" method="get">
+              <input type="search" name="q" placeholder="${EN ? 'e.g. N20 turbo or 11657636757' : 'مثال: تيربو N20 أو 11657636757'}">
+              <button class="btn" type="submit">${t('search_btn')}</button>
+            </form>
+            <div class="hx-pane" data-txp="list">
+              <a class="btn" href="#order-pad" style="flex:1;">${EN ? 'Open Quick Order Pad →' : 'افتح الطلب السريع بالـ SKU ←'}</a>
+            </div>
+            <div class="hx-pane" data-txp="wa">
+              <a class="btn btn-green" data-wa-pricelist target="_blank" rel="noopener" style="flex:1;" href="${waLink(t('trade_wa_pricelist_msg'))}">${t('trade_wa_pricelist')}</a>
+            </div>
+          </div>
+          <div class="hero-cta">
+            <a class="btn btn-outline" href="/shop.html">${t('trade_cta_browse')} →</a>
+            <a class="btn btn-ghost" href="#rfq">${t('trade_cta_quote')}</a>
+          </div>
+          ${u ? `<div class="signed">✓ ${t('trade_signedin')}: ${esc(u.name)}${u.company ? ' — ' + esc(u.company) : ''}</div>` : ''}
         </div>
-        ${u ? '' : `<a class="btn btn-green" data-wa-pricelist target="_blank" rel="noopener" style="margin-top:12px;" href="${waLink(t('trade_wa_pricelist_msg'))}">💬 ${t('trade_wa_pricelist')}</a>`}
-        ${u ? `<div class="signed">✓ ${t('trade_signedin')}: ${esc(u.name)}${u.company ? ' — ' + esc(u.company) : ''}</div>` : ''}
+        <div class="tx-art" aria-hidden="true">
+          <svg viewBox="0 0 420 300">
+            <defs><linearGradient id="txG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2b53c"/><stop offset="1" stop-color="#b98413"/></linearGradient></defs>
+            <path d="M20 250h380" stroke="#2a3140" stroke-width="2"/>
+            <g transform="translate(40 150)"><rect width="340" height="100" rx="6" fill="url(#txG)"/>
+              ${[...Array(16)].map((_, i) => `<rect x="${12 + i * 20}" y="12" width="10" height="76" rx="3" fill="#0c0e12" opacity=".18"/>`).join('')}
+              <rect x="10" y="-8" width="320" height="10" rx="3" fill="#d99e1e"/></g>
+            <g transform="translate(90 60)"><rect width="240" height="88" rx="6" fill="#1d222b" stroke="#f2b53c" stroke-width="2"/>
+              ${[...Array(11)].map((_, i) => `<rect x="${12 + i * 20}" y="12" width="10" height="64" rx="3" fill="#f2b53c" opacity=".14"/>`).join('')}
+              <text x="120" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="16" font-weight="800" fill="#f2b53c">FIXIT · TRADE</text></g>
+            <path d="M210 20v38" stroke="#98a2b6" stroke-width="2" stroke-dasharray="4 4"/>
+          </svg>
+          <div class="tx-chip tx-c1"><b>40HC</b><span>${EN ? 'Full container' : 'حاوية كاملة'}</span></div>
+          <div class="tx-chip tx-c2"><b>LCL</b><span>${EN ? 'Shared freight' : 'شحن مجمّع'}</span></div>
+        </div>
       </section>`;
     }
 
@@ -197,7 +247,7 @@
       if (wsLocked()) {
         return `
         <section class="trade-panel" id="order-pad">
-          <h2>⚡ ${t('op_title')}</h2>
+          <h2>${t('op_title')}</h2>
           <div class="panel-sub">${t('op_login_first')}</div>
           <a class="btn" href="/account.html?mode=register">${t('ws_login_cta')}</a>
           <a class="btn btn-green" data-wa-pricelist target="_blank" rel="noopener" href="${waLink(t('trade_wa_pricelist_msg'))}">💬 ${t('trade_wa_pricelist')}</a>
@@ -205,7 +255,7 @@
       }
       return `
       <section class="trade-panel" id="order-pad">
-        <h2>⚡ ${t('op_title')}</h2>
+        <h2>${t('op_title')}</h2>
         <div class="panel-sub">${t('op_sub')}</div>
         <textarea id="op-input" class="op-textarea" placeholder="${esc(t('op_ph'))}"></textarea>
         <div style="margin-top: 12px;"><button class="btn" id="op-go">${t('op_resolve')}</button></div>
@@ -218,7 +268,7 @@
       const u = user();
       return `
       <section class="trade-panel" id="rfq">
-        <h2>📝 ${t('rfq_title')}</h2>
+        <h2>${t('rfq_title')}</h2>
         <div class="panel-sub">${t('rfq_sub')}</div>
         <div class="trade-grid">
           <div class="form-stack">
@@ -246,7 +296,7 @@
       const best = [...CATALOG].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 8);
       return `
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin: 8px 0 14px;">
-        <h2 style="margin:0;">📦 ${t('nav_catalog')}</h2>
+        <h2 style="margin:0;">${t('nav_catalog')}</h2>
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
           ${wsLocked() ? '' : `<a href="#" id="dl-pl" style="color:var(--accent); font-weight:700;">${t('dl_pricelist')}</a>`}
           <a href="/shop.html" style="color:var(--accent); font-weight:700;">${t('ws_view_catalog')} →</a>
@@ -287,7 +337,7 @@
         : `<div class="ship-list">${open.map(shipCard).join('')}</div>`;
       return `
       <section class="trade-panel" id="share">
-        <h2>🧩 ${t('share_title')}</h2>
+        <h2>${t('share_title')}</h2>
         <div class="panel-sub">${t('share_sub')}</div>
         ${body}
       </section>`;
@@ -360,9 +410,13 @@
     }
 
     function render() {
-      root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + alertBoxHtml() + trustGrid() + processSteps() +
-        orderPadHtml() + shareHtml() + rfqHtml() + faqSection() +
+      root.innerHTML = heroHtml() + statsBar() + newArrivalsHtml() + trustGrid() + processSteps() +
+        orderPadHtml() + shareHtml() + rfqHtml() + alertBoxHtml() + faqSection() +
         `<div id="catalog-teaser"></div>`;
+      root.querySelectorAll('[data-tx]').forEach((b) => b.addEventListener('click', () => {
+        root.querySelectorAll('[data-tx]').forEach((x) => x.classList.toggle('on', x === b));
+        root.querySelectorAll('[data-txp]').forEach((p) => p.classList.toggle('on', p.dataset.txp === b.dataset.tx));
+      }));
       root.querySelectorAll('[data-wa-pricelist]').forEach((a) => a.addEventListener('click', () => trackEvent('wa_click', { via: 'trade_pricelist' })));
       wireOrderPad();
       wireShare();
