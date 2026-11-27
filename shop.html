@@ -17,13 +17,17 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261127d">
+  <link rel="stylesheet" href="/css/style.css?v=20261127e">
 </head>
 <body>
   <div id="site-header"></div>
 
   <main class="section">
     <div class="container">
+      <div class="sx-head">
+        <nav class="breadcrumbs"><a href="/index.html" data-i18n="nav_home">الرئيسية</a><span>←</span><span id="sx-crumb" data-i18n="nav_shop">كل القطع</span></nav>
+        <h1 id="sx-title" data-i18n="nav_shop">كل القطع</h1>
+      </div>
       <div id="wa-top" style="display:grid;"></div>
       <div class="shop-layout">
         <!-- الفلاتر -->
@@ -92,9 +96,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127d"></script>
-  <script src="/js/i18n.js?v=20261127d"></script>
-  <script src="/js/app.js?v=20261127d"></script>
+  <script src="/js/config.js?v=20261127e"></script>
+  <script src="/js/i18n.js?v=20261127e"></script>
+  <script src="/js/app.js?v=20261127e"></script>
   <script>
     renderLayout('shop');
     document.title = t('title_shop');
@@ -247,8 +251,12 @@
         {
           // عنوان واضح للقسم المفتوح (وصل حديثاً / BMW / MINI / ماركات تانية) عشان العميل يعرف هو فين
           const sv = document.getElementById('f-sort').value, bv = document.getElementById('f-brand').value;
-          const label = sv === 'newest' ? '🆕 ' + t('nav_new_arrivals') : bv === 'OTHER' ? t('f_other_makes') : bv ? '⭐ ' + bv : '';
-          document.getElementById('results-count').innerHTML = (label ? `<b style="color:var(--brand);">${esc(label)}</b> • ` : '') + `${lastResults.length} ${t('n_products')}`;
+          const cv = document.getElementById('f-category').value, qv = qs.get('q'), mv = document.getElementById('f-model').value;
+          const label = qv ? (LANG === 'en' ? `Results for “${qv}”` : `نتايج «${qv}»`)
+            : cv ? catName(cv) : sv === 'newest' ? t('nav_new_arrivals') : bv === 'OTHER' ? t('f_other_makes').replace(/^\S+\s/, '') : bv ? (LANG === 'en' ? `${bv} parts` : `قطع ${bv}`) : t('nav_shop');
+          document.getElementById('sx-title').textContent = label + (mv ? ' · ' + mv : '');
+          document.getElementById('sx-crumb').textContent = label;
+          document.getElementById('results-count').textContent = `${lastResults.length} ${t('n_products')}`;
         }
         // 📱 على الموبايل الفلاتر فوق النتايج — لو البحث مالقاش، ننزّل الزبون لخانة "اطلبها" على طول
         if (qs.get('q') && (!lastResults.length || lastResults[0]._near) && innerWidth < 900)

@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261127d">
+  <link rel="stylesheet" href="/css/style.css?v=20261127e">
 </head>
 <body>
   <div id="site-header"></div>
@@ -24,9 +24,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127d"></script>
-  <script src="/js/i18n.js?v=20261127d"></script>
-  <script src="/js/app.js?v=20261127d"></script>
+  <script src="/js/config.js?v=20261127e"></script>
+  <script src="/js/i18n.js?v=20261127e"></script>
+  <script src="/js/app.js?v=20261127e"></script>
   <script>
     renderLayout('cart');
     document.title = t('title_cart');
@@ -114,6 +114,11 @@
         .catch(() => {});
     }
 
+    // 🧭 خطوات الشراء (سلة ← بياناتك ← تأكيد)
+    function cartSteps(n) {
+      const st = LANG === 'en' ? ['Cart', 'Your details', 'Confirmed'] : ['السلة', 'بياناتك', 'تأكيد الطلب'];
+      return `<ol class="cx-steps">${st.map((x, i) => `<li class="${i + 1 < n ? 'done' : i + 1 === n ? 'on' : ''}"><b>${i + 1}</b><span>${x}</span></li>`).join('')}</ol>`;
+    }
     async function load() {
       const cart = getCart();
       const ids = Object.keys(cart);
@@ -462,7 +467,8 @@
 
       container.innerHTML = `
       ${cartNotice ? `<div class="note" style="margin-bottom:14px;">${cartNotice}</div>` : ''}
-      <h1 style="margin-bottom: 20px;">${t('cart')} (${items.length})</h1>
+      ${cartSteps(1)}
+      <h1 class="cx-title">${t('cart')} <small>(${items.length})</small></h1>
       <div class="cart-layout">
         <div>
           ${items.map((p) => `
@@ -482,7 +488,6 @@
               <button class="remove-link" data-remove="${esc(p.id)}">${t('remove')}</button>
             </div>
           </div>`).join('')}
-          ${boughtTogether(items)}
         </div>
 
         <div class="summary">
@@ -531,7 +536,7 @@
             <small>${LANG === 'en' ? `Activated on delivery · next order must be at least ${cbInfo.multiplier}× the cashback used` : `بيتفعّل بعد استلام الطلب · الفاتورة الجاية لازم تكون ${cbInfo.multiplier} أضعاف الكاش باك المستخدم`}</small>
           </div>` : ''}
 
-          <hr style="border-color: var(--line);">
+          <h3 class="cx-h">${LANG === 'en' ? 'Your details' : 'بياناتك'}</h3>
           ${!user ? `<div class="note" style="margin: 0;">${t('have_account')}</div>` : ''}
           <div><label>${t('full_name')}</label><input id="c-name" value="${user ? esc(user.name) : ''}"></div>
           <div><label>${t('phone')}</label><input id="c-phone" type="tel" dir="ltr" style="text-align: start;" placeholder="01xxxxxxxxx" value="${user ? esc(user.phone) : ''}"><small class="muted" style="display:block;font-size:12px;margin-top:3px;">${LANG === 'en' ? 'We save your number with your cart so we can help you finish your order.' : 'بنحفظ رقمك مع السلة عشان نقدر نساعدك تكمّل طلبك.'}</small></div>
@@ -551,10 +556,12 @@
             </div>
           </div>
 
-          <button class="btn" id="submit-order">${t('confirm_order')}</button>
+          <button class="btn cx-submit" id="submit-order">${t('confirm_order')}</button>
+          <div class="cx-safe">${LANG === 'en' ? '🔒 No payment now — we call you to confirm, you pay on delivery' : '🔒 مش هتدفع دلوقتي — هنكلمك نأكد، وتدفع عند الاستلام'}</div>
           <div id="order-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
-      </div>`;
+      </div>
+      <div class="cx-more">${boughtTogether(items)}</div>`;
 
       restoreDraft();
       saveAbandoned();
@@ -726,6 +733,7 @@
       }
 
       container.innerHTML = `
+      ${cartSteps(3)}
       <div class="success-box">
         <span class="icon">✅</span>
         <h2>${t('order_success')}</h2>
