@@ -1928,3 +1928,36 @@ main > .h2-sec:last-of-type { padding-bottom: 10px; }
 .cx-more { max-width: calc(100% - 428px); }
 .cx-more:empty { display: none; }
 @media (max-width: 900px) { .cx-more { max-width: none; } }
+
+/* ================= 🌐 مكتب التجارة (tx-*) — نفس لغة تصميم المتجر بثيم الجملة الداكن ================= */
+.tx-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 30px; align-items: center; padding: 40px 36px; }
+.tx-copy { position: relative; z-index: 1; }
+.tx-hero h1 { max-width: none; }
+.tx-hero p.sub { margin-bottom: 18px; }
+.tx-finder { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 18px 40px rgba(0,0,0,.35); }
+.tx-finder .hx-tabs { background: var(--card2); border-color: var(--line); }
+.tx-finder .hx-tabs button { color: var(--muted); }
+.tx-finder .hx-tabs button.on { background: var(--card); color: var(--accent); border-bottom-color: var(--accent); }
+.tx-finder .hx-pane .btn { display: flex; align-items: center; justify-content: center; }
+.tx-art { position: relative; z-index: 1; }
+.tx-art svg { width: 100%; height: auto; display: block; }
+.tx-chip { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; box-shadow: 0 10px 24px rgba(0,0,0,.4); }
+.tx-chip b { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); font-size: 15px; }
+.tx-chip span { font-size: 11.5px; color: var(--muted); }
+.tx-c1 { top: 6%; inset-inline-end: 4%; }
+.tx-c2 { bottom: 4%; inset-inline-start: 4%; }
+.tx-ic { width: 24px; height: 24px; color: var(--accent); display: block; }
+.stat-ic .tx-ic, .proc-ic .tx-ic { margin-inline: auto; }
+.trust-card .ic .tx-ic { width: 26px; height: 26px; }
+.proc-step .proc-ic .tx-ic { margin-inline: 0; width: 28px; height: 28px; }
+@media (max-width: 900px) {
+  .tx-hero { grid-template-columns: minmax(0, 1fr); padding: 24px 18px; gap: 10px; }
+  .tx-art { order: -1; max-width: 360px; margin: 0 auto; width: 100%; }
+}
+@media (max-width: 600px) {
+  .tx-finder .hx-pane { flex-wrap: wrap; }
+  .tx-finder .hx-pane .btn { flex: 1 1 100%; }
+  .tx-chip { padding: 6px 9px; } .tx-chip b { font-size: 13px; }
+}
+.tx-hero .btn-ghost { color: var(--accent); background: transparent; border: 1px solid rgba(242,181,60,.45); }
+.tx-hero .btn-ghost:hover { background: var(--accent-soft); }
