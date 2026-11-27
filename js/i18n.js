@@ -426,7 +426,7 @@ const I18N = {
   add_cart: { ar: '🛒 أضف للسلة', en: '🛒 Add to Cart' },
   wish_in: { ar: '❤️ في المفضلة', en: '❤️ In wishlist' },
   wish_out: { ar: '🤍 أضف للمفضلة', en: '🤍 Add to wishlist' },
-  ask_wa: { ar: 'اسأل واتساب 💬', en: 'Ask on WhatsApp 💬' },
+  ask_wa: { ar: 'اسأل على واتساب', en: 'Ask on WhatsApp' },
   reserve_wa: { ar: 'نفذت الكمية — احجزها واتساب 💬', en: 'Out of stock — reserve on WhatsApp 💬' },
   best_seller: { ar: '🔥 الأكثر مبيعاً', en: '🔥 Best Seller' },
   reviews_title: { ar: 'التقييمات والمراجعات ⭐', en: 'Ratings & Reviews ⭐' },
