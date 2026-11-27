@@ -1121,7 +1121,7 @@ function renderLayout(active = '') {
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar">${topbarMsg} &nbsp;|&nbsp; <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a> &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}</a></div>
+    <div class="topbar"><span class="tb-msg">${topbarMsg}</span><span class="tb-links"> &nbsp;|&nbsp; <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a> &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}</a></span></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo ${isWholesale() ? '' : 'logo-brand'}" href="${isWholesale() ? '/trade.html' : '/index.html'}">
@@ -1135,11 +1135,13 @@ function renderLayout(active = '') {
           <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
           <div class="hdr-suggest" id="hdr-suggest"></div>
         </div>
-        <div class="header-actions">
+        <div class="hdr-tools">
           ${branchSwitch}
           ${curSwitch}
           <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
           ${isWholesale() ? '' : `<button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) + ' ✓' : t('garage_btn')}</button>`}
+        </div>
+        <div class="header-actions">
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
             👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>
@@ -1156,9 +1158,9 @@ function renderLayout(active = '') {
           ${isWholesale() ? `
           <a href="/trade.html" class="${active === 'trade' ? 'active' : ''}">${t('nav_trade_desk')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_catalog')}</a>
-          <a href="/shop.html?sort=newest">🆕 ${t('nav_new_arrivals')}</a>
-          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
-          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?sort=newest">${t('nav_new_arrivals')}</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">MINI</a>
           <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/trade.html#order-pad">${t('nav_quick_order')}</a>
           <a href="/trade.html#rfq">${t('nav_rfq')}</a>
@@ -1168,8 +1170,8 @@ function renderLayout(active = '') {
           ` : `
           <a href="/index.html" class="${active === 'home' ? 'active' : ''}">${t('nav_home')}</a>
           <a href="/shop.html" class="${active === 'shop' ? 'active' : ''}">${t('nav_shop')}</a>
-          <a href="/shop.html?brand=BMW" class="nav-prio">⭐ BMW</a>
-          <a href="/shop.html?brand=MINI" class="nav-prio">⭐ MINI</a>
+          <a href="/shop.html?brand=BMW" class="nav-prio">BMW</a>
+          <a href="/shop.html?brand=MINI" class="nav-prio">MINI</a>
           <a href="/shop.html?brand=OTHER">${t('nav_all_makes')}</a>
           <a href="/shop.html?condition=used">${t('nav_used')}</a>
           <a href="/shop.html?condition=new">${t('nav_new')}</a>
@@ -1253,7 +1255,7 @@ function renderLayout(active = '') {
     </footer>
     <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
     <a class="call-float" href="${telLink()}" title="${t('call_us')}" aria-label="${t('call_us')}">📞</a>
-    ${!['container', 'product', 'cart'].includes(active) && !/\/(product|cart)\.html/.test(location.pathname) ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
+    ${isWholesale() && !['container', 'product', 'cart'].includes(active) && !/\/(product|cart)\.html/.test(location.pathname) ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
     <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
 
     const topBtn = document.getElementById('scroll-top');
