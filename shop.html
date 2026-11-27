@@ -17,7 +17,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=20261127">
 </head>
 <body>
   <div id="site-header"></div>
@@ -27,8 +27,9 @@
       <div id="wa-top" style="display:grid;"></div>
       <div class="shop-layout">
         <!-- الفلاتر -->
-        <aside class="filters">
+        <aside class="filters" id="filters">
           <h3 data-i18n="filters">تصفية النتائج</h3>
+          <button type="button" class="filters-close" aria-label="close" onclick="document.body.classList.remove('filters-open')">×</button>
           <div>
             <label data-i18n="f_search">بحث</label>
             <input type="search" id="f-q" data-i18n-ph="f_search_ph" placeholder="اسم القطعة أو OEM...">
@@ -59,11 +60,19 @@
             </select>
           </div>
           <button class="btn btn-outline btn-sm" id="f-reset" data-i18n="clear_filters">مسح الفلاتر</button>
+          <button type="button" class="btn filters-apply" onclick="document.body.classList.remove('filters-open');scrollTo({top:0,behavior:'smooth'})" data-i18n="show_results">عرض النتائج</button>
         </aside>
 
         <!-- النتائج -->
         <div>
+          <div class="quick-chips" id="quick-chips">
+            <button type="button" data-f="brand" data-v="BMW">BMW</button>
+            <button type="button" data-f="brand" data-v="MINI">MINI</button>
+            <button type="button" data-f="condition" data-v="new" data-i18n="cond_new">جديد</button>
+            <button type="button" data-f="condition" data-v="used" data-i18n="cond_used">مستعمل وارد</button>
+          </div>
           <div class="shop-toolbar">
+            <button type="button" class="btn btn-outline btn-sm filters-toggle" onclick="document.body.classList.add('filters-open')">⚙️ <span data-i18n="filters">تصفية النتائج</span></button>
             <span class="count" id="results-count"></span>
             <select id="f-sort">
               <option value="" data-i18n="sort_new">الأحدث</option>
@@ -83,9 +92,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261123"></script>
-  <script src="/js/i18n.js?v=20261123"></script>
-  <script src="/js/app.js?v=20261123"></script>
+  <script src="/js/config.js?v=20261127"></script>
+  <script src="/js/i18n.js?v=20261127"></script>
+  <script src="/js/app.js?v=20261127"></script>
   <script>
     renderLayout('shop');
     document.title = t('title_shop');
@@ -273,8 +282,20 @@
         window._ft = setTimeout(load, f === 'q' ? 400 : 0);
       });
     });
+    // ⚡ فلاتر سريعة فوق النتايج (زي المتاجر الكبيرة) — بتغيّر نفس الـ select وبتشغّل نفس الفلترة
+    const syncChips = () => document.querySelectorAll('#quick-chips [data-f]').forEach((b) =>
+      b.classList.toggle('active', document.getElementById('f-' + b.dataset.f).value === b.dataset.v));
+    document.querySelectorAll('#quick-chips [data-f]').forEach((b) => b.addEventListener('click', () => {
+      const sel = document.getElementById('f-' + b.dataset.f);
+      sel.value = sel.value === b.dataset.v ? '' : b.dataset.v;
+      sel.dispatchEvent(new Event('change'));
+      syncChips();
+    }));
+    ['f-brand', 'f-condition'].forEach((id) => document.getElementById(id).addEventListener('change', syncChips));
+    setTimeout(syncChips, 0);
     document.getElementById('f-reset').addEventListener('click', () => {
       fields.forEach((f) => (document.getElementById('f-' + f).value = ''));
+      syncChips();
       load();
     });
     document.addEventListener('cb-offers', () => { try { renderPage(); } catch {} });

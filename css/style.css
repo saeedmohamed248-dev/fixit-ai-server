@@ -1606,3 +1606,80 @@ body.lb-open [class^="mtw-"]{display:none!important}
   background: #f2b53c; color: #14110a; transition: .15s; }
 .ws-add:hover { filter: brightness(1.08); }
 .ws-out { text-align: center; padding: 8px; }
+
+/* ================= ✨ تلميع احترافي (2026-11) — هيدر مضغوط، شبكة منتجات أكثف، فلاتر قابلة للطي ================= */
+.hdr-tools { display: flex; align-items: center; gap: 4px; }
+.header-actions { gap: 2px; }
+.hdr-icon { border-radius: 12px; padding: 6px 10px; transition: background .15s; }
+.hdr-icon:hover { background: rgba(255,255,255,.08); }
+.hdr-search-wrap input { height: 44px; box-shadow: 0 1px 0 rgba(0,0,0,.04); }
+
+/* كروت المنتجات: أكثف وأهدى — زي المتاجر الكبيرة */
+.products-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.card { border-radius: 14px; box-shadow: none; border-color: #e7e9f0; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(16,24,40,.09); border-color: #dfe2ec; }
+.card-img-wrap { background: #fff; }
+.card-img, .img-placeholder { aspect-ratio: 1/1; }
+.card-img-wrap .img-placeholder { background: linear-gradient(180deg, #f6f7fb, #eef0f6); }
+.img-placeholder span { font-size: 40px; opacity: .35; filter: grayscale(1); }
+.card-body { padding: 12px 12px 12px; gap: 6px; }
+.card-title { font-size: 14px; font-weight: 600; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; }
+.card-badges .badge { font-size: 10.5px; padding: 2px 8px; }
+.card-models { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-footer { border-top: 0; padding-top: 4px; }
+.card .price { font-size: 18px; }
+
+/* فلاتر سريعة (chips) فوق النتائج */
+.quick-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+.quick-chips::-webkit-scrollbar { display: none; }
+.quick-chips button { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 7px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: .15s; }
+.quick-chips button:hover { border-color: var(--accent); }
+.quick-chips button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+[data-mode="wholesale"] .quick-chips [data-f="condition"] { display: none; }
+.filters-toggle, .filters-close { display: none; }
+.shop-toolbar .count { font-weight: 600; }
+
+@media (max-width: 900px) {
+  /* هيدر الموبايل: صف (لوجو + أيقونات) ← بحث ← أدوات صغيرة بتتسحب */
+  .topbar { font-size: 12px; padding: 5px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar .tb-links { display: none; }
+  .header-inner { gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+  .header-inner > .logo { order: 1; }
+  .header-actions { order: 2; margin-inline-start: auto; flex-wrap: nowrap; }
+  .hdr-search-wrap { order: 3; }
+  .hdr-search-wrap input { height: 42px; }
+  .hdr-tools { order: 4; flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+  .hdr-tools::-webkit-scrollbar { display: none; }
+  .hdr-tools > * { flex: none; }
+  .hdr-tools .lang-btn { padding: 4px 11px; font-size: 12px; margin: 0; }
+  .hdr-tools .branch-switch button { padding: 4px 10px; font-size: 12px; }
+  .hdr-icon { padding: 6px 8px; font-size: 20px; }
+  .nav a { padding: 8px 12px; font-size: 13.5px; }
+
+  /* الفلاتر: بتتفتح كشيت من تحت بدل ما تغطي المنتجات */
+  .filters-toggle { display: inline-flex; align-items: center; gap: 6px; }
+  .filters { display: none; }
+  body.filters-open .filters { display: flex; position: fixed; inset: auto 0 0 0; max-height: 82vh; overflow-y: auto; z-index: 120; border-radius: 18px 18px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.25); padding-bottom: calc(20px + var(--safe-bottom, 0px)); }
+  body.filters-open::after { content: ''; position: fixed; inset: 0; background: rgba(8,10,20,.45); z-index: 110; }
+  body.filters-open .filters-close { display: block; position: absolute; top: 10px; inset-inline-end: 14px; background: none; border: 0; font-size: 28px; line-height: 1; color: var(--muted); cursor: pointer; }
+  .filters { position: relative; }
+}
+@media (max-width: 600px) {
+  .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .card-body { padding: 10px; }
+  .card-title { font-size: 13px; }
+  .card .price { font-size: 16px; }
+  .card-models { display: none; }
+  .card .btn-icon { width: 36px; height: 36px; }
+}
+.card-price { display: flex; flex-direction: column-reverse; align-items: flex-start; line-height: 1.2; min-width: 0; }
+.card-price .price { white-space: nowrap; }
+.card-price .old-price { font-size: 12px; margin: 0; white-space: nowrap; }
+.card .new-ribbon { inset-inline-start: auto; inset-inline-end: 10px; font-size: 10.5px; padding: 3px 9px; }
+@media (max-width: 600px) { .section:has(.shop-layout) { padding-top: 14px; } }
+.filters-apply { display: none; }
+@media (max-width: 900px) { body.filters-open .filters-apply { display: block; position: sticky; bottom: 0; } }
+@media (max-width: 600px) {
+  .wa-float, .call-float { width: 48px; height: 48px; font-size: 21px; inset-inline-start: 14px; }
+}
+@media (max-width: 600px) { .garage-bar { padding: 8px 12px; font-size: 13px; gap: 8px; margin-bottom: 10px; } .garage-bar .btn { padding: 7px 12px; font-size: 13px; } }
