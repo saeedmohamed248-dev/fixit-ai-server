@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261128d">
+  <link rel="stylesheet" href="/css/style.css?v=20261128e">
 </head>
 <body>
   <div id="site-header"></div>
@@ -24,9 +24,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261128d"></script>
-  <script src="/js/i18n.js?v=20261128d"></script>
-  <script src="/js/app.js?v=20261128d"></script>
+  <script src="/js/config.js?v=20261128e"></script>
+  <script src="/js/i18n.js?v=20261128e"></script>
+  <script src="/js/app.js?v=20261128e"></script>
   <script>
     renderLayout('cart');
     document.title = t('title_cart');
@@ -506,7 +506,16 @@
             <div class="progress-track"><div class="progress-fill" style="width: ${Math.min(100, Math.round(total / SITE.freeShippingOver * 100))}%;"></div></div>
           </div>` : ''}
           <div class="row total"><span>${t('total_due')}</span><span>${money(grand)}</span></div>
-          ${(() => { const w = deliveryWindow(); return `<div class="cx-eta">${uiIc('truck')}<span>${LANG === 'en' ? `Delivered <b>${w.label}</b>` : `يوصلك <b>${w.label}</b>`}${w.today ? (LANG === 'en' ? ' if you order before 6 PM' : ' لو أكدت قبل ٦ مساءً') : ''}</span></div>`; })()}
+          ${(() => {
+            const w = deliveryWindow(), EN = LANG === 'en';
+            const txt = !govSel
+              ? (EN ? `Cairo & Giza: delivered <b>${w.label}</b>${w.today ? ' if you order before 6 PM' : ''} · other governorates 2–4 working days`
+                    : `القاهرة والجيزة: يوصلك <b>${w.label}</b>${w.today ? ' لو أكدت قبل ٦ مساءً' : ''} · باقي المحافظات ٢–٤ أيام عمل`)
+              : isSameDayGov(govSel)
+                ? (EN ? `Delivered <b>${w.label}</b>${w.today ? ' if you order before 6 PM' : ''}` : `يوصلك <b>${w.label}</b>${w.today ? ' لو أكدت قبل ٦ مساءً' : ''}`)
+                : (EN ? `Delivered between <b>${w.farFrom}</b> and <b>${w.farTo}</b>` : `يوصلك من <b>${w.farFrom}</b> لـ <b>${w.farTo}</b>`);
+            return `<div class="cx-eta">${uiIc('truck')}<span>${txt}</span></div>`;
+          })()}
 
           <div style="display: flex; gap: 8px;">
             <input id="c-coupon" placeholder="${t('coupon_ph')}" value="${appliedCoupon ? esc(appliedCoupon.code) : ''}" ${appliedCoupon ? 'disabled' : ''}>
