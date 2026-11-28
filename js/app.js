@@ -886,13 +886,21 @@ function cashbackBadge(p, big) {
     : `<span class="cb-cbadge">🎁 +${money(cb.amount)} ${LANG === 'en' ? 'cashback' : 'كاش باك'}</span>`;
 }
 
-/* ====== 🚚 تاريخ التوصيل المتوقع (قطاعي) — ٢-٤ أيام عمل، الجمعة مفيش شحن، الطلب بعد ٦ مساءً يتحسب من بكرة ====== */
+/* ====== 🚚 التوصيل في نفس اليوم (قطاعي) — الطلب قبل ٦ مساءً بيوصل النهارده، بعدها أول يوم توصيل جاي.
+   الجمعة مفيش شحن، والأحد المحل إجازة. ====== */
+const SAME_DAY_CUTOFF = 18;
 function deliveryWindow() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
-  const d = new Date(now); if (now.getHours() >= 18) d.setDate(d.getDate() + 1);
-  const addWork = (from, n) => { const x = new Date(from); while (n > 0) { x.setDate(x.getDate() + 1); if (x.getDay() !== 5) n--; } return x; };
-  const f = (x) => x.toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
-  return { from: f(addWork(d, 2)), to: f(addWork(d, 4)), cutoff: now.getHours() < 18 ? 18 - now.getHours() : 0 };
+  const offDay = (x) => x.getDay() === 5 || x.getDay() === 0;
+  const today = !offDay(now) && now.getHours() < SAME_DAY_CUTOFF;
+  const d = new Date(now);
+  if (!today) { do { d.setDate(d.getDate() + 1); } while (offDay(d)); }
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+  const label = today ? (LANG === 'en' ? 'today' : 'النهارده')
+    : d.toDateString() === tomorrow.toDateString() ? (LANG === 'en' ? 'tomorrow' : 'بكرة')
+    : d.toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+  const mins = (SAME_DAY_CUTOFF * 60) - (now.getHours() * 60 + now.getMinutes());
+  return { today, label, cutoffH: today ? Math.floor(mins / 60) : 0, cutoffM: today ? mins % 60 : 0 };
 }
 
 /* ====== 🌐 كارت الجملة (FixIt Trade) — كارت تاجر فيه التفاصيل اللي بيقرر بيها ======

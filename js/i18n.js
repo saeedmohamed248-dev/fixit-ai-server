@@ -13,7 +13,7 @@ document.documentElement.dataset.mode = window.__MODE || (localStorage.getItem('
 const I18N = {
   /* ---------- عام / Layout ---------- */
   brand_tag: { ar: 'قطع غيار BMW & MINI', en: 'BMW & MINI Auto Parts' },
-  topbar: { ar: 'شحن لكل المحافظات · الدفع عند الاستلام', en: 'Nationwide delivery · Cash on delivery' },
+  topbar: { ar: 'توصيل في نفس اليوم · الدفع عند الاستلام', en: 'Same-day delivery · Cash on delivery' },
   topbar_free: { ar: 'مجاني فوق', en: 'Free over' },
   whatsapp: { ar: 'واتساب', en: 'WhatsApp' },
   /* ---------- 🇦🇪 فرع الجملة (الإمارات) ---------- */
@@ -112,7 +112,7 @@ const I18N = {
   trust_cod: { ar: 'الدفع عند الاستلام', en: 'Cash on delivery' },
   ds_eyebrow: { ar: 'متخصصين في BMW و MINI بس', en: 'BMW & MINI specialists' },
   ds_title: { ar: 'قطع غيار BMW و MINI<br>بالضمان، لحد باب بيتك', en: 'BMW & MINI parts,<br>guaranteed, to your door' },
-  ds_lead: { ar: 'جديد أصلي ومستعمل وارد أوروبا مفحوص — شحن لكل المحافظات والدفع عند الاستلام.', en: 'Genuine new and inspected European used parts — nationwide delivery, cash on delivery.' },
+  ds_lead: { ar: 'جديد أصلي ومستعمل وارد أوروبا مفحوص — توصيل في نفس اليوم والدفع عند الاستلام.', en: 'Genuine new and inspected European used parts — same-day delivery, cash on delivery.' },
   ds_finder_t: { ar: 'اختار عربيتك', en: 'Select your car' },
   ds_make: { ar: 'الماركة', en: 'Make' },
   ds_model: { ar: 'الموديل / الشاسيه', en: 'Model / chassis' },
@@ -142,7 +142,7 @@ const I18N = {
   hx_s2_t: { ar: 'اطلب أونلاين أو واتساب', en: 'Order online or on WhatsApp' },
   hx_s2_d: { ar: 'مش متأكد؟ ابعت صورة القطعة ونأكدلك', en: 'Not sure? Send a photo, we confirm' },
   hx_s3_t: { ar: 'استلم وادفع', en: 'Receive & pay' },
-  hx_s3_d: { ar: 'شحن لكل المحافظات والدفع عند الاستلام', en: 'Nationwide delivery, cash on delivery' },
+  hx_s3_d: { ar: 'توصيل في نفس اليوم والدفع عند الاستلام', en: 'Same-day delivery, cash on delivery' },
   h2_sub: { ar: 'جديد أصلي ومستعمل وارد مفحوص — والدفع عند الاستلام', en: 'Genuine new & inspected used import — cash on delivery' },
   h2_shop: { ar: 'تسوّق', en: 'Shop' },
   h2_bmw_sub: { ar: 'كل الشاسيهات E · F · G', en: 'Every chassis E · F · G' },
@@ -398,8 +398,8 @@ const I18N = {
   feat1_d: { ar: 'كل قطعة مستعملة بتتفحص بالكامل قبل البيع وبنضمنها.', en: 'Every used part is fully tested before sale and guaranteed.' },
   feat2_t: { ar: 'استيراد مباشر', en: 'Direct Import' },
   feat2_d: { ar: 'وارد أوروبا وأمريكا بدون وسطاء، فالأسعار أفضل.', en: 'Sourced from Europe and the USA with no middlemen — better prices.' },
-  feat3_t: { ar: 'شحن سريع', en: 'Fast Delivery' },
-  feat3_d: { ar: 'توصيل لجميع المحافظات خلال ٢-٤ أيام عمل.', en: 'Nationwide delivery within 2-4 business days.' },
+  feat3_t: { ar: 'توصيل في نفس اليوم', en: 'Same-day delivery' },
+  feat3_d: { ar: 'اطلب قبل ٦ مساءً ويوصلك النهارده.', en: 'Order before 6 PM, get it today.' },
   feat4_t: { ar: 'خبير يساعدك', en: 'Expert Help' },
   feat4_d: { ar: 'مش عارف اسم القطعة؟ اسأل الخبير الذكي وهيوصلك ليها.', en: "Not sure which part you need? Ask our AI expert." },
   cta_title: { ar: 'مش لاقي القطعة اللي بتدور عليها؟', en: "Can't find the part you're looking for?" },
@@ -561,7 +561,7 @@ const I18N = {
   title_policies: { ar: 'الشحن والاسترجاع والضمان | FixIt', en: 'Shipping, Returns & Warranty | FixIt' },
   pol_title: { ar: 'سياسات المتجر', en: 'Store Policies' },
   pol1_t: { ar: 'الشحن والتسليم', en: 'Shipping & Delivery' },
-  pol1_d: { ar: 'بنشحن لجميع محافظات مصر خلال ٢-٤ أيام عمل من تأكيد الطلب. تكلفة الشحن بتتحدد حسب المحافظة وحجم القطعة، وبنبلغك بيها عند تأكيد الطلب قبل الشحن. القطع الكبيرة بتتشحن بتغليف خاص لحمايتها.', en: 'We deliver to all governorates of Egypt within 2-4 business days of order confirmation. Shipping cost depends on your location and part size, and we confirm it with you before dispatch. Large parts are shipped with special protective packaging.' },
+  pol1_d: { ar: 'توصيل في نفس اليوم: الطلب اللي بيتأكد قبل ٦ مساءً بيوصلك النهارده، وبعد ٦ بيوصلك تاني يوم. بنوصّل لكل محافظات مصر، وتكلفة الشحن بنبلغك بيها عند تأكيد الطلب. القطع الكبيرة بتتشحن بتغليف خاص لحمايتها.', en: 'Same-day delivery: orders confirmed before 6 PM arrive today; later orders arrive the next day. We deliver to every governorate in Egypt and confirm the shipping cost when we confirm your order. Large parts are shipped with special protective packaging.' },
   pol2_t: { ar: 'الاسترجاع والاستبدال', en: 'Returns & Exchange' },
   pol2_d: { ar: 'ليك حق الاسترجاع أو الاستبدال خلال ١٤ يوم من الاستلام لو القطعة مش مطابقة للوصف أو فيها عيب. القطعة لازم ترجع بحالتها من غير تركيب أو تعديل. مصاريف الشحن بتتحمّلها لو السبب مش عيب في القطعة.', en: 'You may return or exchange within 14 days of delivery if the part does not match the description or is defective. Parts must be returned unused, uninstalled and unmodified. Return shipping is on you unless the part itself is at fault.' },
   pol3_t: { ar: 'الضمان', en: 'Warranty' },
@@ -603,7 +603,7 @@ const I18N = {
 
   /* ---------- إحصائيات الهيرو ---------- */
   stat1: { ar: '✓ قطع مفحوصة بضمان', en: '✓ Inspected & guaranteed' },
-  stat2: { ar: '✓ شحن ٢-٤ أيام', en: '✓ 2-4 day delivery' },
+  stat2: { ar: '✓ توصيل في نفس اليوم', en: '✓ Same-day delivery' },
   stat3: { ar: '✓ استيراد مباشر', en: '✓ Direct import' },
 
   /* ---------- أسئلة شائعة ---------- */
@@ -613,7 +613,7 @@ const I18N = {
   faq2_q: { ar: 'إيه الفرق بين الجديد والمستعمل الوارد؟', en: 'What is the difference between new and used import?' },
   faq2_a: { ar: 'الجديد قطع أصلية بالكرتونة بضمان سنة. المستعمل الوارد قطع أصلية متفكّكة من عربيات أوروبية وأمريكية، بتتفحص بالكامل وعليها ضمان شهر — وبتوفر لحد 60% من سعر الجديد.', en: 'New parts are boxed originals with a one-year warranty. Used import parts come from European/US cars, fully inspected with a one-month warranty — saving up to 60% versus new.' },
   faq3_q: { ar: 'الدفع والشحن بيتموا إزاي؟', en: 'How do payment and delivery work?' },
-  faq3_a: { ar: 'تحوّل عربون بسيط على انستاباي أو محفظة والباقي كاش عند الاستلام — أو تدفع كله مقدّماً بالتحويل أو البطاقة. بنشحن لكل المحافظات خلال ٢-٤ أيام عمل وبنبلغك بتكلفة الشحن قبل التأكيد.', en: 'Pay a small deposit via InstaPay / e-wallet and the rest in cash on delivery — or pay in full upfront by transfer or card. We deliver nationwide within 2-4 business days and confirm the shipping cost before dispatch.' },
+  faq3_a: { ar: 'بتدفع كاش عند الاستلام بعد ما تعاين القطعة — أو تحوّل على انستاباي أو محفظة، وللطلبات الكبيرة ممكن تحجز بعربون اختياري. التوصيل في نفس اليوم للطلبات اللي بتتأكد قبل ٦ مساءً، وبنبلغك بتكلفة الشحن قبل التأكيد.', en: 'Pay cash on delivery after inspecting the part — or transfer via InstaPay / e-wallet; larger orders can be reserved with an optional deposit. Orders confirmed before 6 PM are delivered the same day, and we confirm the shipping cost before dispatch.' },
   faq4_q: { ar: 'لو القطعة وصلت مش مناسبة أو فيها عيب؟', en: 'What if the part arrives wrong or faulty?' },
   faq4_a: { ar: 'ليك استرجاع أو استبدال خلال ١٤ يوم بشرط عدم التركيب. ولو ظهر عيب فني في فترة الضمان بنستبدلها أو نرجعلك فلوسك.', en: 'You can return or exchange within 14 days as long as the part is uninstalled. If a technical fault appears within warranty, we replace it or refund you.' },
   faq5_q: { ar: 'بتجيبوا قطع مش موجودة في الموقع؟', en: 'Can you source parts not listed on the site?' },

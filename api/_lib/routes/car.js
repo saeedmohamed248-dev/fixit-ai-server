@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261128c">
+  <link rel="stylesheet" href="/css/style.css?v=20261128d">
   <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 </head>
 <body>
@@ -92,9 +92,9 @@ export default async function handler(req, res) {
     <section class="car-others"><h2>موديلات تانية</h2><div>${others}</div></section>
   </div></main>
   <div id="site-footer"></div>
-  <script src="/js/config.js?v=20261128c"></script>
-  <script src="/js/i18n.js?v=20261128c"></script>
-  <script src="/js/app.js?v=20261128c"></script>
+  <script src="/js/config.js?v=20261128d"></script>
+  <script src="/js/i18n.js?v=20261128d"></script>
+  <script src="/js/app.js?v=20261128d"></script>
   <script>
     renderLayout('shop');
     document.getElementById('save-car').addEventListener('click', () => {

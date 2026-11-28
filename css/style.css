@@ -2260,3 +2260,5 @@ main > .h2-sec:last-of-type { padding-bottom: 10px; }
 [data-mode="retail"] .eta-box small { color: var(--muted); }
 [data-mode="retail"] .px-save { background: #fef2f2; border-color: #fecaca; }
 [data-mode="retail"] .compat-badge, [data-mode="retail"] .fit-badge { border-radius: 10px; }
+.cx-eta { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text); background: var(--card2); border-radius: 10px; padding: 9px 12px; }
+.cx-eta .ui-ic { width: 18px; height: 18px; flex: none; }
