@@ -15,13 +15,13 @@
   <link rel="canonical" href="https://fixitauto.parts/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
   <!-- 🇪🇬 الرئيسية = قطاعي مصر. تاجر جملة مسجّل بس هو اللي بيتحوّل لمكتب التجارة؛ أي حد تاني بيرجع للقطاعي -->
   <script>try{if(localStorage.getItem('mode')==='wholesale'){var u=JSON.parse(localStorage.getItem('user')||'null');if(u&&u.account==='wholesale')location.replace('/trade.html');else localStorage.setItem('mode','retail');}}catch(e){}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20261127f">
+  <link rel="stylesheet" href="/css/style.css?v=20261128c">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoPartsStore","name":"Fixit Spare Parts","alternateName":"FixIt","url":"https://fixitauto.parts/","telephone":"+201125157767","address":{"@type":"PostalAddress","streetAddress":"الحي العاشر، مدينة نصر","addressLocality":"Nasr City","addressRegion":"Cairo","addressCountry":"EG"},"hasMap":"https://share.google/InODxiIyOGIAOBHaM","priceRange":"$$","logo":"https://fixitauto.parts/assets/fixit-logo-square.png","image":"https://fixitauto.parts/assets/fixit-logo-square.png","areaServed":{"@type":"Country","name":"Egypt"},"currenciesAccepted":"EGP","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"12:00","closes":"23:00"}],"brand":[{"@type":"Brand","name":"BMW"},{"@type":"Brand","name":"MINI"}]}</script>
   <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "FixIt", "url": "https://fixitauto.parts/", "inLanguage": ["ar", "en"], "potentialAction": {"@type": "SearchAction", "target": "https://fixitauto.parts/shop.html?q={search_term_string}", "query-input": "required name=search_term_string"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "منين أشتري قطع غيار BMW أصلية في مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "FixIt متخصص في قطع غيار BMW وميني كوبر بس — جديد ومستعمل وارد أوروبا وأمريكا، كل قطعة بتتفحص قبل البيع وعليها ضمان، ومحلنا في الحي العاشر بمدينة نصر بالقاهرة مع شحن لكل المحافظات."}}, {"@type": "Question", "name": "هل قطع الغيار المستعملة عليها ضمان؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، القطع المستعملة الوارد بتتفحص وبتتباع بضمان. تفاصيل مدة الضمان والاستبدال موجودة في صفحة السياسات."}}, {"@type": "Question", "name": "إزاي أعرف القطعة المناسبة لعربيتي؟", "acceptedAnswer": {"@type": "Answer", "text": "اختار موديل عربيتك (زي F30 أو E90 أو R56) من “عربيتي”، أو ابعتلنا رقم الشاسيه (VIN) على واتساب ونحدد لك رقم القطعة الصح."}}, {"@type": "Question", "name": "لو القطعة مش موجودة على الموقع أعمل إيه؟", "acceptedAnswer": {"@type": "Answer", "text": "اطلبها من صفحة “اطلب قطعتك” بالاسم أو رقم القطعة، وهنكلمك خلال ٥ دقايق في مواعيد العمل (١٢ الظهر – ١١ بالليل) بالسعر والمدة."}}, {"@type": "Question", "name": "بتشحنوا لكل محافظات مصر؟", "acceptedAnswer": {"@type": "Answer", "text": "أيوه، بنشحن لكل المحافظات، وممكن تستلم من المحل في مدينة نصر."}}, {"@type": "Question", "name": "إيه موديلات BMW وميني اللي بتوفروا قطعها؟", "acceptedAnswer": {"@type": "Answer", "text": "كل فئات BMW (الفئة 1 و3 و5 و7 و X1 و X3 و X5 و X6) من E36 لحد G20 و G30، وميني كوبر R56 و R55 و R60 و F56 و F55 و F54 و F60."}}]}]</script>
 </head>
@@ -29,155 +29,138 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- 🔧 الرئيسية: «لاقي القطعة الصح» — عربية تفاعلية تختار منها الجزء + باحث بـ 3 طرق -->
-    <section class="hx-hero">
-      <div class="container hx-grid">
-        <div class="hx-copy">
-          <span class="hx-open" id="sh-open"><i></i><span id="sh-open-txt">مفتوح دلوقتي</span></span>
-          <h1><span data-i18n="hx_title1">لاقي القطعة الصح</span><br><em data-i18n="hx_title2">لعربيتك الـ BMW أو MINI</em></h1>
-          <p data-i18n="hx_sub">جديد أصلي ومستعمل وارد مفحوص — بضمان، والدفع عند الاستلام.</p>
+    <!-- ✦ FixIt 2.0 — الرئيسية: العربية الأول، وبعدين القطع -->
+    <section class="ds-hero">
+      <div class="container ds-hero-grid">
+        <div class="ds-hero-copy">
+          <p class="ds-eyebrow"><span class="ds-dot" id="sh-open"></span><span id="sh-open-txt">متخصصين في BMW و MINI بس</span></p>
+          <h1 data-i18n="ds_title">قطع غيار BMW و MINI<br>بالضمان، لحد باب بيتك</h1>
+          <p class="ds-lead" data-i18n="ds_lead">جديد أصلي ومستعمل وارد أوروبا مفحوص — شحن لكل المحافظات والدفع عند الاستلام.</p>
 
-          <div class="hx-finder">
-            <div class="hx-tabs" role="tablist">
-              <button type="button" class="on" data-tab="car" data-i18n="hx_tab_car">بالعربية</button>
-              <button type="button" data-tab="part" data-i18n="hx_tab_part">باسم القطعة / OEM</button>
-              <button type="button" data-tab="vin" data-i18n="hx_tab_vin">برقم الشاسيه</button>
+          <div class="ds-finder">
+            <div class="ds-finder-h"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 16v2M19 16v2M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6v3H3z"/><path d="M3 13h18"/></svg><b data-i18n="ds_finder_t">اختار عربيتك</b></div>
+            <div class="ds-finder-row">
+              <label class="ds-field"><span data-i18n="ds_make">الماركة</span><select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select></label>
+              <label class="ds-field"><span data-i18n="ds_model">الموديل / الشاسيه</span><select id="sbc-model" aria-label="Model"></select></label>
+              <button class="btn ds-go" id="sbc-go" data-i18n="ds_go">اعرض القطع</button>
             </div>
-            <div class="hx-pane on" data-pane="car">
-              <div class="sbc-form">
-                <select id="sbc-brand" aria-label="Brand"><option value="BMW">BMW</option><option value="MINI">MINI</option></select>
-                <select id="sbc-model" aria-label="Model"></select>
-                <button class="btn" id="sbc-go" data-i18n="sbc_go">دوّر القطع</button>
-              </div>
+            <div class="ds-finder-alt">
+              <a href="/shop.html" id="ds-alt-search" data-i18n="ds_alt_search">أو ابحث باسم القطعة / رقم OEM</a>
+              <a href="#" id="ds-alt-vin" data-i18n="ds_alt_vin">ابعت رقم الشاسيه على واتساب</a>
             </div>
-            <form class="hx-pane" data-pane="part" action="/shop.html" method="get">
-              <input type="search" name="q" data-i18n-ph="hx_part_ph" placeholder="مثال: تيل فرامل F30 أو 34116860016">
-              <button class="btn" type="submit" data-i18n="search_btn">بحث</button>
-            </form>
-            <form class="hx-pane" data-pane="vin" id="hx-vin">
-              <input name="vin" maxlength="17" dir="ltr" data-i18n-ph="hx_vin_ph" placeholder="WBA8E9C5XGK... (17 حرف)">
-              <button class="btn btn-green" type="submit" data-i18n="hx_vin_go">ابعته واتساب</button>
-            </form>
           </div>
-
-          <div class="hx-chassis" id="hx-chassis"></div>
         </div>
-
-        <div class="hx-car" aria-label="اختار الجزء من العربية">
-          <svg viewBox="0 0 600 230" class="hx-car-svg" aria-hidden="true">
-            <defs>
-              <linearGradient id="hxBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ecf5"/></linearGradient>
-              <radialGradient id="hxShadow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#0b0d12" stop-opacity=".22"/><stop offset="1" stop-color="#0b0d12" stop-opacity="0"/></radialGradient>
-            </defs>
-            <ellipse cx="305" cy="204" rx="285" ry="16" fill="url(#hxShadow)"/>
-            <path class="hx-body" d="M38 156 Q36 126 78 116 L168 103 Q214 62 262 54 L382 52 Q432 54 474 98 L542 110 Q578 118 574 152 L574 163 Q574 172 563 172 L522 172 A44 44 0 0 0 434 172 L192 172 A44 44 0 0 0 104 172 L50 172 Q38 172 38 162 Z" fill="url(#hxBody)"/>
-            <path class="hx-glass" d="M188 103 Q224 68 264 64 L316 64 L316 103 Z M328 64 L380 64 Q416 68 444 103 L328 103 Z"/>
-            <path class="hx-line" d="M110 128 L560 128 M322 106 L322 168 M546 120 Q560 122 566 132"/>
-            <rect class="hx-lamp" x="548" y="122" width="22" height="9" rx="4"/>
-            <rect class="hx-tail" x="40" y="124" width="14" height="9" rx="3"/>
-            <g class="hx-wheel"><circle cx="148" cy="172" r="36"/><circle cx="148" cy="172" r="17" class="hx-rim"/></g>
-            <g class="hx-wheel"><circle cx="478" cy="172" r="36"/><circle cx="478" cy="172" r="17" class="hx-rim"/></g>
-          </svg>
-          <div class="hx-spots" id="hx-spots"></div>
-          <div class="hx-car-hint" data-i18n="hx_car_hint">دوس على أي جزء في العربية</div>
-        </div>
+        <div class="ds-hero-side" id="ds-mosaic"></div>
       </div>
     </section>
 
-    <!-- شريط الثقة -->
-    <div class="container">
-      <div class="hx-trust" id="hx-trust"></div>
-    </div>
+    <!-- الثقة -->
+    <section class="ds-trust">
+      <div class="container ds-trust-row" id="ds-trust"></div>
+    </section>
 
     <!-- الفئات -->
-    <section class="h2-sec">
+    <section class="ds-sec">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_cats">تسوّق حسب الفئة</h2><a href="/shop.html" data-i18n="view_all">عرض الكل ←</a></div>
-        <div class="hx-cats" id="cats-grid"></div>
+        <div class="ds-cats" id="cats-grid"></div>
       </div>
     </section>
 
-    <!-- عرض اليوم (عدّاد تنازلي) -->
-    <section class="h2-sec" style="display: none;" id="flash-section">
-      <div class="container"><div class="flash-band" id="flash-band"></div></div>
+    <!-- الموديلات -->
+    <section class="ds-sec">
+      <div class="container">
+        <div class="section-head"><h2 data-i18n="ds_models_t">تسوّق حسب موديل عربيتك</h2></div>
+        <div class="ds-models" id="ds-models"></div>
+      </div>
     </section>
 
-    <!-- عروض وخصومات -->
-    <section class="h2-sec" style="display: none;" id="deals-section">
+    <!-- عروض -->
+    <section class="ds-sec" style="display: none;" id="deals-section">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_deals">عروض وخصومات</h2><a href="/shop.html" data-i18n="view_all">عرض الكل ←</a></div>
-        <div class="hscroll h2-rail" id="deals-grid"></div>
+        <div class="hscroll ds-rail" id="deals-grid"></div>
       </div>
     </section>
 
-    <!-- بلاطات جديد / مستعمل -->
-    <section class="h2-sec">
-      <div class="container h2-promos">
-        <a class="h2-promo h2-p-new" href="/shop.html?condition=new"><b data-i18n="chip_new">جديد أصلي</b><span data-i18n="h2_new_sub">قطع أصلية بضمان الوكيل</span><i>←</i></a>
-        <a class="h2-promo h2-p-used" href="/shop.html?condition=used"><b data-i18n="chip_used">مستعمل وارد</b><span data-i18n="h2_used_sub">وارد أوروبا وأمريكا — مفحوص</span><i>←</i></a>
-        <a class="h2-promo h2-p-sav" href="/savings.html"><b data-i18n="nav_savings">احسب توفيرك</b><span data-i18n="h2_sav_sub">صوّر فاتورتك واعرف هتوفّر كام</span><i>←</i></a>
-      </div>
-    </section>
-
-    <!-- إزاي بتشتري -->
-    <section class="h2-sec">
-      <div class="container">
-        <div class="hx-steps">
-          <div><b>1</b><h3 data-i18n="hx_s1_t">اختار عربيتك</h3><p data-i18n="hx_s1_d">الموديل أو رقم الشاسيه — ونوريك اللي بيركب بس</p></div>
-          <div><b>2</b><h3 data-i18n="hx_s2_t">اطلب أونلاين أو واتساب</h3><p data-i18n="hx_s2_d">مش متأكد؟ ابعت صورة القطعة ونأكدلك</p></div>
-          <div><b>3</b><h3 data-i18n="hx_s3_t">استلم وادفع</h3><p data-i18n="hx_s3_d">شحن لكل المحافظات والدفع عند الاستلام</p></div>
-        </div>
+    <!-- جديد / مستعمل -->
+    <section class="ds-sec">
+      <div class="container ds-duo">
+        <a class="ds-tile" href="/shop.html?condition=new">
+          <span class="ds-tile-k" data-i18n="chip_new">جديد أصلي</span>
+          <b data-i18n="ds_new_t">قطع جديدة بالكرتونة</b>
+          <span data-i18n="ds_new_d">أصلي وOEM بضمان الوكيل</span>
+          <i data-i18n="ds_shop_now">تسوّق دلوقتي ←</i>
+        </a>
+        <a class="ds-tile ds-tile-dark" href="/shop.html?condition=used">
+          <span class="ds-tile-k" data-i18n="chip_used">مستعمل وارد</span>
+          <b data-i18n="ds_used_t">وارد أوروبا — مفحوص</b>
+          <span data-i18n="ds_used_d">نفس الأصلي بسعر أقل، ومتجرّب قبل البيع</span>
+          <i data-i18n="ds_shop_now">تسوّق دلوقتي ←</i>
+        </a>
       </div>
     </section>
 
     <!-- وصل حديثاً -->
-    <section class="h2-sec" style="display: none;" id="new-section">
+    <section class="ds-sec" style="display: none;" id="new-section">
       <div class="container">
         <div class="section-head"><h2 data-i18n="na_title">وصل حديثاً</h2><a href="/shop.html?sort=newest" data-i18n="view_all">عرض الكل ←</a></div>
-        <div class="hscroll h2-rail" id="new-grid"></div>
+        <div class="hscroll ds-rail" id="new-grid"></div>
       </div>
     </section>
 
     <!-- الأكثر مبيعاً -->
-    <section class="h2-sec">
+    <section class="ds-sec">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_best">الأكثر مبيعاً</h2><a href="/shop.html?sort=best" data-i18n="view_all">عرض الكل ←</a></div>
         <div class="products-grid" id="featured-grid"></div>
       </div>
     </section>
 
+    <!-- إزاي بتشتري -->
+    <section class="ds-sec">
+      <div class="container">
+        <div class="ds-steps">
+          <div><b>01</b><h3 data-i18n="hx_s1_t">اختار عربيتك</h3><p data-i18n="hx_s1_d">الموديل أو رقم الشاسيه — ونوريك اللي بيركب بس</p></div>
+          <div><b>02</b><h3 data-i18n="hx_s2_t">اطلب أونلاين أو واتساب</h3><p data-i18n="hx_s2_d">مش متأكد؟ ابعت صورة القطعة ونأكدلك</p></div>
+          <div><b>03</b><h3 data-i18n="hx_s3_t">استلم وادفع</h3><p data-i18n="hx_s3_d">شحن لكل المحافظات والدفع عند الاستلام</p></div>
+        </div>
+      </div>
+    </section>
+
     <!-- شاهدتها مؤخراً -->
-    <section class="h2-sec" style="display: none;" id="recent-section">
+    <section class="ds-sec" style="display: none;" id="recent-section">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_recent">شاهدتها مؤخراً</h2></div>
-        <div class="hscroll h2-rail" id="recent-grid"></div>
+        <div class="hscroll ds-rail" id="recent-grid"></div>
       </div>
     </section>
 
     <!-- آراء العملاء -->
-    <section class="h2-sec" style="display: none;" id="reviews-section">
+    <section class="ds-sec" style="display: none;" id="reviews-section">
       <div class="container">
         <div class="section-head"><h2 data-i18n="sec_reviews">آراء عملائنا</h2></div>
         <div class="reviews-grid" id="reviews-grid"></div>
       </div>
     </section>
 
-    <!-- CTA -->
-    <section class="section" style="padding-top: 0;">
+    <!-- مش لاقي القطعة -->
+    <section class="ds-sec">
       <div class="container">
-        <div class="cta-band">
+        <div class="ds-cta">
           <div>
             <h2 data-i18n="cta_title">مش لاقي القطعة اللي بتدور عليها؟</h2>
             <p data-i18n="cta_sub">ابعتلنا رقم الشاسيه أو صورة القطعة على واتساب وهنوفرهالك.</p>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a class="btn" href="/request.html" data-i18n="cta_request" style="background: #fff; color: var(--accent-dark);">اطلب قطعتك دلوقتي 🔎</a>
-            <a class="btn btn-green" id="cta-wa" target="_blank" rel="noopener" data-i18n="cta_btn">كلمنا واتساب 💬</a>
-            <a class="btn" id="cta-call" style="background: #101828; color: #fff;">📞 <span data-i18n="call_us">اتصل بينا</span> <span dir="ltr" id="cta-call-num"></span></a>
+          <div class="ds-cta-btns">
+            <a class="btn btn-green" id="cta-wa" target="_blank" rel="noopener" data-i18n="ds_cta_wa">ابعت على واتساب</a>
+            <a class="btn ds-btn-light" href="/request.html" data-i18n="ds_cta_req">اطلب قطعة</a>
+            <a class="btn ds-btn-ghost" id="cta-call"><span data-i18n="call_us">اتصل بينا</span>&nbsp;<span dir="ltr" id="cta-call-num"></span></a>
           </div>
         </div>
       </div>
     </section>
+
     <!-- ❓ أسئلة شائعة (SEO) -->
     <section class="section faq-home">
       <div class="container">
@@ -194,9 +177,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261127f"></script>
-  <script src="/js/i18n.js?v=20261127f"></script>
-  <script src="/js/app.js?v=20261127f"></script>
+  <script src="/js/config.js?v=20261128c"></script>
+  <script src="/js/i18n.js?v=20261128c"></script>
+  <script src="/js/app.js?v=20261128c"></script>
   <script>
     renderLayout('home');
     document.title = t('title_home');
@@ -205,7 +188,7 @@
     document.getElementById('cta-call-num').textContent = phoneDisplay();
     document.getElementById('featured-grid').innerHTML = skeletonCards(10);
 
-    // 🚗 دوّر بعربيتك — موديلات حسب الماركة
+    // 🚗 اختار عربيتك — موديلات حسب الماركة
     const MODELS_BY_BRAND = {
       BMW: ['E46', 'E60', 'E90', 'E92', 'F10', 'F30', 'F32', 'G20', 'G30', 'X1', 'X3', 'X5', 'X6'],
       MINI: ['R56', 'R55', 'R60', 'F54', 'F55', 'F56'],
@@ -218,7 +201,6 @@
     }
     document.getElementById('sbc-brand').addEventListener('change', fillModels);
     fillModels();
-    // استرجاع آخر اختيار (لمسة شخصية)
     try {
       const g = getGarage();
       if (g && g.model) { for (const [br, ms] of Object.entries(MODELS_BY_BRAND)) if (ms.includes(g.model)) { document.getElementById('sbc-brand').value = br; fillModels(); document.getElementById('sbc-model').value = g.model; } }
@@ -228,20 +210,44 @@
       const model = document.getElementById('sbc-model').value;
       location.href = '/shop.html?brand=' + encodeURIComponent(brand) + (model ? '&model=' + encodeURIComponent(model) : '');
     });
+    // بحث باسم القطعة → يركّز على البحث في الهيدر
+    document.getElementById('ds-alt-search').addEventListener('click', (e) => {
+      const hs = document.getElementById('hdr-search'); if (!hs) return;
+      e.preventDefault(); hs.focus(); hs.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    document.getElementById('ds-alt-vin').addEventListener('click', (e) => {
+      e.preventDefault(); trackEvent('part_request', { via: 'vin' });
+      window.open(waLink(LANG === 'en' ? 'Hi FixIt 👋\nMy chassis number (VIN): \nI need: ' : 'أهلاً FixIt 👋\nرقم الشاسيه: \nمحتاج: '), '_blank');
+    });
 
-
+    // 🕛 المحل مفتوح دلوقتي؟ (١٢ الظهر – ١١ بالليل بتوقيت القاهرة، الأحد إجازة)
     (function storeStatus() {
       try {
         const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date());
         const h = +parts.find((x) => x.type === 'hour').value % 24, wd = parts.find((x) => x.type === 'weekday').value;
         const open = wd !== 'Sun' && h >= 12 && h < 23;
-        const el = document.getElementById('sh-open'); if (!el) return;
-        el.classList.toggle('closed', !open);
+        document.getElementById('sh-open').classList.toggle('closed', !open);
         document.getElementById('sh-open-txt').textContent = open
-          ? (LANG === 'en' ? 'Open now · till 11 PM' : 'مفتوح دلوقتي · لحد ١١ بالليل')
-          : (LANG === 'en' ? 'Closed · opens 12 PM' : 'مقفول · بنفتح ١٢ الظهر');
+          ? (LANG === 'en' ? 'BMW & MINI specialists · Open now till 11 PM' : 'متخصصين في BMW و MINI · مفتوح دلوقتي لحد ١١ بالليل')
+          : (LANG === 'en' ? 'BMW & MINI specialists · Opens 12 PM' : 'متخصصين في BMW و MINI · بنفتح ١٢ الظهر');
       } catch {}
     })();
+
+    // ✅ الثقة
+    const TR = {
+      ship: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17" r="1.8"/><circle cx="17" cy="17" r="1.8"/>',
+      cod: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+      shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+      ret: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+    };
+    const trIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TR[k]}</svg>`;
+    const EN = LANG === 'en';
+    document.getElementById('ds-trust').innerHTML = [
+      ['ship', EN ? 'Nationwide delivery' : 'شحن لكل المحافظات', EN ? '2–4 days' : 'خلال ٢–٤ أيام'],
+      ['cod', EN ? 'Cash on delivery' : 'الدفع عند الاستلام', EN ? 'Inspect, then pay' : 'عاين وبعدين ادفع'],
+      ['shield', EN ? 'Guaranteed parts' : 'قطع مضمونة', EN ? 'Every part inspected' : 'كل قطعة متفحصة'],
+      ['ret', EN ? '14-day returns' : 'استرجاع ١٤ يوم', EN ? 'If not as described' : 'لو مش مطابقة'],
+    ].map(([k, a, b]) => `<div class="ds-trust-i">${trIc(k)}<div><b>${a}</b><span>${b}</span></div></div>`).join('');
 
     // ⭐ آراء العملاء
     (function renderReviews() {
@@ -256,114 +262,77 @@
         </div>`).join('');
     })();
 
+    // 🗂️ الفئات
     const CATS = ['فرامل', 'عفشة وتعليق', 'محرك', 'كهرباء وإشعال', 'تبريد', 'وقود', 'فلاتر وصيانة', 'هيكل وإكسسوارات'];
-    // ✏️ أيقونات خطية (بدل الإيموجي) — 24×24 stroke
-    const IC = {
-      'فرامل': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-      'عفشة وتعليق': '<path d="M8 3h8M8 21h8M8 6l8 2-8 2 8 2-8 2 8 2-8 2"/>',
-      'محرك': '<path d="M4 10h2V8h4V6h4v2h3l2 3h1v5h-1l-2 2h-6l-2-2H6v-2H4z"/><path d="M10 6V4h4v2"/>',
-      'كهرباء وإشعال': '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
-      'تبريد': '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2"/>',
-      'وقود': '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M6 9h6"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
-      'فلاتر وصيانة': '<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M6 8h12M6 16h12M10 8v8M14 8v8"/>',
-      'هيكل وإكسسوارات': '<path d="M3 16v-3l2-5h14l2 5v3"/><path d="M3 16h18v2H3z"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M6 12h12"/>',
-    };
-    const svgIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${IC[k] || IC['هيكل وإكسسوارات']}</svg>`;
     document.getElementById('cats-grid').innerHTML = CATS.map((c) => `
-      <a class="hx-cat" href="/shop.html?category=${encodeURIComponent(c)}">
-        <span class="hx-cat-ic">${svgIc(c)}</span>
-        <span class="hx-cat-n">${catName(c)}</span>
+      <a class="ds-cat" href="/shop.html?category=${encodeURIComponent(c)}">
+        <span class="ds-cat-w">${catSvg(c)}</span>
+        <span class="ds-cat-n">${catName(c)}</span>
       </a>`).join('');
-    // 🚗 نقاط على العربية → الفئة (إحداثيات من viewBox 600×230)
-    const SPOTS = [['محرك', 505, 100], ['كهرباء وإشعال', 560, 126], ['تبريد', 572, 148], ['فرامل', 478, 172], ['عفشة وتعليق', 148, 172], ['هيكل وإكسسوارات', 300, 138], ['وقود', 78, 118], ['فلاتر وصيانة', 440, 116]];
-    document.getElementById('hx-spots').innerHTML = SPOTS.map(([c, x, y]) => `
-      <a class="hx-spot" href="/shop.html?category=${encodeURIComponent(c)}" style="left:${(x / 600 * 100).toFixed(2)}%;top:${(y / 230 * 100).toFixed(2)}%">
-        <i></i><span>${catName(c)}</span></a>`).join('');
-    // 🔢 شاسيهات شائعة
-    const CHASSIS = [['BMW', 'F30'], ['BMW', 'E90'], ['BMW', 'G20'], ['BMW', 'F10'], ['BMW', 'X5'], ['BMW', 'X3'], ['MINI', 'R56'], ['MINI', 'F56']];
-    document.getElementById('hx-chassis').innerHTML = `<small>${LANG === 'en' ? 'Popular:' : 'الأكثر طلباً:'}</small>` +
-      CHASSIS.map(([b, m]) => `<a href="/shop.html?brand=${b}&model=${m}">${m}</a>`).join('');
-    // ✅ شريط الثقة بأيقونات خطية
-    const TI = {
-      ship: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
-      cod: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/>',
-      genuine: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
-      inspect: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M8.5 11l2 2 3.5-3.5"/>',
-    };
-    document.getElementById('hx-trust').innerHTML = [['ship', 'trust_ship'], ['cod', 'trust_cod'], ['genuine', 'trust_genuine'], ['inspect', 'trust_inspect']]
-      .map(([k, key]) => `<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${TI[k]}</svg><b>${t(key)}</b></span>`).join('');
-    // 🗂️ تبويبات الباحث
-    document.querySelectorAll('.hx-tabs button').forEach((b) => b.addEventListener('click', () => {
-      document.querySelectorAll('.hx-tabs button').forEach((x) => x.classList.toggle('on', x === b));
-      document.querySelectorAll('.hx-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === b.dataset.tab));
-      const inp = document.querySelector(`.hx-pane[data-pane="${b.dataset.tab}"] input`); if (inp) inp.focus();
-    }));
-    document.getElementById('hx-vin').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const vin = e.target.vin.value.trim().toUpperCase();
-      trackEvent('part_request', { via: 'vin' });
-      window.open(waLink((LANG === 'en' ? 'Hi FixIt 👋\nMy chassis number (VIN): ' : 'أهلاً FixIt 👋\nرقم الشاسيه بتاعي: ') + vin + (LANG === 'en' ? '\nI need: ' : '\nمحتاج: ')), '_blank');
-    });
+
+    // 🚘 الموديلات
+    const MODELS = [
+      ['BMW', 'F30', EN ? '3 Series' : 'الفئة الثالثة', '2012–2019'],
+      ['BMW', 'G20', EN ? '3 Series' : 'الفئة الثالثة', '2019+'],
+      ['BMW', 'E90', EN ? '3 Series' : 'الفئة الثالثة', '2005–2012'],
+      ['BMW', 'F10', EN ? '5 Series' : 'الفئة الخامسة', '2010–2017'],
+      ['BMW', 'E60', EN ? '5 Series' : 'الفئة الخامسة', '2003–2010'],
+      ['BMW', 'X5', 'BMW X5', EN ? 'All generations' : 'كل الأجيال'],
+      ['MINI', 'R56', 'MINI Cooper', '2006–2013'],
+      ['MINI', 'F56', 'MINI Cooper', '2014+'],
+    ];
+    document.getElementById('ds-models').innerHTML = MODELS.map(([b, m, n, y]) => `
+      <a class="ds-model" href="/shop.html?brand=${b}&model=${m}">
+        <small>${b}</small><b>${m}</b><span>${n}</span><em>${y}</em>
+      </a>`).join('');
+
     api('/products').then((products) => {
-      // 🐛 [FIX]: الرئيسية كانت بتعرض قطع الفرعين — دلوقتي قطع فرع العرض الحالي بس (قطاعي مصر / جملة الإمارات)
       products = wsCatalogFilter(products);
-      // الأكثر مبيعاً (أو الأحدث لو لسه مفيش مبيعات)
+      // 🖼️ موزاييك الهيرو: قطع حقيقية بصورها (من اختيار الأدمن، وإلا الأكثر مبيعاً اللي ليها صور)
+      (function mosaic() {
+        const withImg = products.filter((p) => firstImage(p) && p.stock > 0);
+        const picked = ((window.SETTINGS || {}).heroProducts || []).map((id) => products.find((p) => p.id === id)).filter((p) => p && firstImage(p));
+        const list = (picked.length >= 4 ? picked : [...withImg].sort((a, b) => (b.sold || 0) - (a.sold || 0))).slice(0, 4);
+        const box = document.getElementById('ds-mosaic');
+        if (list.length < 4) {
+          // مفيش صور كفاية → كارت أرقام بدل الصور
+          box.innerHTML = `<div class="ds-stat-card">
+            <div><b>${products.length.toLocaleString(EN ? 'en-US' : 'ar-EG')}+</b><span>${EN ? 'parts in stock' : 'قطعة متاحة دلوقتي'}</span></div>
+            <div><b>BMW · MINI</b><span>${EN ? 'Specialists only' : 'متخصصين فيهم بس'}</span></div>
+            <div><b>${EN ? '2–4 days' : '٢–٤ أيام'}</b><span>${EN ? 'to your door' : 'لحد باب بيتك'}</span></div>
+          </div>`;
+          return;
+        }
+        box.innerHTML = `<div class="ds-mosaic">${list.map((p) => `
+          <a class="ds-mo" href="${productUrl(p)}">${productImage(p, 'ds-mo-img')}
+            <span class="ds-mo-cap"><span>${esc(pname(p))}</span><b>${money(p.price)}</b></span></a>`).join('')}</div>`;
+      })();
+      // الأكثر مبيعاً
       const best = [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 10);
       document.getElementById('featured-grid').innerHTML =
         best.map(productCard).join('') ||
-        // 🐛 [FIX]: الكتالوج الفاضي كان بيسيب مكان «الأكثر مبيعاً» بجملة «مفيش منتجات» بس — دلوقتي بيودّي الزائر لطلب القطعة أو مكالمة
         `<div class="note" style="grid-column: 1 / -1; text-align: center;">${t('no_products')}<br><br>
           <a class="btn" href="/request.html">${t('cta_request')}</a>
-          <a class="btn btn-green" href="${telLink()}">📞 ${t('call_us')} <span dir="ltr">${esc(phoneDisplay())}</span></a></div>`;
-
-      // 🆕 وصل حديثاً
-      const fresh = newArrivals(products, 10);
+          <a class="btn btn-green" href="${telLink()}">${t('call_us')} <span dir="ltr">${esc(phoneDisplay())}</span></a></div>`;
+      // وصل حديثاً
+      const fresh = newArrivals(products, 12);
       if (fresh.length) {
         document.getElementById('new-section').style.display = '';
         document.getElementById('new-grid').innerHTML = fresh.map(productCard).join('');
       }
-
-      // العروض: اللي عليها خصم
+      // العروض
       const deals = products.filter((p) => p.oldPrice > p.price).slice(0, 16);
       if (deals.length) {
         document.getElementById('deals-section').style.display = '';
         document.getElementById('deals-grid').innerHTML = deals.map(productCard).join('');
-
-        // 🔥 عرض اليوم: أكبر خصم + عدّاد تنازلي لنهاية اليوم (إلحاح يرجّع العميل)
-        const top = [...deals].sort((a, b) => (1 - a.price / a.oldPrice) - (1 - b.price / b.oldPrice)).pop();
-        const off = Math.round((1 - top.price / top.oldPrice) * 100);
-        document.getElementById('flash-section').style.display = '';
-        document.getElementById('flash-band').innerHTML = `
-          <div class="flash-left">
-            <span class="flash-tag">🔥 ${t('deal_today')} · -${off}%</span>
-            <h3>${esc(pname(top))}</h3>
-            <div class="flash-price"><span class="old-price">${money(top.oldPrice)}</span> <span class="price">${money(top.price)}</span></div>
-            <div class="flash-timer">${t('deal_ends')} <span id="flash-clock">--:--:--</span></div>
-            <a class="btn" href="${productUrl(top)}">${t('deal_grab')} →</a>
-          </div>
-          <div class="flash-img">${productImage(top, 'flash-thumb')}</div>`;
-        const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
-        const clock = document.getElementById('flash-clock');
-        const tick = () => {
-          let s = Math.max(0, Math.floor((endOfDay - Date.now()) / 1000));
-          const h = String(Math.floor(s / 3600)).padStart(2, '0');
-          const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-          const ss = String(s % 60).padStart(2, '0');
-          if (clock) clock.textContent = `${h}:${m}:${ss}`;
-        };
-        tick(); setInterval(tick, 1000);
       }
-
       // شاهدتها مؤخراً
-      const recentIds = getRecent();
-      const recent = recentIds.map((rid) => products.find((p) => p.id === rid)).filter(Boolean);
+      const recent = getRecent().map((rid) => products.find((p) => p.id === rid)).filter(Boolean);
       if (recent.length) {
         document.getElementById('recent-section').style.display = '';
         document.getElementById('recent-grid').innerHTML = recent.map(productCard).join('');
       }
-
-      // نظهر كل الكروت فوراً عشان الصفحة تبان مليانة (بدل انتظار السكرول)
-      document.querySelectorAll('.card, .cat-card').forEach((c) => c.classList.add('shown'));
+      document.querySelectorAll('.card').forEach((c) => c.classList.add('shown'));
     }).catch((e) => {
       document.getElementById('featured-grid').innerHTML = `<div class="spinner">${esc(e.message)}</div>`;
     });

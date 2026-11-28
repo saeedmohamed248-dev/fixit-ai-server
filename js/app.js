@@ -371,7 +371,8 @@ function applySettings(s) {
   if (s.gaId) initGA(s.gaId);
   // 🐛 [FIX]: لون المتجر من اللوحة كان بيتحط inline على :root فبيغطي ذهبي سكين الجملة (الأسعار والزراير
   //    بقت أزرق غامق على خلفية سودا ومش مقروءة) — سكين الجملة له هويته الثابتة، فاللون للقطاعي بس.
-  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent) && !isWholesale()) {
+  // #2f33bf = اللون القديم الافتراضي → نسيب ألوان التصميم الجديد. أي لون تاني يختاره الأدمن بيتطبّق.
+  if (s.accent && /^#[0-9a-fA-F]{6}$/.test(s.accent) && s.accent.toLowerCase() !== '#2f33bf' && !isWholesale()) {
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent);
     root.setProperty('--accent-dark', shadeColor(s.accent, -14));
@@ -789,11 +790,28 @@ const CATEGORY_ICONS = {
   'هيكل وإكسسوارات': '🚗', 'أخرى': '🔧',
 };
 function categoryIcon(cat) { return CATEGORY_ICONS[cat] || '🔧'; }
+// ✏️ أيقونات الفئات خطية (للصور البديلة والصفحة الرئيسية) بدل الإيموجي
+const CAT_SVG = {
+  'فرامل': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+  'عفشة وتعليق': '<path d="M8 3h8M8 21h8M8 6l8 2-8 2 8 2-8 2 8 2-8 2"/>',
+  'محرك': '<path d="M4 10h2V8h4V6h4v2h3l2 3h1v5h-1l-2 2h-6l-2-2H6v-2H4z"/><path d="M10 6V4h4v2"/>',
+  'كهرباء وإشعال': '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  'تبريد': '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2"/>',
+  'وقود': '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M6 9h6"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
+  'فلاتر وصيانة': '<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M6 8h12M6 16h12M10 8v8M14 8v8"/>',
+  'هيكل وإكسسوارات': '<path d="M3 16v-3l2-5h14l2 5v3"/><path d="M3 16h18v2H3z"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M6 12h12"/>',
+  'أخرى': '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+};
+function catSvg(cat, cls = 'cat-ic') {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT_SVG[cat] || CAT_SVG['أخرى']}</svg>`;
+}
 
 function imgFallback(img, icon) {
   const d = document.createElement('div');
   d.className = img.className + ' img-placeholder';
-  d.innerHTML = '<span>' + (icon || '🔧') + '</span>';
+  // الإيموجي اللي جاي من onerror بنرجّعه لفئته ونرسم أيقونة خطية
+  const cat = Object.keys(CATEGORY_ICONS).find((k) => CATEGORY_ICONS[k] === icon) || 'أخرى';
+  d.innerHTML = '<span>' + catSvg(cat) + '</span>';
   img.replaceWith(d);
 }
 // 🖼️ الصور المحفوظة قبل كده بدومين الموقع/مسار نسبي (/media/...) — مكانها الحقيقي سيرفر موس تك
@@ -818,7 +836,7 @@ function productImage(p, cssClass = 'card-img') {
   const src = imgSized(firstImage(p), /thumb/.test(cssClass) ? 200 : 480);
   // لو رابط الصورة بايظ/انتهى، نعرض أيقونة الفئة بدل مربع فاضي
   if (src) return `<img class="${cssClass}" src="${esc(src)}" alt="${esc(pname(p))}${p.oem ? ' ' + esc(p.oem) : ''}" loading="lazy" decoding="async" onerror="imgFallback(this, '${categoryIcon(p.category)}')">`;
-  return `<div class="${cssClass} img-placeholder"><span>${categoryIcon(p.category)}</span></div>`;
+  return `<div class="${cssClass} img-placeholder"><span>${catSvg(p.category)}</span></div>`;
 }
 
 function conditionBadge(p) {
@@ -905,7 +923,7 @@ function wsCard(p) {
   <a class="card ws-card ${out ? 'card-out' : ''}" href="${productUrl(p)}">
     <div class="card-img-wrap ws-media">
       ${media}
-      ${isNewArrival(p) ? `<span class="new-ribbon">🆕 ${t('new_arrival')}</span>` : ''}
+      ${isNewArrival(p) ? `<span class="new-ribbon">${t('new_arrival')}</span>` : ''}
       ${p.stock > 0 && p.stock <= 2 ? `<span class="ws-low">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
     </div>
     <div class="card-body ws-body">
@@ -945,14 +963,14 @@ function productCard(p) {
     <div class="card-img-wrap">
       ${productImage(p)}
       ${discount ? `<span class="discount-tag">${LANG === 'en' ? discount + '% ' + t('discount') : t('discount') + ' ' + discount + '%'}</span>` : ''}
-      ${isNewArrival(p) ? `<span class="new-ribbon">🆕 ${t('new_arrival')}</span>` : ''}
+      ${isNewArrival(p) ? `<span class="new-ribbon">${t('new_arrival')}</span>` : ''}
     </div>
     <div class="card-body">
       <div class="card-badges">
         ${conditionBadge(p)}
         <span class="badge badge-brand">${esc(p.brand)}</span>
         ${p.supplier ? `<span class="badge badge-supplier" title="${t('supplier')}">${esc(p.supplier)}</span>` : ''}
-        ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-used">⏳ ${t('low_left', { n: p.stock })}</span>` : ''}
+        ${p.stock > 0 && p.stock <= 2 ? `<span class="badge badge-low">${t('low_left', { n: p.stock })}</span>` : ''}
         ${p.stock > 0 ? cashbackBadge(p) : ''}
       </div>
       <h3 class="card-title">${esc(pname(p))}</h3>
@@ -968,7 +986,7 @@ function productCard(p) {
         </div>
         ${out
           ? `<span class="stock-out">${t('out_stock')}</span>`
-          : `<button class="btn-icon add-btn" data-id="${esc(p.id)}" title="${t('add_cart')}">🛒</button>`}
+          : `<button class="btn-icon add-btn" data-id="${esc(p.id)}" title="${t('add_cart')}" aria-label="${t('add_cart')}">${uiIc('plus')}</button>`}
       </div>
     </div>
   </a>`;
@@ -1087,14 +1105,32 @@ function fixitLogoMark(h = 34) {
   <svg class="fixit-mark" viewBox="0 0 214 72" height="${h}" role="img" aria-label="FixIt" direction="ltr"
        style="height:${h}px;width:auto;display:block;flex:0 0 auto;overflow:visible;direction:ltr;">
     <g font-family="'Archivo','Segoe UI',system-ui,sans-serif" font-size="58" font-style="italic" font-weight="900"
-       direction="ltr" text-anchor="start" fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+       direction="ltr" text-anchor="start" fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round" class="fm-ink">
       <text x="8" y="56">FI</text>
       <text x="146" y="56">IT</text>
     </g>
-    <g fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+    <g fill="#2a2d9e" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round" class="fm-ink">
       <polygon points="76,14 92,36 76,58 90,58 106,40 122,58 136,58 120,36 136,14 122,14 106,32 90,14"></polygon>
     </g>
   </svg>`;
+}
+
+// ✏️ أيقونات خطية موحّدة للواجهة (بدل الإيموجي) — 24×24
+const UI_IC = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  cart: '<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>',
+  car: '<path d="M5 16v2M19 16v2M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6v3H3z"/><path d="M3 13h18"/><circle cx="7.5" cy="15.5" r=".8"/><circle cx="16.5" cy="15.5" r=".8"/>',
+  phone: '<path d="M5 4h3l2 5-2 1.5a11 11 0 0 0 5.5 5.5L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  wa: '<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/>',
+  truck: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17" r="1.8"/><circle cx="17" cy="17" r="1.8"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  up: '<path d="m6 15 6-6 6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+};
+function uiIc(k, cls = 'ui-ic') {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI_IC[k] || ''}</svg>`;
 }
 
 function renderLayout(active = '') {
@@ -1106,12 +1142,6 @@ function renderLayout(active = '') {
     ? `🇦🇪 ${t('ws_topbar')}`
     : ((LANG === 'en' ? SETTINGS.topbarEn : SETTINGS.topbarAr) ||
       `${t('topbar')} ${SITE.freeShippingOver ? `— ${t('topbar_free')} ${money(SITE.freeShippingOver)}` : ''}`);
-  // مبدّل الفرع: قطاعي مصر ⇄ جملة الإمارات
-  const branchSwitch = `
-    <div class="branch-switch" title="${t('branch_hint')}">
-      <button class="${!isWholesale() ? 'active' : ''}" onclick="setMode('retail')">🇪🇬 ${t('branch_retail')}</button>
-      <button class="${isWholesale() ? 'active' : ''}" onclick="setMode('wholesale')">🇦🇪 ${t('branch_wholesale')}</button>
-    </div>`;
   // مبدّل العملة (يظهر في الجملة فقط)
   const curSwitch = isWholesale() ? `
     <div class="cur-switch" title="${t('cur_hint')}">
@@ -1121,7 +1151,19 @@ function renderLayout(active = '') {
   const header = document.getElementById('site-header');
   if (header) {
     header.innerHTML = `
-    <div class="topbar"><span class="tb-msg">${topbarMsg}</span><span class="tb-links"> &nbsp;|&nbsp; <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a> &nbsp;|&nbsp; <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}</a></span></div>
+    <div class="topbar"><div class="container tb-inner">
+      <span class="tb-msg">${isWholesale() ? '' : uiIc('truck')}${topbarMsg}</span>
+      <span class="tb-links">
+        <a class="tb-hide-m" href="${telLink()}">${uiIc('phone')}<span dir="ltr">${esc(phoneDisplay())}</span></a>
+        <a class="tb-hide-m" href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${uiIc('wa')}${t('whatsapp')}</a>
+        <span class="tb-store">
+          <button type="button" class="${!isWholesale() ? 'on' : ''}" onclick="setMode('retail')">${LANG === 'en' ? 'Egypt' : 'مصر'}</button>
+          <button type="button" class="${isWholesale() ? 'on' : ''}" onclick="setMode('wholesale')">${LANG === 'en' ? 'UAE Trade' : 'جملة الإمارات'}</button>
+        </span>
+        ${curSwitch}
+        <button type="button" class="tb-lang" onclick="setLang('${otherLang}')">${uiIc('globe')}${otherLang === 'en' ? 'English' : 'عربي'}</button>
+      </span>
+    </div></div>
     <header class="header">
       <div class="container header-inner">
         <a class="logo ${isWholesale() ? '' : 'logo-brand'}" href="${isWholesale() ? '/trade.html' : '/index.html'}">
@@ -1129,27 +1171,23 @@ function renderLayout(active = '') {
             ? `<span class="logo-mark">🌐</span><span class="logo-text">Fix<em>It</em> <span class="trade-tag">TRADE</span><small>${LANG === 'en' ? esc(wsConf().taglineEn || '') : esc(wsConf().taglineAr || '')}</small></span>`
             : (SITE.name && SITE.name !== 'FixIt'
               ? `<span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}<small>${t('brand_tag')}</small></span>`
-              : `${fixitLogoMark(36)}<small class="logo-tagline">${t('brand_tag')}</small>`)}
+              : `${fixitLogoMark(34)}<small class="logo-tagline">${t('brand_tag')}</small>`)}
         </a>
         <div class="hdr-search-wrap">
+          ${uiIc('search', 'ui-ic hdr-search-ic')}
           <input id="hdr-search" type="search" placeholder="${t('search_ph')}" autocomplete="off">
           <div class="hdr-suggest" id="hdr-suggest"></div>
         </div>
-        <div class="hdr-tools">
-          ${branchSwitch}
-          ${curSwitch}
-          <button class="lang-btn" onclick="setLang('${otherLang}')" title="Switch language">${otherLang === 'en' ? 'EN' : 'عربي'}</button>
-          ${isWholesale() ? '' : `<button class="lang-btn garage-chip" onclick="openGarageModal()">${getGarage() ? '🚗 ' + esc(getGarage().model) + ' ✓' : t('garage_btn')}</button>`}
-        </div>
         <div class="header-actions">
+          ${isWholesale() ? '' : `<button type="button" class="hdr-icon hdr-car garage-chip" onclick="openGarageModal()">${uiIc('car')}<small>${getGarage() ? esc(getGarage().model) : (LANG === 'en' ? 'My car' : 'عربيتي')}</small></button>`}
           <a class="hdr-icon" href="/account.html" title="${user ? esc(user.name) : t('login')}">
-            👤 <small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
+            ${uiIc('user')}<small>${user ? esc(user.name.split(' ')[0]) : t('login')}</small>
           </a>
           <a class="hdr-icon wish-link" href="/wishlist.html" title="${t('footer_wish')}">
-            ❤️ <span class="wish-badge">0</span>
+            ${uiIc('heart')}<small>${LANG === 'en' ? 'Saved' : 'المفضلة'}</small><span class="wish-badge">0</span>
           </a>
           <a class="hdr-icon cart-link" href="/cart.html" title="${t('cart')}">
-            🛒 <span class="cart-badge">0</span>
+            ${uiIc('cart')}<small>${t('cart')}</small><span class="cart-badge">0</span>
           </a>
         </div>
       </div>
@@ -1235,7 +1273,7 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_service')}</h4>
-          <a href="/request.html">${t('req_link')} 🔎</a>
+          <a href="/request.html">${t('req_link')}</a>
           <a href="/track.html">${t('footer_track')}</a>
           <a href="/account.html">${t('footer_account')}</a>
           <a href="/policies.html">${t('footer_policies')}</a>
@@ -1244,19 +1282,18 @@ function renderLayout(active = '') {
         </div>
         <div>
           <h4>${t('footer_contact')}</h4>
-          <a href="${telLink()}">📞 ${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
-          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">💬 ${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
-          <span>⚡ ${t('reply_fast')}</span>
-          <a href="${esc(SITE.mapsUrl || '#')}" target="_blank" rel="noopener" style="color:inherit;">📍 ${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)} — ${LANG === 'en' ? 'Open in Maps' : 'افتح على الخريطة'} ↗</a>
-          <span>🕛 ${LANG === 'en' ? 'Daily 12 PM – 11 PM · Closed Sunday' : 'يوميًا من 12 الظهر لـ 11 بالليل · الأحد إجازة'}</span>
+          <a href="${telLink()}">${t('call_us')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <a href="${waLink(t('wa_greeting'))}" target="_blank" rel="noopener">${t('whatsapp')}: <span dir="ltr">${esc(phoneDisplay())}</span></a>
+          <a href="${esc(SITE.mapsUrl || '#')}" target="_blank" rel="noopener" style="color:inherit;">${LANG === 'en' ? esc(SITE.addressEn) : esc(SITE.address)} — ${LANG === 'en' ? 'Open in Maps' : 'افتح على الخريطة'} ↗</a>
+          <span>${LANG === 'en' ? 'Daily 12 PM – 11 PM · Closed Sunday' : 'يوميًا من 12 الظهر لـ 11 بالليل · الأحد إجازة'}</span>
         </div>
       </div>`}
       <div class="footer-bottom">© ${new Date().getFullYear()} ${isWholesale() ? (LANG === 'en' ? esc(wsConf().brandEn || 'FixIt Trade') : esc(wsConf().brandAr || 'فيكس إت تريد')) : esc(SITE.name)} — ${t('footer_rights')} · <a href="/privacy.html" style="color:inherit;text-decoration:underline;">${LANG === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية'}</a></div>
     </footer>
-    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp">💬</a>
-    <a class="call-float" href="${telLink()}" title="${t('call_us')}" aria-label="${t('call_us')}">📞</a>
+    <a class="wa-float" target="_blank" rel="noopener" href="${waLink(t('wa_part'))}" title="WhatsApp" aria-label="WhatsApp">${uiIc('wa')}</a>
+    ${isWholesale() ? `<a class="call-float" href="${telLink()}" title="${t('call_us')}" aria-label="${t('call_us')}">📞</a>` : ''}
     ${isWholesale() && !['container', 'product', 'cart'].includes(active) && !/\/(product|cart)\.html/.test(location.pathname) ? `<a class="ct-float" href="/container.html">🧩 ${LANG === 'en' ? 'Build / share a container' : 'اعمل أو شارك في حاوية'}</a>` : ''}
-    <button class="scroll-top" id="scroll-top" title="⬆">⬆</button>`;
+    <button class="scroll-top" id="scroll-top" title="Top" aria-label="Top">${uiIc('up')}</button>`;
 
     const topBtn = document.getElementById('scroll-top');
     window.addEventListener('scroll', () => {
