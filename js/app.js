@@ -888,29 +888,29 @@ function cashbackBadge(p, big) {
 
 /* ====== 🚚 مواعيد التوصيل (قطاعي)
    • القاهرة والجيزة: في نفس اليوم للطلب قبل ٦ مساءً، وبعدها أول يوم توصيل جاي.
-   • باقي المحافظات: ٢–٤ أيام عمل.
-   الجمعة مفيش شحن، والأحد إجازة. ====== */
+   • باقي المحافظات: في نفس اليوم أو تاني يوم.
+   الأحد بس إجازة (الجمعة فيه توصيل). ====== */
 const SAME_DAY_CUTOFF = 18;
 const SAME_DAY_GOVS = ['القاهرة', 'الجيزة'];
 function isSameDayGov(gov) { return SAME_DAY_GOVS.includes(String(gov || '').trim()); }
 function deliveryWindow() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
-  const offDay = (x) => x.getDay() === 5 || x.getDay() === 0;
+  const offDay = (x) => x.getDay() === 0; // الأحد إجازة
   const fmt = (x) => x.toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
   // القاهرة والجيزة
   const today = !offDay(now) && now.getHours() < SAME_DAY_CUTOFF;
   const d = new Date(now);
   if (!today) { do { d.setDate(d.getDate() + 1); } while (offDay(d)); }
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-  const label = today ? (LANG === 'en' ? 'today' : 'النهارده')
-    : d.toDateString() === tomorrow.toDateString() ? (LANG === 'en' ? 'tomorrow' : 'بكرة') : fmt(d);
+  const rel = (x) => x.toDateString() === now.toDateString() ? (LANG === 'en' ? 'today' : 'النهارده')
+    : x.toDateString() === tomorrow.toDateString() ? (LANG === 'en' ? 'tomorrow' : 'بكرة') : fmt(x);
+  const label = rel(d);
   const mins = (SAME_DAY_CUTOFF * 60) - (now.getHours() * 60 + now.getMinutes());
-  // باقي المحافظات: ٢–٤ أيام عمل (الطلب بعد ٦ بيتحسب من بكرة)
-  const start = new Date(now); if (now.getHours() >= SAME_DAY_CUTOFF) start.setDate(start.getDate() + 1);
-  const addWork = (from, n) => { const x = new Date(from); while (n > 0) { x.setDate(x.getDate() + 1); if (!offDay(x)) n--; } return x; };
+  // باقي المحافظات: نفس يوم القاهرة أو أول يوم توصيل بعده
+  const d2 = new Date(d); do { d2.setDate(d2.getDate() + 1); } while (offDay(d2));
   return {
     today, label, cutoffH: today ? Math.floor(mins / 60) : 0, cutoffM: today ? mins % 60 : 0,
-    farFrom: fmt(addWork(start, 2)), farTo: fmt(addWork(start, 4)),
+    farFrom: label, farTo: rel(d2),
   };
 }
 
