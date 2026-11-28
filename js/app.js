@@ -1279,7 +1279,7 @@ function renderLayout(active = '') {
         <div>
           <div class="logo logo-brand">${SITE.name && SITE.name !== 'FixIt' ? `<span class="logo-mark">🔧</span><span class="logo-text">${logoHtml()}</span>` : fixitLogoMark(32)}</div>
           <p>${LANG === 'en' ? esc(SITE.sloganEn) : esc(SITE.slogan)}. ${t('footer_desc')}</p>
-          <div class="pay-badges">${SITE.depositOff ? t('pay_badges').replace(/^[^&]*&nbsp;\s*/, '') : t('pay_badges')}</div>
+          <div class="pay-badges">${t('pay_badges')}</div>
         </div>
         <div>
           <h4>${t('footer_shop')}</h4>
