@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#101828">
-  <link rel="stylesheet" href="/css/style.css?v=20261128f">
+  <link rel="stylesheet" href="/css/style.css?v=20261128g">
 </head>
 <body>
   <div id="site-header"></div>
@@ -24,9 +24,9 @@
 
   <div id="site-footer"></div>
 
-  <script src="/js/config.js?v=20261128f"></script>
-  <script src="/js/i18n.js?v=20261128f"></script>
-  <script src="/js/app.js?v=20261128f"></script>
+  <script src="/js/config.js?v=20261128g"></script>
+  <script src="/js/i18n.js?v=20261128g"></script>
+  <script src="/js/app.js?v=20261128g"></script>
   <script>
     renderLayout('cart');
     document.title = t('title_cart');
@@ -567,7 +567,7 @@
           </div>
 
           <button class="btn cx-submit" id="submit-order">${t('confirm_order')}</button>
-          <div class="cx-safe">${LANG === 'en' ? '🔒 No payment now — we call you to confirm, you pay on delivery' : '🔒 مش هتدفع دلوقتي — هنكلمك نأكد، وتدفع عند الاستلام'}</div>
+          <div class="cx-safe">${LANG === 'en' ? 'We call you to confirm your order before shipping' : 'هنكلمك نأكد الطلب قبل الشحن'}</div>
           <div id="order-error" style="color: var(--red); font-size: 14px;"></div>
         </div>
       </div>
